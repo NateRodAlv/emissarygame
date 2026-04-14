@@ -20,29 +20,33 @@ const stateRef  = (matchId) =>
 export async function createMatch(matchId, hostId, settings) {
   await set(matchRef(matchId), {
     host: hostId,
-    settings,                        // { discussionTime, votingTime, meetingCalls, useChat }
-    phase: "lobby",                  // lobby | playing | meeting | ended
+    settings,
+    phase: "lobby",
     createdAt: Date.now(),
   });
 }
 
 export async function joinMatch(matchId, player) {
-  // player: { id, name, avatar }
   await set(playerRef(matchId, player.id), {
     ...player,
-    role: null,        // assigned on game start: "crew" | "impostor" | "jester"
+    role: null,
     alive: true,
-    x: 0, y: 0,       // position on the map canvas
-    shield: null,      // null | { type: "full"|"low", chance: 0.50|0.05|0.15 }
-    killReady: false,  // impostor only
-    jesterSwapsLeft: 0,// jester only — counted up as SQs are answered
-    meetingCallsLeft: 0,// set from settings on game start
+    x: 0, y: 0,
+    shield: null,
+    killReady: false,
+    jesterSwapsLeft: 0,
+    meetingCallsLeft: 0,
   });
+}
+
+/** Read match settings (and host) from Firebase. Non-hosts call this on game start. */
+export async function getMatchSettings(matchId) {
+  const snap = await get(matchRef(matchId));
+  return snap.val()?.settings ?? {};
 }
 
 // ── Game state mutations ──────────────────────────────────────
 export async function assignRoles(matchId, roleMap) {
-  // roleMap: { [playerId]: "crew"|"impostor"|"jester" }
   const updates = {};
   for (const [pid, role] of Object.entries(roleMap)) {
     updates[`${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}/${pid}/role`] = role;
@@ -54,7 +58,6 @@ export async function assignRoles(matchId, roleMap) {
 }
 
 export async function setPhase(matchId, phase) {
-  // phase: "lobby" | "playing" | "meeting" | "ended"
   await update(stateRef(matchId), { phase });
 }
 
@@ -67,14 +70,11 @@ export async function setKillReady(matchId, impostorId, ready) {
 }
 
 export async function applyKill(matchId, targetId) {
-  // Returns true if kill lands (shield logic handled client-side before calling)
   await update(playerRef(matchId, targetId), { alive: false });
-  // move to dead zone
   await set(ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.deadZone}/${targetId}`), true);
 }
 
 export async function applyJesterSwap(matchId, jesterId, impostorId) {
-  // Teleport jester to impostor's position and vice versa
   const [jSnap, iSnap] = await Promise.all([
     get(playerRef(matchId, jesterId)),
     get(playerRef(matchId, impostorId)),
@@ -86,8 +86,6 @@ export async function applyJesterSwap(matchId, jesterId, impostorId) {
 }
 
 export async function applyShield(matchId, playerId, shieldObj) {
-  // shieldObj: { type: "full"|"low"|"lq", chance: 0.50|0.05|0.15 }
-  // Crew can only have one shield — overwrite
   await update(playerRef(matchId, playerId), { shield: shieldObj });
 }
 
@@ -97,15 +95,14 @@ export async function breakShield(matchId, playerId) {
 
 // ── Meeting / voting ──────────────────────────────────────────
 export async function callMeeting(matchId, callerId, reason) {
-  // reason: "corpse" | "zone_lq"
   await set(ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.meetings}/active`), {
     calledBy: callerId,
     reason,
     calledAt: Date.now(),
-    phase: "discussion",  // discussion | voting | closed
+    phase: "discussion",
     votes: {},
   });
-  await update(playerRef(matchId, callerId), { meetingCallsLeft: null }); // decrement handled separately
+  await update(playerRef(matchId, callerId), { meetingCallsLeft: null });
 }
 
 export async function castVote(matchId, voterId, targetId) {
@@ -115,7 +112,7 @@ export async function castVote(matchId, voterId, targetId) {
   );
 }
 
-// ── Subscriptions (call in components) ───────────────────────
+// ── Subscriptions ─────────────────────────────────────────────
 export function onPlayersChange(matchId, cb) {
   return onValue(
     ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}`),

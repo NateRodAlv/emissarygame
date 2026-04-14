@@ -88,7 +88,8 @@
                 justify-content:center;z-index:50;display:none}
     #task-modal.open{display:flex}
     .task-box{background:var(--surface);border:1px solid var(--border);
-              border-radius:16px;padding:1.5rem;width:min(460px,95vw)}
+              border-radius:16px;padding:1.5rem;width:min(460px,95vw);
+              max-height:90dvh;overflow-y:auto}
     .task-box h3{font-family:var(--font-title);color:var(--accent);
                  margin-bottom:1rem;font-size:.9rem}
 
@@ -225,7 +226,8 @@ import { createMatch, joinMatch,
          onPlayersChange, onPhaseChange,
          assignRoles, setPhase,
          callMeeting, castVote,
-         applyKill, onMeetingChange }     from "./realtime.js";
+         applyKill, onMeetingChange,
+         getMatchSettings }              from "./realtime.js";
 import { Impostor, Jester, Crew }         from "./roles.js";
 import { World, randomColor }             from "./world.js";
 import { SwipeTask, ConnectorTask,
@@ -240,8 +242,11 @@ const show = id => {
 let matchId, localPlayer, world;
 let allPlayers = {}, settings = {}, isHost = false;
 let meetingTimerInterval = null;
-let killReady = false;
-let hasVoted  = false;
+let killReady  = false;
+let hasVoted   = false;
+// Guards so tallyVotes() never fires twice concurrently
+let isVotingPhase  = false;
+let tallyingVotes  = false;
 
 // ── Touch detection ──────────────────────────────────────────
 if (window.matchMedia("(pointer:coarse)").matches)
@@ -256,9 +261,9 @@ $("btn-join").addEventListener("click", async () => {
   const name = $("player-name").value.trim();
   if (!name) { $("player-name").focus(); return; }
 
-  isHost      = !$("match-id").value.trim();
-  matchId     = $("match-id").value.trim() ||
-                Math.random().toString(36).slice(2,7).toUpperCase();
+  isHost  = !$("match-id").value.trim();
+  matchId = $("match-id").value.trim() ||
+            Math.random().toString(36).slice(2,7).toUpperCase();
   localPlayer = { id: crypto.randomUUID(), name, color: randomColor() };
 
   if (isHost) {
@@ -286,14 +291,11 @@ $("btn-join").addEventListener("click", async () => {
   if (!isHost) {
     onPhaseChange(matchId, async phase => {
       if (phase === "playing" && !world) {
-        // Read our role from the latest player data
+        // Read our role from the latest player snapshot
         const me = allPlayers[localPlayer.id];
         localPlayer.role = me?.role ?? "crew";
-        // Fetch match settings from Firebase
-        const { get, ref, getDatabase } =
-          await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-        // settings already imported into the match node — read it
-        // (simplest approach: just default; host's createMatch stored it)
+        // Pull settings from Firebase so chat/timers work for everyone
+        settings = await getMatchSettings(matchId);
         launchGame();
       }
     });
@@ -359,14 +361,12 @@ function launchGame() {
   onPhaseChange(matchId, phase => {
     if (phase === "meeting") openMeeting();
     else                     closeMeeting();
-    // Also check win conditions
     checkWinConditions(allPlayers);
   });
 
   // Watch players
   onPlayersChange(matchId, snap => {
     allPlayers = snap ?? {};
-    // Sync killReady flag from Firebase
     const me = allPlayers[localPlayer.id];
     if (me && role === "impostor") {
       killReady = me.killReady ?? false;
@@ -376,9 +376,25 @@ function launchGame() {
     checkWinConditions(allPlayers);
   });
 
-  // Watch meeting node for chat/votes
+  // Watch meeting node — store snapshot AND check if all votes are in
   onMeetingChange(matchId, mtg => {
-    if (!mtg) return;
+    window._latestMeeting = mtg;
+
+    // Auto-end voting phase when every alive player has voted
+    if (mtg?.votes && isVotingPhase && !tallyingVotes) {
+      const voteCount  = Object.keys(mtg.votes).length;
+      const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
+      if (aliveCount > 0 && voteCount >= aliveCount) {
+        // Everyone voted — end immediately
+        clearInterval(meetingTimerInterval);
+        $("timer-label").textContent = "All votes cast!";
+        $("timer-fill").style.width = "0%";
+        tallyingVotes = true;
+        setTimeout(() => tallyVotes(), 800); // brief pause so players see "all voted"
+      }
+    }
+
+    // Sync chat messages for non-host players too
     if (settings.useChat === "chat") syncChat(mtg);
   });
 }
@@ -399,16 +415,13 @@ $("btn-kill").addEventListener("click", async () => {
   if (target.shield) {
     const blocked = Math.random() < target.shield.chance;
     if (blocked) {
-      // Impostor is notified, crew is not
       flashHud("Kill blocked by shield!", "warn");
-      await Impostor.onSqCorrect(matchId, localPlayer.id); // reset killReady
+      await Impostor.onSqCorrect(matchId, localPlayer.id);
       return;
     }
   }
-  // Kill lands
   await applyKill(matchId, target.id);
   killReady = false;
-  // Flash screen red for impostor
   const f = $("kill-flash");
   f.classList.add("flash");
   setTimeout(() => f.classList.remove("flash"), 300);
@@ -417,15 +430,12 @@ $("btn-kill").addEventListener("click", async () => {
 });
 
 // ── Meeting ───────────────────────────────────────────────────
-
-// Report corpse button
 $("btn-report").addEventListener("click", async () => {
   if (!localPlayer) return;
   await callMeeting(matchId, localPlayer.id, "corpse");
   await setPhase(matchId, "meeting");
 });
 
-// Meeting zone button
 $("btn-meeting").addEventListener("click", async () => {
   const me = allPlayers[localPlayer.id];
   if ((me?.meetingCallsLeft ?? 1) <= 0) { flashHud("No meeting calls left!"); return; }
@@ -434,19 +444,20 @@ $("btn-meeting").addEventListener("click", async () => {
 });
 
 function openMeeting() {
-  hasVoted = false;
+  hasVoted      = false;
+  isVotingPhase = false;
+  tallyingVotes = false;
   $("meeting-overlay").classList.add("active");
   $("vote-result").style.display = "none";
   $("vote-result").textContent   = "";
 
-  // Chat
+  // Show chat based on settings — now works for ALL players since settings is loaded
   const useChat = settings.useChat === "chat";
   $("chat-wrap").style.display = useChat ? "flex" : "none";
 
-  // Build vote list
   buildVoteList();
 
-  // Timer: discussion phase
+  // Start discussion timer; when done → move to voting
   startMeetingTimer(
     settings.discussionTime ?? 120,
     "DISCUSSION",
@@ -479,37 +490,43 @@ function buildVoteList() {
 }
 
 function startVotingPhase() {
+  isVotingPhase = true;
   $("timer-label").textContent = "VOTING";
   $("timer-fill").style.background = "var(--danger)";
+
+  // Check immediately in case all votes already arrived during discussion
+  const votes = window._latestMeeting?.votes ?? {};
+  const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
+  if (!tallyingVotes && aliveCount > 0 && Object.keys(votes).length >= aliveCount) {
+    tallyingVotes = true;
+    tallyVotes();
+    return;
+  }
+
   startMeetingTimer(
     settings.votingTime ?? 60,
     "VOTING",
-    () => tallyVotes()
+    () => {
+      if (!tallyingVotes) {
+        tallyingVotes = true;
+        tallyVotes();
+      }
+    }
   );
 }
 
 async function tallyVotes() {
-  // Read votes from Firebase (stored by castVote)
-  // Tally from allPlayers snapshot — votes are in the meetings node
-  // For simplicity: read from the current meeting in realtime (onMeetingChange already fires)
-  // We just collect from whatever is in the meeting node
-  // Slight delay so any last-second votes come in
-  await new Promise(r => setTimeout(r, 1500));
+  // Small delay so any in-flight writes settle
+  await new Promise(r => setTimeout(r, 600));
 
-  const { get, ref, getDatabase } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"
-  );
-  // Import the db instance from realtime.js isn't possible directly,
-  // so we read via onMeetingChange snapshot we stored
-  // Instead, use the votes already captured in window._latestMeeting
-  const votes   = window._latestMeeting?.votes ?? {};
-  const tally   = {};
+  const votes  = window._latestMeeting?.votes ?? {};
+  const tally  = {};
   for (const v of Object.values(votes)) tally[v] = (tally[v] ?? 0) + 1;
 
-  const sorted  = Object.entries(tally).sort((a,b) => b[1] - a[1]);
-  const topId   = sorted[0]?.[0];
+  const sorted   = Object.entries(tally).sort((a,b) => b[1] - a[1]);
+  const topId    = sorted[0]?.[0];
   const topVotes = sorted[0]?.[1] ?? 0;
-  const tied    = sorted.length > 1 && sorted[1][1] === topVotes;
+  const tied     = sorted.length > 1 && sorted[1][1] === topVotes;
 
   const result = $("vote-result");
   result.style.display = "block";
@@ -524,7 +541,7 @@ async function tallyVotes() {
     result.innerHTML = `
       <strong style="color:var(--danger)">${ejected?.name ?? "?"}</strong>
       was ejected with ${topVotes} vote${topVotes>1?"s":""}.<br>
-      <span style="color:var(--muted);font-size:.8rem">They were… 
+      <span style="color:var(--muted);font-size:.8rem">They were…
         <strong>${ejected?.role ?? "?"}</strong></span>
     `;
     await applyKill(matchId, topId);
@@ -533,6 +550,8 @@ async function tallyVotes() {
 
   // Resume game after 4 seconds
   setTimeout(async () => {
+    isVotingPhase = false;
+    tallyingVotes = false;
     await setPhase(matchId, "playing");
   }, 4000);
 }
@@ -555,30 +574,28 @@ function startMeetingTimer(secs, label, onDone) {
   }, 1000);
 }
 
-// Store latest meeting snapshot globally so tallyVotes can read it
-onMeetingChange(matchId, mtg => { window._latestMeeting = mtg; });
-
-// Chat
+// Chat — works for everyone now that settings is loaded correctly
 $("btn-chat-send")?.addEventListener("click", sendChat);
 $("chat-input")?.addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
+
 async function sendChat() {
   const msg = $("chat-input")?.value.trim();
-  if (!msg) return;
+  if (!msg || !localPlayer) return;
   $("chat-input").value = "";
-  // Push message to Firebase under meetings/active/chat
-  const { ref, push, getDatabase } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"
-  );
-  // Note: this dynamic import shares the same app instance
-  // but we need the db reference — easier to move chat to realtime.js if expanding
-  // For now just append locally
   const box = $("chat-box");
-  box.innerHTML += `<div><strong style="color:${localPlayer.color}">${localPlayer.name}:</strong> ${msg}</div>`;
+  const entry = document.createElement("div");
+  entry.innerHTML = `<strong style="color:${localPlayer.color}">${localPlayer.name}:</strong> ${escapeHtml(msg)}`;
+  box.appendChild(entry);
   box.scrollTop = box.scrollHeight;
+  // TODO: persist to Firebase meetings/active/chat for multi-player sync
 }
 
 function syncChat(mtg) {
-  // TODO: subscribe to mtg.chat and render in #chat-box
+  // TODO: render mtg.chat entries in #chat-box for full multi-player sync
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
 // ── Swap (jester) ────────────────────────────────────────────
@@ -602,7 +619,8 @@ $("btn-close-task").addEventListener("click", () => $("task-modal").classList.re
 
 function openTask(room) {
   $("task-modal").classList.add("open");
-  $("task-content").innerHTML = "";
+  $("task-content").innerHTML = "<p style='color:var(--muted);font-size:.8rem'>Loading questions…</p>";
+
   const type = room.id === "electrical" ? "connector"
              : room.id === "weapons"    ? "ninja"
              : "swipe";
@@ -614,27 +632,35 @@ function openTask(room) {
       $("hud-shield").textContent      = "🛡 SHIELDED";
       $("hud-shield").style.color       = "var(--accent)";
       $("hud-shield").style.borderColor = "var(--accent)";
+      flashHud(`Task complete! ${score}/${total} correct ✓`);
+    } else {
+      flashHud(`Task failed. ${score}/${total} correct.`, "warn");
     }
-    // Impostor: completing a task (if sneaking) preloads a kill
     if (localPlayer.role === "impostor" && pass) {
       await Impostor.onSqCorrect(matchId, localPlayer.id);
     }
   };
 
+  $("task-content").innerHTML = "";
+
   if (type === "swipe") {
     const t = new SwipeTask("task-content");
-    t.onComplete = (s,total) => onDone(s,total, s >= Math.ceil(total*0.6));
+    t.onComplete = (s, total) => onDone(s, total, s >= Math.ceil(total * 0.6));
     t.init();
   } else if (type === "connector") {
     const t = new ConnectorTask("task-content");
-    t.onComplete = (s,total) => onDone(s,total, s >= 1);
+    t.onComplete = (s, total) => onDone(s, total, s >= 1);
     t.init();
   } else {
+    // Fruit ninja / bubble tap — needs a canvas
     const cvs = document.createElement("canvas");
-    cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
+    cvs.id = "ninja-canvas";
+    cvs.width  = 360;
+    cvs.height = 260;
+    cvs.style.cssText = "display:block;width:100%;border-radius:8px;background:var(--bg)";
     $("task-content").appendChild(cvs);
     const t = new FruitNinjaTask("ninja-canvas");
-    t.onComplete = (s,total) => { onDone(s,total, s >= Math.ceil(total*0.5)); t.destroy(); };
+    t.onComplete = (s, total) => { onDone(s, total, s >= Math.ceil(total * 0.5)); t.destroy(); };
     t.init();
   }
 }
