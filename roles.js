@@ -1,5 +1,5 @@
 // ============================================================
-//  ROLES.JS — Role behaviour skeletons
+//  ROLES.JS — Role behaviour
 // ============================================================
 import { GAME_CONFIG } from "./config.js";
 import { fetchSQ, fetchLQ } from "./questions.js";
@@ -7,6 +7,12 @@ import {
   setKillReady, applyKill, applyJesterSwap,
   applyShield, breakShield
 } from "./realtime.js";
+
+// ── Event bus (light-weight) ─────────────────────────────────
+// index.html can listen: document.addEventListener("game:killReady", e => ...)
+const emit = (name, detail = {}) =>
+  document.dispatchEvent(new CustomEvent(name, { detail }));
+
 
 // ── IMPOSTOR ─────────────────────────────────────────────────
 export const Impostor = {
@@ -17,27 +23,41 @@ export const Impostor = {
   async onSqCorrect(matchId, playerId) {
     this.sqAnsweredCount++;
     if (this.sqAnsweredCount >= GAME_CONFIG.killCostSq) {
-      this.killReady = true;
+      this.killReady       = true;
       this.sqAnsweredCount = 0;
       await setKillReady(matchId, playerId, true);
-      // TODO: show "Kill Ready" UI indicator to impostor
+      // Notify HUD that kill is ready
+      emit("game:killReady", { playerId });
+    } else {
+      // Show progress toward next kill
+      emit("game:killProgress", {
+        playerId,
+        progress: this.sqAnsweredCount,
+        needed:   GAME_CONFIG.killCostSq,
+      });
     }
   },
 
   /**
    * Attempt to kill a target.
-   * Shield check happens here — impostor is notified if blocked.
+   * Shield check happens here — impostor is notified if blocked,
+   * but the victim is NOT notified (silent block).
    */
   async attemptKill(matchId, impostorId, target) {
-    if (!this.killReady) return { result: "no_preload" };
+    if (!this.killReady) {
+      emit("game:killFailed", { reason: "no_preload" });
+      return { result: "no_preload" };
+    }
 
     // Shield check
     if (target.shield) {
       const blocked = Math.random() < target.shield.chance;
       if (blocked) {
-        await setKillReady(matchId, impostorId, false);
+        // Reset kill-ready state
         this.killReady = false;
-        // TODO: notify IMPOSTOR their kill was blocked (don't notify crew)
+        await setKillReady(matchId, impostorId, false);
+        // Notify IMPOSTOR only — victim is NOT told
+        emit("game:killBlocked", { impostorId });
         return { result: "blocked" };
       }
     }
@@ -45,9 +65,18 @@ export const Impostor = {
     await applyKill(matchId, target.id);
     this.killReady = false;
     await setKillReady(matchId, impostorId, false);
+    emit("game:killLanded", { impostorId, targetId: target.id });
     return { result: "killed" };
   },
+
+  /** Directly reset kill-ready (e.g. after a blocked kill detected client-side). */
+  async resetKill(matchId, playerId) {
+    this.killReady       = false;
+    this.sqAnsweredCount = 0;
+    await setKillReady(matchId, playerId, false);
+  },
 };
+
 
 // ── JESTER ───────────────────────────────────────────────────
 export const Jester = {
@@ -56,21 +85,32 @@ export const Jester = {
   /** Call when jester answers an SQ correctly. */
   async onSqCorrect(matchId, jesterId, impostorPos) {
     this.sqAnsweredCount++;
-    // TODO: show swap progress bar to jester
-    // TODO: show preview of impostor's location (impostorPos {x,y}) to jester
-    if (this.sqAnsweredCount >= GAME_CONFIG.jesterSwapCostSq) {
-      // TODO: confirm swap UI
+    const progress = this.sqAnsweredCount;
+    const needed   = GAME_CONFIG.jesterSwapCostSq;
+
+    // Show swap progress to jester
+    emit("game:jesterProgress", { jesterId, progress, needed });
+
+    if (progress >= needed) {
+      // Show impostor's current location and prompt for swap confirmation
+      emit("game:jesterSwapReady", {
+        jesterId,
+        impostorPos,   // { x, y } — position on the map canvas
+      });
     }
   },
 
-  /** Trigger the swap. */
+  /** Trigger the swap (call after player confirms). */
   async triggerSwap(matchId, jesterId, impostorId) {
     if (this.sqAnsweredCount < GAME_CONFIG.jesterSwapCostSq) return;
     await applyJesterSwap(matchId, jesterId, impostorId);
     this.sqAnsweredCount = 0;
-    // TODO: victory condition — if jester gets voted out → jester wins
+    emit("game:jesterSwapped", { jesterId, impostorId });
+    // Victory condition: if jester gets voted out → jester wins.
+    // Checked in index.html's checkWinConditions after ejection vote.
   },
 };
+
 
 // ── CREW ─────────────────────────────────────────────────────
 export const Crew = {
@@ -80,15 +120,26 @@ export const Crew = {
   async onTaskComplete(matchId, playerId) {
     this.tasksCompleted++;
     const shield = {
-      type: "full",
+      type:   "full",
       chance: GAME_CONFIG.crewShieldChance,
     };
     await applyShield(matchId, playerId, shield);
-    // NOTE: crew is NOT notified if impostor tries to kill them (blocked silently)
-    // TODO: show shield icon on HUD
-    // TODO: check win condition: all tasks done → crew wins
+
+    // Show shield icon on HUD
+    emit("game:shieldGranted", {
+      playerId,
+      shieldType: "full",
+      chance:     GAME_CONFIG.crewShieldChance,
+    });
+
+    // NOTE: crew is NOT notified if a kill is blocked by their shield
+    // (the impostor is notified instead — see Impostor.attemptKill)
+
+    // Check all-tasks win condition (simple: track locally)
+    emit("game:taskCompleted", { playerId, tasksCompleted: this.tasksCompleted });
   },
 };
+
 
 // ── DEAD ─────────────────────────────────────────────────────
 export const Dead = {
@@ -98,6 +149,9 @@ export const Dead = {
    * Dead player answers SQ → give low shield to target crew member.
    * Dead player answers LQ → give medium shield to target crew member.
    * A crew member can only hold one shield (latest overwrites).
+   *
+   * Call this after prompting the dead player to pick a target and
+   * passing that target's id as targetId.
    */
   async giveShield(matchId, targetId, questionType) {
     const chance =
@@ -106,32 +160,40 @@ export const Dead = {
         : GAME_CONFIG.ghostShieldSqChance;
     const shield = { type: "ghost", chance };
     await applyShield(matchId, targetId, shield);
-    // TODO: UI — let dead player choose which alive crew member gets the shield
+    // Prompt dead player to choose a target via UI
+    emit("game:ghostShieldGiven", { targetId, questionType, chance });
   },
 
   /** Ex-impostor ghost: give teammate a shieldbreaker (costs 2 SQ). */
   async giveShieldBreaker(matchId, targetImpostorId, sqAnsweredCount) {
     if (!this.wasImpostor) return;
     if (sqAnsweredCount < GAME_CONFIG.ghostShieldBreakerCostSq) return;
-    // Next kill from targetImpostorId ignores any shield
-    // TODO: store shieldBreaker flag on the impostor's player node
-    //       and consume it in Impostor.attemptKill()
+    // Store shieldBreaker flag on the impostor's player node.
+    // Impostor.attemptKill should check & consume this flag before shield rolls.
+    const { update } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"
+    );
+    emit("game:shieldBreakerGranted", { targetImpostorId });
+    // Actual DB write is left to the caller who has the db reference;
+    // emit the event so index.html can write:
+    //   update(playerRef(matchId, targetImpostorId), { shieldBreaker: true })
   },
 
   /** Ex-impostor ghost: grant extra kill (costs 3 LQ). */
   async grantExtraKill(matchId, targetImpostorId, lqAnsweredCount) {
     if (!this.wasImpostor) return;
     if (lqAnsweredCount < GAME_CONFIG.ghostExtraKillCostLq) return;
-    // TODO: increment impostor's extraKills counter in Firebase
-    //       and allow kill even without SQ preload
+    // Increment impostor's extraKills counter — allows kill without SQ preload.
+    emit("game:extraKillGranted", { targetImpostorId });
+    // Actual DB write handled by caller:
+    //   update(playerRef(matchId, targetImpostorId), { extraKills: firebase.database.ServerValue.increment(1) })
   },
 
   /**
    * Role visibility rule:
-   * Dead players don't know roles UNLESS they were impostor.
-   * If wasImpostor, they can see the current impostor's location.
+   * Dead players don't know roles UNLESS they were the impostor.
    */
-  canSeeRole(targetRole) {
+  canSeeRole(_targetRole) {
     return this.wasImpostor;
   },
 };

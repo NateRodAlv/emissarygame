@@ -88,8 +88,7 @@
                 justify-content:center;z-index:50;display:none}
     #task-modal.open{display:flex}
     .task-box{background:var(--surface);border:1px solid var(--border);
-              border-radius:16px;padding:1.5rem;width:min(460px,95vw);
-              max-height:90dvh;overflow-y:auto}
+              border-radius:16px;padding:1.5rem;width:min(460px,95vw)}
     .task-box h3{font-family:var(--font-title);color:var(--accent);
                  margin-bottom:1rem;font-size:.9rem}
 
@@ -227,7 +226,9 @@ import { createMatch, joinMatch,
          assignRoles, setPhase,
          callMeeting, castVote,
          applyKill, onMeetingChange,
-         getMatchSettings }              from "./realtime.js";
+         setKillReady,
+         getMatchSettings, getPlayerData,
+         sendChatMessage, onChatMessage }  from "./realtime.js";
 import { Impostor, Jester, Crew }         from "./roles.js";
 import { World, randomColor }             from "./world.js";
 import { SwipeTask, ConnectorTask,
@@ -242,15 +243,37 @@ const show = id => {
 let matchId, localPlayer, world;
 let allPlayers = {}, settings = {}, isHost = false;
 let meetingTimerInterval = null;
-let killReady  = false;
-let hasVoted   = false;
-// Guards so tallyVotes() never fires twice concurrently
-let isVotingPhase  = false;
-let tallyingVotes  = false;
+let killReady = false;
+let hasVoted  = false;
+let chatUnsubscribe = null;
 
 // ── Touch detection ──────────────────────────────────────────
 if (window.matchMedia("(pointer:coarse)").matches)
   $("joystick-wrap").style.display = "block";
+
+// ── Listen to role-based events from roles.js ────────────────
+document.addEventListener("game:killReady", () => {
+  $("hud-kill-status").textContent = "🔪 KILL READY";
+  $("hud-kill-status").style.color = "var(--danger)";
+});
+document.addEventListener("game:killProgress", e => {
+  const { progress, needed } = e.detail;
+  $("hud-kill-status").textContent = `🔪 SQ ${progress}/${needed}`;
+  $("hud-kill-status").style.color = "var(--muted)";
+});
+document.addEventListener("game:shieldGranted", () => {
+  $("hud-shield").textContent      = "🛡 SHIELDED";
+  $("hud-shield").style.color       = "var(--accent)";
+  $("hud-shield").style.borderColor = "var(--accent)";
+});
+document.addEventListener("game:jesterProgress", e => {
+  const { progress, needed } = e.detail;
+  flashHud(`⇄ Swap charge: ${progress}/${needed}`, "info");
+});
+document.addEventListener("game:jesterSwapReady", e => {
+  const { impostorPos } = e.detail;
+  flashHud(`⇄ Swap ready! Impostor nearby (${Math.round(impostorPos?.x ?? 0)},${Math.round(impostorPos?.y ?? 0)})`, "warn");
+});
 
 // ── Lobby ────────────────────────────────────────────────────
 $("match-id").addEventListener("input", () => {
@@ -261,9 +284,9 @@ $("btn-join").addEventListener("click", async () => {
   const name = $("player-name").value.trim();
   if (!name) { $("player-name").focus(); return; }
 
-  isHost  = !$("match-id").value.trim();
-  matchId = $("match-id").value.trim() ||
-            Math.random().toString(36).slice(2,7).toUpperCase();
+  isHost      = !$("match-id").value.trim();
+  matchId     = $("match-id").value.trim() ||
+                Math.random().toString(36).slice(2,7).toUpperCase();
   localPlayer = { id: crypto.randomUUID(), name, color: randomColor() };
 
   if (isHost) {
@@ -291,11 +314,15 @@ $("btn-join").addEventListener("click", async () => {
   if (!isHost) {
     onPhaseChange(matchId, async phase => {
       if (phase === "playing" && !world) {
-        // Read our role from the latest player snapshot
-        const me = allPlayers[localPlayer.id];
-        localPlayer.role = me?.role ?? "crew";
-        // Pull settings from Firebase so chat/timers work for everyone
+        // BUG FIX: fetch settings from Firebase for non-host players
         settings = await getMatchSettings(matchId);
+
+        // BUG FIX: read role — wait for player data if not yet loaded
+        let me = allPlayers[localPlayer.id];
+        if (!me || !me.role) {
+          me = await getPlayerData(matchId, localPlayer.id);
+        }
+        localPlayer.role = me?.role ?? "crew";
         launchGame();
       }
     });
@@ -373,28 +400,26 @@ function launchGame() {
       $("hud-kill-status").textContent = killReady ? "🔪 KILL READY" : "🔪 NEED SQ";
       $("hud-kill-status").style.color = killReady ? "var(--danger)" : "var(--muted)";
     }
+    // Update shield HUD from Firebase (e.g. ghost shield given by dead player)
+    if (me) {
+      if (me.shield) {
+        $("hud-shield").textContent      = "🛡 SHIELDED";
+        $("hud-shield").style.color       = "var(--accent)";
+        $("hud-shield").style.borderColor = "var(--accent)";
+      } else {
+        $("hud-shield").textContent      = "NO SHIELD";
+        $("hud-shield").style.color       = "var(--muted)";
+        $("hud-shield").style.borderColor = "var(--muted)";
+      }
+    }
     checkWinConditions(allPlayers);
   });
 
-  // Watch meeting node — store snapshot AND check if all votes are in
+  // BUG FIX: onMeetingChange with matchId must be set up INSIDE launchGame,
+  // after matchId is defined — not at module level where matchId is undefined.
   onMeetingChange(matchId, mtg => {
     window._latestMeeting = mtg;
-
-    // Auto-end voting phase when every alive player has voted
-    if (mtg?.votes && isVotingPhase && !tallyingVotes) {
-      const voteCount  = Object.keys(mtg.votes).length;
-      const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
-      if (aliveCount > 0 && voteCount >= aliveCount) {
-        // Everyone voted — end immediately
-        clearInterval(meetingTimerInterval);
-        $("timer-label").textContent = "All votes cast!";
-        $("timer-fill").style.width = "0%";
-        tallyingVotes = true;
-        setTimeout(() => tallyVotes(), 800); // brief pause so players see "all voted"
-      }
-    }
-
-    // Sync chat messages for non-host players too
+    if (!mtg) return;
     if (settings.useChat === "chat") syncChat(mtg);
   });
 }
@@ -411,31 +436,44 @@ $("btn-kill").addEventListener("click", async () => {
     flashHud("No one in range!");
     return;
   }
-  // Shield check
+
+  // Shield check — impostor is notified silently, crew is NOT told
   if (target.shield) {
     const blocked = Math.random() < target.shield.chance;
     if (blocked) {
+      // BUG FIX: was calling Impostor.onSqCorrect() which incremented the
+      // kill counter instead of resetting it.  Directly reset kill-ready.
       flashHud("Kill blocked by shield!", "warn");
-      await Impostor.onSqCorrect(matchId, localPlayer.id);
+      killReady = false;
+      await Impostor.resetKill(matchId, localPlayer.id);
+      $("hud-kill-status").textContent = "🔪 NEED SQ";
+      $("hud-kill-status").style.color  = "var(--muted)";
       return;
     }
   }
+
+  // Kill lands
   await applyKill(matchId, target.id);
   killReady = false;
+  await setKillReady(matchId, localPlayer.id, false);
+
   const f = $("kill-flash");
   f.classList.add("flash");
   setTimeout(() => f.classList.remove("flash"), 300);
   $("hud-kill-status").textContent = "🔪 NEED SQ";
-  $("hud-kill-status").style.color = "var(--muted)";
+  $("hud-kill-status").style.color  = "var(--muted)";
 });
 
 // ── Meeting ───────────────────────────────────────────────────
+
+// Report corpse button
 $("btn-report").addEventListener("click", async () => {
   if (!localPlayer) return;
   await callMeeting(matchId, localPlayer.id, "corpse");
   await setPhase(matchId, "meeting");
 });
 
+// Meeting zone button
 $("btn-meeting").addEventListener("click", async () => {
   const me = allPlayers[localPlayer.id];
   if ((me?.meetingCallsLeft ?? 1) <= 0) { flashHud("No meeting calls left!"); return; }
@@ -444,20 +482,19 @@ $("btn-meeting").addEventListener("click", async () => {
 });
 
 function openMeeting() {
-  hasVoted      = false;
-  isVotingPhase = false;
-  tallyingVotes = false;
+  hasVoted = false;
   $("meeting-overlay").classList.add("active");
   $("vote-result").style.display = "none";
   $("vote-result").textContent   = "";
 
-  // Show chat based on settings — now works for ALL players since settings is loaded
+  // Chat
   const useChat = settings.useChat === "chat";
   $("chat-wrap").style.display = useChat ? "flex" : "none";
 
+  // Build vote list
   buildVoteList();
 
-  // Start discussion timer; when done → move to voting
+  // Timer: discussion phase
   startMeetingTimer(
     settings.discussionTime ?? 120,
     "DISCUSSION",
@@ -490,37 +527,21 @@ function buildVoteList() {
 }
 
 function startVotingPhase() {
-  isVotingPhase = true;
   $("timer-label").textContent = "VOTING";
   $("timer-fill").style.background = "var(--danger)";
-
-  // Check immediately in case all votes already arrived during discussion
-  const votes = window._latestMeeting?.votes ?? {};
-  const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
-  if (!tallyingVotes && aliveCount > 0 && Object.keys(votes).length >= aliveCount) {
-    tallyingVotes = true;
-    tallyVotes();
-    return;
-  }
-
   startMeetingTimer(
     settings.votingTime ?? 60,
     "VOTING",
-    () => {
-      if (!tallyingVotes) {
-        tallyingVotes = true;
-        tallyVotes();
-      }
-    }
+    () => tallyVotes()
   );
 }
 
 async function tallyVotes() {
-  // Small delay so any in-flight writes settle
-  await new Promise(r => setTimeout(r, 600));
+  // Allow last-second votes to arrive
+  await new Promise(r => setTimeout(r, 1500));
 
-  const votes  = window._latestMeeting?.votes ?? {};
-  const tally  = {};
+  const votes   = window._latestMeeting?.votes ?? {};
+  const tally   = {};
   for (const v of Object.values(votes)) tally[v] = (tally[v] ?? 0) + 1;
 
   const sorted   = Object.entries(tally).sort((a,b) => b[1] - a[1]);
@@ -541,7 +562,7 @@ async function tallyVotes() {
     result.innerHTML = `
       <strong style="color:var(--danger)">${ejected?.name ?? "?"}</strong>
       was ejected with ${topVotes} vote${topVotes>1?"s":""}.<br>
-      <span style="color:var(--muted);font-size:.8rem">They were…
+      <span style="color:var(--muted);font-size:.8rem">They were… 
         <strong>${ejected?.role ?? "?"}</strong></span>
     `;
     await applyKill(matchId, topId);
@@ -550,8 +571,6 @@ async function tallyVotes() {
 
   // Resume game after 4 seconds
   setTimeout(async () => {
-    isVotingPhase = false;
-    tallyingVotes = false;
     await setPhase(matchId, "playing");
   }, 4000);
 }
@@ -559,6 +578,7 @@ async function tallyVotes() {
 function closeMeeting() {
   $("meeting-overlay").classList.remove("active");
   clearInterval(meetingTimerInterval);
+  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
 }
 
 function startMeetingTimer(secs, label, onDone) {
@@ -574,28 +594,46 @@ function startMeetingTimer(secs, label, onDone) {
   }, 1000);
 }
 
-// Chat — works for everyone now that settings is loaded correctly
+// ── Chat ─────────────────────────────────────────────────────
 $("btn-chat-send")?.addEventListener("click", sendChat);
 $("chat-input")?.addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
 
 async function sendChat() {
   const msg = $("chat-input")?.value.trim();
-  if (!msg || !localPlayer) return;
+  if (!msg || !matchId) return;
   $("chat-input").value = "";
-  const box = $("chat-box");
-  const entry = document.createElement("div");
-  entry.innerHTML = `<strong style="color:${localPlayer.color}">${localPlayer.name}:</strong> ${escapeHtml(msg)}`;
-  box.appendChild(entry);
-  box.scrollTop = box.scrollHeight;
-  // TODO: persist to Firebase meetings/active/chat for multi-player sync
+  // BUG FIX: actually push message to Firebase using the realtime helper
+  await sendChatMessage(
+    matchId,
+    localPlayer.id,
+    localPlayer.name,
+    localPlayer.color,
+    msg
+  );
 }
 
-function syncChat(mtg) {
-  // TODO: render mtg.chat entries in #chat-box for full multi-player sync
+// BUG FIX: syncChat now subscribes to Firebase chat using onChatMessage
+// and renders live messages — previously it was a no-op stub.
+function syncChat(_mtg) {
+  // Unsubscribe any previous listener
+  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+
+  chatUnsubscribe = onChatMessage(matchId, msgs => {
+    const box = $("chat-box");
+    if (!box) return;
+    box.innerHTML = msgs.map(m =>
+      `<div style="margin-bottom:.2rem">
+         <strong style="color:${m.color}">${_escHtml(m.playerName)}:</strong>
+         ${_escHtml(m.text)}
+       </div>`
+    ).join("");
+    box.scrollTop = box.scrollHeight;
+  });
 }
 
-function escapeHtml(str) {
-  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function _escHtml(str) {
+  return String(str)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
 // ── Swap (jester) ────────────────────────────────────────────
@@ -619,8 +657,7 @@ $("btn-close-task").addEventListener("click", () => $("task-modal").classList.re
 
 function openTask(room) {
   $("task-modal").classList.add("open");
-  $("task-content").innerHTML = "<p style='color:var(--muted);font-size:.8rem'>Loading questions…</p>";
-
+  $("task-content").innerHTML = "";
   const type = room.id === "electrical" ? "connector"
              : room.id === "weapons"    ? "ninja"
              : "swipe";
@@ -629,38 +666,28 @@ function openTask(room) {
     $("task-modal").classList.remove("open");
     if (pass) {
       await Crew.onTaskComplete(matchId, localPlayer.id);
-      $("hud-shield").textContent      = "🛡 SHIELDED";
-      $("hud-shield").style.color       = "var(--accent)";
-      $("hud-shield").style.borderColor = "var(--accent)";
-      flashHud(`Task complete! ${score}/${total} correct ✓`);
-    } else {
-      flashHud(`Task failed. ${score}/${total} correct.`, "warn");
+      // Shield HUD is updated by the "game:shieldGranted" event from roles.js
     }
+    // Impostor: completing a task also preloads a kill
     if (localPlayer.role === "impostor" && pass) {
       await Impostor.onSqCorrect(matchId, localPlayer.id);
     }
   };
 
-  $("task-content").innerHTML = "";
-
   if (type === "swipe") {
     const t = new SwipeTask("task-content");
-    t.onComplete = (s, total) => onDone(s, total, s >= Math.ceil(total * 0.6));
+    t.onComplete = (s,total) => onDone(s,total, s >= Math.ceil(total*0.6));
     t.init();
   } else if (type === "connector") {
     const t = new ConnectorTask("task-content");
-    t.onComplete = (s, total) => onDone(s, total, s >= 1);
+    t.onComplete = (s,total) => onDone(s,total, s >= 1);
     t.init();
   } else {
-    // Fruit ninja / bubble tap — needs a canvas
     const cvs = document.createElement("canvas");
-    cvs.id = "ninja-canvas";
-    cvs.width  = 360;
-    cvs.height = 260;
-    cvs.style.cssText = "display:block;width:100%;border-radius:8px;background:var(--bg)";
+    cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
     $("task-content").appendChild(cvs);
     const t = new FruitNinjaTask("ninja-canvas");
-    t.onComplete = (s, total) => { onDone(s, total, s >= Math.ceil(total * 0.5)); t.destroy(); };
+    t.onComplete = (s,total) => { onDone(s,total, s >= Math.ceil(total*0.5)); t.destroy(); };
     t.init();
   }
 }
@@ -682,6 +709,7 @@ function checkWinConditions(players) {
 function endGame(winner) {
   world?.stop();
   clearInterval(meetingTimerInterval);
+  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
   const data = {
     crew:     ["CREW WINS",     "The impostor was ejected. Well played."],
     impostor: ["IMPOSTOR WINS", "Sabotage complete. No survivors."],
