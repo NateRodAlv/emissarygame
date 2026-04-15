@@ -20,15 +20,38 @@ export class SwipeTask {
     this._animating   = false;
   }
 
-  async init() {
-    fetched = await fetchQuestionsForTask("sq", GAME_CONFIG.swipeCategorizeSqCount, this.category);
-    this.questions = new ArrayList<>(fetched)
-    Collections.shuffle(this.questions);
-    const cats = [...new Set(this.questions.map(q => q.answer).filter(Boolean))];
-    if (cats.length >= 2)      { this._catA = cats[0]; this._catB = cats[1]; }
-    else if (cats.length === 1){ this._catA = cats[0]; this._catB = "Other"; }
-    this._renderCard();
+async init() {
+  const fetched = await fetchQuestionsForTask(
+    "sq",
+    GAME_CONFIG.swipeCategorizeSqCount,
+    this.category
+  );
+
+  this.questions = [...fetched];
+
+  // 🔀 Fisher-Yates shuffle (better randomness)
+  for (let i = this.questions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [this.questions[i], this.questions[j]] = [this.questions[j], this.questions[i]];
   }
+
+  // ✂️ Keep only first 3 questions
+  this.questions = this.questions.slice(0, 3);
+
+  // categories logic stays the same
+  const cats = [...new Set(this.questions.map(q => q.answer).filter(Boolean))];
+
+  if (cats.length >= 2) {
+    this._catA = cats[0];
+    this._catB = cats[1];
+  } else if (cats.length === 1) {
+    this._catA = cats[0];
+    this._catB = "Other";
+  }
+
+  this._renderCard();
+}
+
 
   _renderCard() {
     if (this.currentIndex >= this.questions.length) {
