@@ -264,6 +264,7 @@ export class World {
   _drawOtherPlayers() {
     for (const [id, p] of Object.entries(this.players)) {
       if (id === this.local.id) continue;
+      // Always draw the player - dead players show as ghosts
       this._drawPlayer(p.x ?? 600, p.y ?? 130, p.name, p.color ?? "#aaa", !p.alive);
     }
   }

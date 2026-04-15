@@ -1,19 +1,21 @@
 // ============================================================
 //  REALTIME.JS — Firebase Realtime DB wrapper
 // ============================================================
-import { initializeApp }               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get,
-         update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { FIREBASE_CONFIG, DB_PATHS }   from "./config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getDatabase, ref, set, get,
+  update, onValue, push, remove
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { FIREBASE_CONFIG, DB_PATHS } from "./config.js";
 
 const app = initializeApp(FIREBASE_CONFIG);
-const db  = getDatabase(app);
+const db = getDatabase(app);
 
 // ── Helpers ──────────────────────────────────────────────────
-const matchRef  = (matchId) => ref(db, `${DB_PATHS.matches}/${matchId}`);
-const playerRef = (matchId, pid) =>
+const matchRef = (matchId) => ref(db, `${DB_PATHS.matches}/${matchId}`);
+export const playerRef = (matchId, pid) =>
   ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}/${pid}`);
-const stateRef  = (matchId) =>
+const stateRef = (matchId) =>
   ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.gameState}`);
 
 // ── Match lifecycle ───────────────────────────────────────────
@@ -84,10 +86,14 @@ export async function setKillReady(matchId, impostorId, ready) {
 }
 
 export async function applyKill(matchId, targetId) {
-  // Returns true if kill lands (shield logic handled client-side before calling)
-  await update(playerRef(matchId, targetId), { alive: false });
-  // move to dead zone
-  await set(ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.deadZone}/${targetId}`), true);
+  const updates = {};
+  updates[`${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}/${targetId}/alive`] = false;
+  updates[`${DB_PATHS.matches}/${matchId}/${DB_PATHS.deadZone}/${targetId}`] = {
+    killedAt: Date.now(),
+    x: (await get(playerRef(matchId, targetId))).val()?.x ?? 600,
+    y: (await get(playerRef(matchId, targetId))).val()?.y ?? 600,
+  };
+  await update(ref(db), updates);
 }
 
 export async function applyJesterSwap(matchId, jesterId, impostorId) {
@@ -98,7 +104,7 @@ export async function applyJesterSwap(matchId, jesterId, impostorId) {
   ]);
   const jPos = jSnap.val();
   const iPos = iSnap.val();
-  await update(playerRef(matchId, jesterId),   { x: iPos.x, y: iPos.y });
+  await update(playerRef(matchId, jesterId), { x: iPos.x, y: iPos.y });
   await update(playerRef(matchId, impostorId), { x: jPos.x, y: jPos.y });
 }
 
@@ -115,17 +121,19 @@ export async function breakShield(matchId, playerId) {
 // ── Meeting / voting ──────────────────────────────────────────
 export async function callMeeting(matchId, callerId, reason) {
   // reason: "corpse" | "zone_lq"
+  const now = Date.now();
   await set(ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.meetings}/active`), {
     calledBy: callerId,
     reason,
-    calledAt: Date.now(),
+    calledAt: now,
+    discussionEndsAt: now + (await getMatchSettings(matchId)).discussionTime * 1000,
     phase: "discussion",  // discussion | voting | closed
     votes: {},
     chat: {},
   });
 
   // BUG FIX: properly decrement meetingCallsLeft instead of setting to null
-  const snap    = await get(playerRef(matchId, callerId));
+  const snap = await get(playerRef(matchId, callerId));
   const current = snap.val()?.meetingCallsLeft ?? 1;
   await update(playerRef(matchId, callerId), {
     meetingCallsLeft: Math.max(0, current - 1),
@@ -166,7 +174,7 @@ export function onChatMessage(matchId, cb) {
   return onValue(
     ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.meetings}/active/chat`),
     snap => {
-      const raw  = snap.val() ?? {};
+      const raw = snap.val() ?? {};
       const msgs = Object.values(raw).sort((a, b) => a.ts - b.ts);
       cb(msgs);
     }

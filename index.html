@@ -973,14 +973,6 @@
       <div class="divider"></div>
 
       <p class="section-label">❓ Questions</p>
-      <div class="type-toggle">
-        <button class="type-btn active sq" id="addq-type-sq" data-type="sq">
-          ⚡ Short Questions<br><span style="font-size:.6rem;opacity:.7">Quick recall (SQ)</span>
-        </button>
-        <button class="type-btn lq" id="addq-type-lq" data-type="lq">
-          📖 Long Questions<br><span style="font-size:.6rem;opacity:.7">Deep understanding (LQ)</span>
-        </button>
-      </div>
       <p style="font-size:.67rem;color:var(--muted);margin-bottom:.7rem;line-height:1.45">
         <strong style="color:var(--blue)">Short (SQ)</strong> — used in Swipe and Fruit Ninja tasks, kill preloading.
         Quick facts.<br>
@@ -1010,6 +1002,11 @@
       <p style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">
         Players in lobby</p>
       <ul id="player-list"></ul>
+      <div class="divider"></div>
+      <p class="section-label">🎨 Your Color</p>
+      <div id="color-picker" style="display:grid;grid-template-columns:repeat(5,1fr);gap:.4rem;margin-bottom:.8rem">
+        <!-- Colors will be added here -->
+      </div>
       <div id="host-qset-display" style="display:none;font-size:.72rem;color:var(--muted);
          padding:.4rem .7rem;border-radius:6px;border:1px solid var(--border);margin-bottom:.6rem">
         📚 Question set: <strong id="host-qset-name" style="color:var(--accent)">—</strong>
@@ -1108,6 +1105,8 @@
     } from "./realtime.js";
     import { Impostor, Jester, Crew } from "./roles.js";
     import { World, randomColor } from "./world.js";
+    import { update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { ref } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
     import {
       SwipeTask, ConnectorTask,
       FruitNinjaTask
@@ -1243,6 +1242,47 @@
       });
     }
 
+    function setupWaitingListeners() {
+      onPlayersChange(matchId, snap => {
+        allPlayers = snap ?? {};
+        $("player-list").innerHTML = Object.values(allPlayers).map(p =>
+          `<li style="color:${p.color}">${p.name}</li>`
+        ).join("");
+      });
+
+      // Add color picker
+      const colorPicker = $("color-picker");
+      if (colorPicker) {
+        colorPicker.innerHTML = PLAYER_COLORS.map(color => `
+      <button class="color-swatch ${localPlayer.color === color ? 'selected' : ''}" 
+              data-color="${color}" 
+              style="
+                width:100%;aspect-ratio:1;border-radius:8px;
+                background:${color};border:2px solid ${localPlayer.color === color ? '#fff' : 'transparent'};
+                cursor:pointer;transition:transform .15s,border-color .15s
+              "></button>
+    `).join("");
+
+        colorPicker.querySelectorAll(".color-swatch").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const newColor = btn.dataset.color;
+            localPlayer.color = newColor;
+            await update(playerRef(matchId, localPlayer.id), { color: newColor });
+
+            colorPicker.querySelectorAll(".color-swatch").forEach(b => {
+              b.style.borderColor = b.dataset.color === newColor ? '#fff' : 'transparent';
+            });
+          });
+
+          btn.addEventListener("mouseenter", function () {
+            this.style.transform = "scale(1.1)";
+          });
+          btn.addEventListener("mouseleave", function () {
+            this.style.transform = "scale(1)";
+          });
+        });
+      }
+    }
     $("qset-refresh").addEventListener("click", loadCategories);
 
     // ═══════════════════════════════════════════════
@@ -1383,28 +1423,42 @@
       });
 
       // Player updates
+      // Player updates
       onPlayersChange(matchId, snap => {
         allPlayers = snap ?? {};
         const me = allPlayers[localPlayer.id];
-        if (me && role === "impostor") {
-          killReady = me.killReady ?? false;
-          $("hud-kill-status").textContent = killReady ? "🔪 KILL READY" : "🔪 NEED SQ";
-          $("hud-kill-status").style.color = killReady ? "var(--danger)" : "var(--muted)";
-        }
         if (me) {
-          if (me.shield) {
-            $("hud-shield").textContent = "🛡 SHIELDED";
-            $("hud-shield").style.color = "var(--accent)";
-            $("hud-shield").style.borderColor = "var(--accent)";
-          } else {
-            $("hud-shield").textContent = "NO SHIELD";
-            $("hud-shield").style.color = "var(--muted)";
-            $("hud-shield").style.borderColor = "var(--muted)";
+          // Check if local player died
+          if (!me.alive && localPlayer.role && localPlayer.role !== "dead") {
+            $("hud-role").textContent = "DEAD";
+            $("hud-role").className = "hud-pill hud-role-dead";
+            flashHud("You have been eliminated!", "warn");
+
+            // Hide action buttons
+            $("btn-kill").classList.add("hidden");
+            $("btn-swap").classList.add("hidden");
+            $("btn-meeting").classList.add("hidden");
+          }
+
+          if (me && role === "impostor") {
+            killReady = me.killReady ?? false;
+            $("hud-kill-status").textContent = killReady ? "🔪 KILL READY" : "🔪 NEED SQ";
+            $("hud-kill-status").style.color = killReady ? "var(--danger)" : "var(--muted)";
+          }
+          if (me) {
+            if (me.shield) {
+              $("hud-shield").textContent = "🛡 SHIELDED";
+              $("hud-shield").style.color = "var(--accent)";
+              $("hud-shield").style.borderColor = "var(--accent)";
+            } else {
+              $("hud-shield").textContent = "NO SHIELD";
+              $("hud-shield").style.color = "var(--muted)";
+              $("hud-shield").style.borderColor = "var(--muted)";
+            }
           }
         }
         checkWinConditions(allPlayers);
       });
-
       // Meeting changes — also drives auto-skip when all voted
       onMeetingChange(matchId, mtg => {
         window._latestMeeting = mtg;
@@ -1477,22 +1531,22 @@
       hasVoted = false;
       meetingPhase = "discussion";
       tallyingVotes = false;
-
       $("meeting-overlay").classList.add("active");
       $("vote-result").style.display = "none";
       $("vote-result").textContent = "";
       $("vote-phase-banner").textContent = "🔒 DISCUSSION IN PROGRESS — voting opens when timer ends";
       $("vote-phase-banner").classList.remove("voting");
       $("timer-fill").style.background = "var(--accent)";
-
       const useChat = settings.useChat === "chat";
       $("chat-wrap").style.display = useChat ? "flex" : "none";
+      buildVoteList();
 
-      buildVoteList();   // buttons start disabled
-
-      startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => startVotingPhase());
+      // Use server timestamp from meeting data
+      const meeting = window._latestMeeting;
+      if (meeting?.discussionEndsAt) {
+        startMeetingTimer(meeting.discussionEndsAt, "DISCUSSION", () => startVotingPhase());
+      }
     }
-
     function buildVoteList() {
       const alive = Object.entries(allPlayers).filter(([, p]) => p.alive);
       $("vote-list").innerHTML = alive.map(([id, p]) => `
@@ -1526,16 +1580,16 @@
       $("vote-phase-banner").classList.add("voting");
       $("timer-fill").style.background = "var(--danger)";
 
-      // Enable vote buttons (except own entry)
       $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
         if (btn.dataset.id !== localPlayer.id) btn.disabled = false;
       });
 
-      startMeetingTimer(settings.votingTime ?? 60, "VOTING", () => {
+      const meeting = window._latestMeeting;
+      const votingEndsAt = meeting.discussionEndsAt + (settings.votingTime ?? 60) * 1000;
+      startMeetingTimer(votingEndsAt, "VOTING", () => {
         if (!tallyingVotes) { tallyingVotes = true; tallyVotes(); }
       });
     }
-
     async function tallyVotes() {
       await new Promise(r => setTimeout(r, 1200));
 
@@ -1574,17 +1628,23 @@
       if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
     }
 
-    function startMeetingTimer(secs, label, onDone) {
+    function startMeetingTimer(endTimestamp, label, onDone) {
       clearInterval(meetingTimerInterval);
-      let remaining = secs;
-      $("timer-label").textContent = `${label} — ${remaining}s`;
-      $("timer-fill").style.width = "100%";
-      meetingTimerInterval = setInterval(() => {
-        remaining--;
-        $("timer-fill").style.width = `${(remaining / secs) * 100}%`;
+      const totalSecs = Math.ceil((endTimestamp - Date.now()) / 1000);
+
+      const tick = () => {
+        const remaining = Math.ceil((endTimestamp - Date.now()) / 1000);
+        if (remaining <= 0) {
+          clearInterval(meetingTimerInterval);
+          onDone();
+          return;
+        }
+        $("timer-fill").style.width = `${(remaining / totalSecs) * 100}%`;
         $("timer-label").textContent = `${label} — ${remaining}s`;
-        if (remaining <= 0) { clearInterval(meetingTimerInterval); onDone(); }
-      }, 1000);
+      };
+
+      tick();
+      meetingTimerInterval = setInterval(tick, 1000);
     }
 
     // ── Chat ─────────────────────────────────────────────────────
@@ -1711,19 +1771,6 @@
     // ═══════════════════════════════════════════════
     //  ADD QUESTIONS SCREEN
     // ═══════════════════════════════════════════════
-    let addqType = "sq";
-    let addqRowCount = 0;
-
-    $("addq-type-sq").addEventListener("click", () => setAddqType("sq"));
-    $("addq-type-lq").addEventListener("click", () => setAddqType("lq"));
-
-    function setAddqType(type) {
-      addqType = type;
-      $("addq-type-sq").classList.toggle("active", type === "sq");
-      $("addq-type-sq").classList.toggle("sq", type === "sq");
-      $("addq-type-lq").classList.toggle("active", type === "lq");
-      $("addq-type-lq").classList.toggle("lq", type === "lq");
-    }
 
     async function loadAddqCategories() {
       try {
@@ -1754,6 +1801,14 @@
       div.innerHTML = `
     <div class="q-row-num">QUESTION ${n}</div>
     <button class="q-row-del" title="Remove" data-del="${n}">✕</button>
+    <div class="type-toggle" style="margin-bottom:.7rem">
+      <button class="type-btn active sq" data-row="${n}" data-type="sq">
+        ⚡ Short (SQ)
+      </button>
+      <button class="type-btn lq" data-row="${n}" data-type="lq">
+        📖 Long (LQ)
+      </button>
+    </div>
     <div class="field" style="margin-bottom:.5rem">
       <label>Question</label>
       <textarea class="addq-q" placeholder="e.g. What is the powerhouse of the cell?" rows="2"></textarea>
@@ -1764,30 +1819,42 @@
     </div>
   `;
       $("addq-rows").appendChild(div);
-      div.querySelector("[data-del]").addEventListener("click", () => div.remove());
-    }
 
+      div.querySelector("[data-del]").addEventListener("click", () => div.remove());
+
+      // Add type toggle listeners for this row
+      div.querySelectorAll(".type-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const row = btn.closest(".q-row");
+          row.querySelectorAll(".type-btn").forEach(b => {
+            b.classList.remove("active");
+            b.classList.remove("sq", "lq");
+          });
+          btn.classList.add("active");
+          btn.classList.add(btn.dataset.type);
+        });
+      });
+    }
     $("addq-submit").addEventListener("click", async () => {
       const cat = $("addq-cat-input").value.trim();
       if (!cat) { $("addq-cat-input").focus(); showAddqStatus("Please enter a category name.", "error"); return; }
-
       const rows = [];
       let anyBlank = false;
       $("addq-rows").querySelectorAll(".q-row").forEach(row => {
         const q = row.querySelector(".addq-q").value.trim();
         const a = row.querySelector(".addq-a").value.trim();
+        const typeBtn = row.querySelector(".type-btn.active");
+        const type = typeBtn?.dataset.type || "sq";
         if (!q || !a) { anyBlank = true; return; }
-        rows.push({ question: q, answer: a, category: cat, type: addqType });
+        rows.push({ question: q, answer: a, category: cat, type });
       });
-
       if (anyBlank) { showAddqStatus("Some questions are missing question or answer text.", "error"); return; }
       if (!rows.length) { showAddqStatus("Add at least one question.", "error"); return; }
-
       $("addq-submit").disabled = true;
       $("addq-submit").textContent = "Uploading…";
       try {
         await addQuestions(rows);
-        showAddqStatus(`✓ ${rows.length} question${rows.length > 1 ? "s" : ""} added to "${cat}" successfully!`, "ok");
+        showAddqStatus(`✔ ${rows.length} question${rows.length > 1 ? "s" : ""} added to "${cat}" successfully!`, "ok");
         $("addq-rows").innerHTML = "";
         addqRowCount = 0;
         addqAddRow();
@@ -1799,7 +1866,6 @@
         $("addq-submit").textContent = "UPLOAD TO DATABASE →";
       }
     });
-
     function showAddqStatus(msg, type) {
       const el = $("addq-status");
       el.textContent = msg;
