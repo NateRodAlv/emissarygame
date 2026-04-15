@@ -1101,12 +1101,12 @@
       applyKill, onMeetingChange,
       setKillReady,
       getMatchSettings, getPlayerData,
-      sendChatMessage, onChatMessage
+      sendChatMessage, onChatMessage,
+      playerRef
     } from "./realtime.js";
     import { Impostor, Jester, Crew } from "./roles.js";
-    import { World, randomColor } from "./world.js";
-    import { update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-    import { ref } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { World, randomColor, PLAYER_COLORS } from "./world.js";
+    import { update, ref } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
     import {
       SwipeTask, ConnectorTask,
       FruitNinjaTask
@@ -1119,79 +1119,63 @@
       $(id).classList.add("active");
     };
 
-    // ── State ────────────────────────────────────────────────────
+    // ── State ────────────────────────────────────────────────────────────────
     let matchId, localPlayer, world;
     let allPlayers = {}, settings = {}, isHost = false;
     let meetingTimerInterval = null;
-    let meetingPhase = "discussion"; // "discussion" | "voting"
+    let meetingPhase = "discussion";
     let tallyingVotes = false;
     let hasVoted = false;
     let killReady = false;
     let chatUnsubscribe = null;
-    let selectedCategory = null; // the chosen question set category
+    let selectedCategory = null;
+    let addqRowCount = 0;
 
-    // ── Touch detection ──────────────────────────────────────────
-    if (window.matchMedia("(pointer:coarse)").matches)
-      $("joystick-wrap").style.display = "block";
-
-    // ── Starfield (menu decoration) ──────────────────────────────
-    (function initStars() {
-      const cv = $("star-canvas"), ctx = cv.getContext("2d");
-      let stars = [];
-      const resize = () => {
-        cv.width = window.innerWidth; cv.height = window.innerHeight;
-        stars = Array.from({ length: 160 }, () => ({
-          x: Math.random() * cv.width, y: Math.random() * cv.height,
-          r: Math.random() * 1.2 + 0.2, v: Math.random() * 0.18 + 0.05,
-          o: Math.random(),
-        }));
-      };
-      resize(); window.addEventListener("resize", resize);
-      (function tick() {
-        if (!$("screen-menu").classList.contains("active")) { requestAnimationFrame(tick); return; }
-        ctx.clearRect(0, 0, cv.width, cv.height);
-        for (const s of stars) {
-          s.o += (Math.random() - 0.5) * 0.04;
-          s.o = Math.max(0.05, Math.min(0.7, s.o));
-          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(200,220,255,${s.o})`; ctx.fill();
-          s.y -= s.v; if (s.y < 0) { s.y = cv.height; s.x = Math.random() * cv.width; }
-        }
-        requestAnimationFrame(tick);
-      })();
-    })();
-
-    // ── Role event listeners ─────────────────────────────────────
-    document.addEventListener("game:killReady", () => {
-      $("hud-kill-status").textContent = "🔪 KILL READY";
-      $("hud-kill-status").style.color = "var(--danger)";
-    });
-    document.addEventListener("game:killProgress", e => {
-      const { progress, needed } = e.detail;
-      $("hud-kill-status").textContent = `🔪 SQ ${progress}/${needed}`;
-      $("hud-kill-status").style.color = "var(--muted)";
-    });
-    document.addEventListener("game:shieldGranted", () => {
-      $("hud-shield").textContent = "🛡 SHIELDED";
-      $("hud-shield").style.color = "var(--accent)";
-      $("hud-shield").style.borderColor = "var(--accent)";
-    });
-    document.addEventListener("game:jesterProgress", e => {
-      const { progress, needed } = e.detail;
-      flashHud(`⇄ Swap: ${progress}/${needed}`, "info");
+    // ── Initialize when DOM is ready ────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeApp();
     });
 
-    // ═══════════════════════════════════════════════
-    //  MAIN MENU
-    // ═══════════════════════════════════════════════
-    $("menu-btn-play").addEventListener("click", () => show("screen-play"));
-    $("menu-btn-host").addEventListener("click", () => { show("screen-host"); loadCategories(); });
-    $("menu-btn-addq").addEventListener("click", () => { show("screen-addq"); loadAddqCategories(); addqEnsureRow(); });
+    function initializeApp() {
+      // ── Touch detection ──
+      if (window.matchMedia("(pointer:coarse)").matches)
+        $("joystick-wrap").style.display = "block";
 
-    $("play-back").addEventListener("click", () => show("screen-menu"));
-    $("host-back").addEventListener("click", () => show("screen-menu"));
-    $("addq-back").addEventListener("click", () => show("screen-menu"));
+      // ── Starfield ──
+      initStars();
 
+      // ── Role event listeners ──
+      document.addEventListener("game:killReady", () => {
+        $("hud-kill-status").textContent = "🔪 KILL READY";
+        $("hud-kill-status").style.color = "var(--danger)";
+      });
+
+      document.addEventListener("game:killProgress", e => {
+        const { progress, needed } = e.detail;
+        $("hud-kill-status").textContent = `🔪 SQ ${progress}/${needed}`;
+        $("hud-kill-status").style.color = "var(--muted)";
+      });
+
+      document.addEventListener("game:shieldGranted", () => {
+        $("hud-shield").textContent = "🛡 SHIELDED";
+        $("hud-shield").style.color = "var(--accent)";
+        $("hud-shield").style.borderColor = "var(--accent)";
+      });
+
+      document.addEventListener("game:jesterProgress", e => {
+        const { progress, needed } = e.detail;
+        flashHud(`⇄ Swap: ${progress}/${needed}`, "info");
+      });
+
+      // ── MAIN MENU ──
+      $("menu-btn-play").addEventListener("click", () => show("screen-play"));
+      $("menu-btn-host").addEventListener("click", () => { show("screen-host"); loadCategories(); });
+      $("menu-btn-addq").addEventListener("click", () => { show("screen-addq"); loadAddqCategories(); addqEnsureRow(); });
+
+      $("play-back").addEventListener("click", () => show("screen-menu"));
+      $("host-back").addEventListener("click", () => show("screen-menu"));
+      $("addq-back").addEventListener("click", () => show("screen-menu"));
+    }
     // ═══════════════════════════════════════════════
     //  HOST SCREEN — category loading
     // ═══════════════════════════════════════════════
