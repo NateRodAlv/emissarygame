@@ -22,7 +22,7 @@ export class SwipeTask {
 
   async init() {
     this.questions = await fetchQuestionsForTask("sq", GAME_CONFIG.swipeCategorizeSqCount, this.category);
-    const cats = [...new Set(this.questions.map(q => q.category).filter(Boolean))];
+    const cats = [...new Set(this.questions.map(q => q.answer).filter(Boolean))];
     if (cats.length >= 2)      { this._catA = cats[0]; this._catB = cats[1]; }
     else if (cats.length === 1){ this._catA = cats[0]; this._catB = "Other"; }
     this._renderCard();
@@ -295,8 +295,8 @@ export class FruitNinjaTask {
     if (item.sliced) {
       item.alpha = Math.max(0, item.alpha - 0.055); if (item.alpha <= 0) return;
       ctx.globalAlpha = item.alpha;
-      const c = item.isCorrect ? "#4affa4" : "#ff4a6b";
-      ctx.fillStyle = item.isCorrect ? "rgba(74,255,164,0.35)" : "rgba(255,74,107,0.28)";
+      const c = item.isCorrect ? "#3f899b" : "#0f318b";
+      ctx.fillStyle = item.isCorrect ? "rgba(74,255,164,0.35)" : "rgba(5, 35, 117, 0.28)";
       ctx.beginPath(); ctx.ellipse(item.x - 10, item.y - 5, item.r * 0.7, item.r * 0.35, -0.35, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(item.x + 10, item.y + 5, item.r * 0.7, item.r * 0.35,  0.35, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = c; ctx.font = "bold 16px monospace"; ctx.textAlign = "center";
