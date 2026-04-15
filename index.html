@@ -1337,14 +1337,6 @@
       });
     }
 
-    function setupWaitingListeners() {
-      onPlayersChange(matchId, snap => {
-        allPlayers = snap ?? {};
-        $("player-list").innerHTML = Object.values(allPlayers).map(p =>
-          `<li style="color:${p.color}">${p.name}</li>`
-        ).join("");
-      });
-    }
 
     // ═══════════════════════════════════════════════
     //  START GAME (host)
