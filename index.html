@@ -1135,6 +1135,45 @@
     document.addEventListener('DOMContentLoaded', () => {
       initializeApp();
     });
+    function initStars() {
+      const cv = $("star-canvas"), ctx = cv.getContext("2d");
+      let stars = [];
+      const resize = () => {
+        cv.width = window.innerWidth;
+        cv.height = window.innerHeight;
+        stars = Array.from({ length: 160 }, () => ({
+          x: Math.random() * cv.width,
+          y: Math.random() * cv.height,
+          r: Math.random() * 1.2 + 0.2,
+          v: Math.random() * 0.18 + 0.05,
+          o: Math.random(),
+        }));
+      };
+      resize();
+      window.addEventListener("resize", resize);
+
+      (function tick() {
+        if (!$("screen-menu").classList.contains("active")) {
+          requestAnimationFrame(tick);
+          return;
+        }
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        for (const s of stars) {
+          s.o += (Math.random() - 0.5) * 0.04;
+          s.o = Math.max(0.05, Math.min(0.7, s.o));
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(200,220,255,${s.o})`;
+          ctx.fill();
+          s.y -= s.v;
+          if (s.y < 0) {
+            s.y = cv.height;
+            s.x = Math.random() * cv.width;
+          }
+        }
+        requestAnimationFrame(tick);
+      })();
+    }
 
     function initializeApp() {
       // ── Touch detection ──
@@ -1142,6 +1181,7 @@
         $("joystick-wrap").style.display = "block";
 
       // ── Starfield ──
+
       initStars();
 
       // ── Role event listeners ──
@@ -1435,46 +1475,7 @@
         }
         checkWinConditions(allPlayers);
       });
-      // ── Starfield (menu decoration) ──────────────────────────────────────
-      function initStars() {
-        const cv = $("star-canvas"), ctx = cv.getContext("2d");
-        let stars = [];
-        const resize = () => {
-          cv.width = window.innerWidth;
-          cv.height = window.innerHeight;
-          stars = Array.from({ length: 160 }, () => ({
-            x: Math.random() * cv.width,
-            y: Math.random() * cv.height,
-            r: Math.random() * 1.2 + 0.2,
-            v: Math.random() * 0.18 + 0.05,
-            o: Math.random(),
-          }));
-        };
-        resize();
-        window.addEventListener("resize", resize);
 
-        (function tick() {
-          if (!$("screen-menu").classList.contains("active")) {
-            requestAnimationFrame(tick);
-            return;
-          }
-          ctx.clearRect(0, 0, cv.width, cv.height);
-          for (const s of stars) {
-            s.o += (Math.random() - 0.5) * 0.04;
-            s.o = Math.max(0.05, Math.min(0.7, s.o));
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(200,220,255,${s.o})`;
-            ctx.fill();
-            s.y -= s.v;
-            if (s.y < 0) {
-              s.y = cv.height;
-              s.x = Math.random() * cv.width;
-            }
-          }
-          requestAnimationFrame(tick);
-        })();
-      }
       // Meeting changes — also drives auto-skip when all voted
       onMeetingChange(matchId, mtg => {
         window._latestMeeting = mtg;
