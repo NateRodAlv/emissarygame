@@ -1,739 +1,1813 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>thing</title>
+  <title>Emissary</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@600;800&display=swap"
+    rel="stylesheet">
   <style>
     :root {
-      --bg:#07080f; --surface:#0e1120; --border:#1a2540;
-      --accent:#4affa4; --danger:#ff4a6b; --warn:#ffc94a;
-      --blue:#4a9eff; --text:#c8d4f0; --muted:#4a5580;
-      --font-hud:'Share Tech Mono',monospace;
-      --font-title:'Orbitron',monospace; --r:10px;
+      --bg: #07080f;
+      --surface: #0e1120;
+      --surface2: #131728;
+      --border: #1a2540;
+      --border2: #243060;
+      --accent: #4affa4;
+      --danger: #ff4a6b;
+      --warn: #ffc94a;
+      --blue: #4a9eff;
+      --text: #c8d4f0;
+      --muted: #4a5580;
+      --muted2: #6878a8;
+      --font-hud: 'Share Tech Mono', monospace;
+      --font-title: 'Orbitron', monospace;
+      --r: 10px;
     }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--text);font-family:var(--font-hud);
-         height:100dvh;overflow:hidden;display:flex;flex-direction:column}
-    .screen{display:none;width:100%;height:100dvh;
-            align-items:center;justify-content:center;flex-direction:column}
-    .screen.active{display:flex}
 
-    .panel{background:var(--surface);border:1px solid var(--border);
-           border-radius:16px;padding:2rem;width:min(420px,94vw)}
-    h1{font-family:var(--font-title);font-size:clamp(1.6rem,5vw,2.4rem);
-       color:var(--accent);letter-spacing:.05em;
-       text-shadow:0 0 20px rgba(74,255,164,0.4);margin-bottom:.25rem}
-    .sub{color:var(--muted);font-size:.75rem;margin-bottom:1.5rem;letter-spacing:.1em}
-    input,select{width:100%;padding:.7rem 1rem;background:var(--bg);
-      border:1px solid var(--border);color:var(--text);border-radius:var(--r);
-      font-family:var(--font-hud);font-size:.9rem;margin-bottom:.6rem;
-      outline:none;transition:border-color .2s}
-    input:focus,select:focus{border-color:var(--accent)}
-    .btn{display:block;width:100%;padding:.75rem;background:var(--accent);
-         color:#07080f;border:none;border-radius:var(--r);
-         font-family:var(--font-title);font-size:.85rem;font-weight:800;
-         letter-spacing:.08em;cursor:pointer;transition:opacity .15s,transform .1s}
-    .btn:hover{opacity:.85}.btn:active{transform:scale(.97)}
-    .btn.danger{background:var(--danger);color:#fff}
-    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
-    .btn.hidden{display:none!important}
-    .divider{height:1px;background:var(--border);margin:1rem 0}
-    #player-list{list-style:none;margin-bottom:1rem}
-    #player-list li{padding:.4rem .7rem;background:var(--bg);border-radius:6px;
-                    margin-bottom:.4rem;font-size:.85rem;border:1px solid var(--border)}
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
 
-    /* Game */
-    #screen-game{flex-direction:column;padding:0;position:relative}
-    #hud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;
-         gap:.5rem;padding:.4rem .6rem;background:rgba(7,8,15,0.88);
-         backdrop-filter:blur(6px);border-bottom:1px solid var(--border);
-         z-index:20;flex-wrap:wrap}
-    .hud-pill{padding:.2rem .6rem;border-radius:999px;font-size:.7rem;
-              font-family:var(--font-hud);border:1px solid currentColor}
-    .hud-role-crew    {color:var(--blue);  background:rgba(74,158,255,0.1)}
-    .hud-role-impostor{color:var(--danger);background:rgba(255,74,107,0.1)}
-    .hud-role-jester  {color:var(--warn);  background:rgba(255,201,74,0.1)}
-    .hud-role-dead    {color:var(--muted); background:rgba(74,85,128,0.1)}
-    .hud-spacer{flex:1}
-    #game-canvas{flex:1;width:100%;display:block;margin-top:38px}
-    #action-bar{position:absolute;bottom:0;left:0;right:0;display:flex;gap:.5rem;
-                padding:.5rem .6rem;background:rgba(7,8,15,0.88);
-                backdrop-filter:blur(6px);border-top:1px solid var(--border);z-index:20}
-    #action-bar .btn{flex:1;padding:.6rem .4rem;font-size:.7rem}
-    #joystick-wrap{position:absolute;bottom:80px;left:24px;width:100px;
-                   height:100px;z-index:25;display:none}
-    #joystick{width:100%;height:100%;background:rgba(255,255,255,0.06);
-              border:2px solid rgba(255,255,255,0.15);border-radius:50%;
-              display:flex;align-items:center;justify-content:center}
-    #joystick-knob{width:36px;height:36px;background:rgba(74,255,164,0.6);
-                   border-radius:50%;pointer-events:none}
-    #room-label{position:absolute;top:46px;left:50%;transform:translateX(-50%);
-                background:rgba(7,8,15,0.9);border:1px solid var(--accent);
-                color:var(--accent);padding:.2rem .8rem;border-radius:999px;
-                font-size:.7rem;letter-spacing:.1em;z-index:21;
-                pointer-events:none;opacity:0;transition:opacity .3s}
-    #room-label.visible{opacity:1}
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-hud);
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column
+    }
 
-    /* Kill flash */
-    #kill-flash{position:fixed;inset:0;background:rgba(255,74,107,0);
-                pointer-events:none;z-index:200;transition:background .1s}
-    #kill-flash.flash{background:rgba(255,74,107,0.25)}
+    /* ── Screens ── */
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100dvh;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column
+    }
 
-    /* Task modal */
-    #task-modal{position:fixed;inset:0;background:rgba(0,0,0,0.75);
-                backdrop-filter:blur(4px);align-items:center;
-                justify-content:center;z-index:50;display:none}
-    #task-modal.open{display:flex}
-    .task-box{background:var(--surface);border:1px solid var(--border);
-              border-radius:16px;padding:1.5rem;width:min(460px,95vw)}
-    .task-box h3{font-family:var(--font-title);color:var(--accent);
-                 margin-bottom:1rem;font-size:.9rem}
+    .screen.active {
+      display: flex
+    }
 
-    /* Meeting */
-    #meeting-overlay{position:fixed;inset:0;background:var(--bg);z-index:100;
-                     padding:1.5rem;display:none;flex-direction:column}
-    #meeting-overlay.active{display:flex}
-    #meeting-overlay h2{font-family:var(--font-title);color:var(--danger);
-                        font-size:1.2rem;margin-bottom:.5rem}
-    #vote-list{display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem;
-               overflow-y:auto;flex:1}
-    .vote-btn{padding:.7rem 1rem;background:var(--surface);
-              border:1px solid var(--border);border-radius:var(--r);
-              color:var(--text);font-family:var(--font-hud);font-size:.85rem;
-              cursor:pointer;text-align:left;transition:border-color .2s;
-              display:flex;align-items:center;gap:.75rem}
-    .vote-btn:hover{border-color:var(--danger);color:var(--danger)}
-    .vote-btn:disabled{opacity:.4;cursor:default}
-    .vote-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-    #timer-bar{height:4px;background:var(--border);border-radius:2px;margin:.6rem 0;overflow:hidden}
-    #timer-fill{height:100%;background:var(--accent);transition:width 1s linear}
-    #timer-label{font-size:.72rem;color:var(--muted)}
-    #vote-result{margin-top:.75rem;padding:1rem;background:var(--surface);
-                 border-radius:var(--r);border:1px solid var(--border);
-                 font-size:.85rem;display:none}
+    /* ── Panels ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      width: min(440px, 94vw)
+    }
 
-    /* End */
-    #end-title{font-family:var(--font-title);font-size:2rem;margin-bottom:.5rem}
+    .panel-scroll {
+      overflow-y: auto;
+      max-height: calc(100dvh - 2rem)
+    }
 
-    body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
-      background:repeating-linear-gradient(0deg,transparent,transparent 2px,
-        rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px)}
+    /* ── Typography ── */
+    h1 {
+      font-family: var(--font-title);
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      color: var(--accent);
+      letter-spacing: .05em;
+      text-shadow: 0 0 20px rgba(74, 255, 164, 0.4);
+      margin-bottom: .25rem
+    }
+
+    h2 {
+      font-family: var(--font-title);
+      font-size: 1rem;
+      color: var(--text);
+      letter-spacing: .06em;
+      margin-bottom: 1rem
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: .75rem;
+      margin-bottom: 1.5rem;
+      letter-spacing: .1em
+    }
+
+    /* ── Form elements ── */
+    .field {
+      margin-bottom: .9rem
+    }
+
+    .field label {
+      display: block;
+      font-size: .68rem;
+      color: var(--muted2);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .3rem
+    }
+
+    .field .hint {
+      font-size: .62rem;
+      color: var(--muted);
+      margin-top: .25rem;
+      line-height: 1.4
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: .7rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--r);
+      font-family: var(--font-hud);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+      -webkit-appearance: none
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent)
+    }
+
+    select option {
+      background: var(--bg)
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: .75rem;
+      background: var(--accent);
+      color: #07080f;
+      border: none;
+      border-radius: var(--r);
+      font-family: var(--font-title);
+      font-size: .85rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      text-align: center
+    }
+
+    .btn:hover {
+      opacity: .85
+    }
+
+    .btn:active {
+      transform: scale(.97)
+    }
+
+    .btn.danger {
+      background: var(--danger);
+      color: #fff
+    }
+
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted2)
+    }
+
+    .btn.ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent)
+    }
+
+    .btn.warn {
+      background: var(--warn);
+      color: #07080f
+    }
+
+    .btn.hidden {
+      display: none !important
+    }
+
+    .btn.sm {
+      padding: .5rem .9rem;
+      font-size: .72rem;
+      width: auto;
+      display: inline-block
+    }
+
+    /* ── Main menu ── */
+    #screen-menu {
+      background: var(--bg)
+    }
+
+    .menu-logo {
+      text-align: center;
+      margin-bottom: 2.5rem
+    }
+
+    .menu-logo h1 {
+      font-size: clamp(2rem, 8vw, 3.2rem);
+      margin-bottom: .15rem
+    }
+
+    .menu-logo p {
+      font-size: .7rem;
+      color: var(--muted);
+      letter-spacing: .18em
+    }
+
+    .menu-btns {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      width: min(340px, 88vw)
+    }
+
+    .menu-btn {
+      padding: 1rem 1.5rem;
+      border-radius: 14px;
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-title);
+      font-size: .82rem;
+      letter-spacing: .07em;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: .9rem;
+      transition: border-color .2s, background .2s
+    }
+
+    .menu-btn:hover {
+      border-color: var(--accent);
+      background: rgba(74, 255, 164, 0.04)
+    }
+
+    .menu-btn .icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center
+    }
+
+    .menu-btn.primary {
+      background: var(--accent);
+      color: #07080f;
+      border-color: transparent
+    }
+
+    .menu-btn.primary:hover {
+      opacity: .88
+    }
+
+    .menu-btn-desc {
+      font-family: var(--font-hud);
+      font-size: .65rem;
+      color: var(--muted);
+      margin-top: .15rem;
+      letter-spacing: .04em;
+      font-weight: 400
+    }
+
+    .menu-btn.primary .menu-btn-desc {
+      color: rgba(0, 0, 0, 0.55)
+    }
+
+    /* ── Back link ── */
+    .back-link {
+      font-size: .72rem;
+      color: var(--muted);
+      cursor: pointer;
+      letter-spacing: .08em;
+      margin-bottom: 1.2rem;
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem
+    }
+
+    .back-link:hover {
+      color: var(--accent)
+    }
+
+    /* ── Dividers ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1rem 0
+    }
+
+    .section-label {
+      font-size: .65rem;
+      color: var(--muted2);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: .6rem;
+      margin-top: 1.1rem
+    }
+
+    /* ── Player list (waiting) ── */
+    #player-list {
+      list-style: none;
+      margin-bottom: 1rem
+    }
+
+    #player-list li {
+      padding: .4rem .7rem;
+      background: var(--bg);
+      border-radius: 6px;
+      margin-bottom: .35rem;
+      font-size: .85rem;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .5rem
+    }
+
+    #player-list li::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0
+    }
+
+    /* ── Question Set picker ── */
+    .qset-grid {
+      display: flex;
+      flex-direction: column;
+      gap: .45rem;
+      max-height: 160px;
+      overflow-y: auto;
+      margin-bottom: .6rem
+    }
+
+    .qset-card {
+      padding: .6rem .9rem;
+      border-radius: 9px;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      transition: border-color .18s, background .18s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem
+    }
+
+    .qset-card:hover {
+      border-color: var(--border2)
+    }
+
+    .qset-card.selected {
+      border-color: var(--accent);
+      background: rgba(74, 255, 164, 0.06)
+    }
+
+    .qset-name {
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--text)
+    }
+
+    .qset-meta {
+      font-size: .65rem;
+      color: var(--muted);
+      letter-spacing: .04em
+    }
+
+    .qset-badge {
+      padding: .15rem .45rem;
+      border-radius: 999px;
+      font-size: .6rem;
+      letter-spacing: .05em
+    }
+
+    .qset-badge.sq {
+      background: rgba(74, 158, 255, 0.15);
+      color: var(--blue);
+      border: 1px solid rgba(74, 158, 255, 0.3)
+    }
+
+    .qset-badge.lq {
+      background: rgba(255, 201, 74, 0.15);
+      color: var(--warn);
+      border: 1px solid rgba(255, 201, 74, 0.3)
+    }
+
+    .qset-badges {
+      display: flex;
+      gap: .3rem;
+      flex-wrap: wrap
+    }
+
+    /* ── Question set addition ── */
+    .q-row {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .8rem;
+      margin-bottom: .5rem;
+      position: relative
+    }
+
+    .q-row-num {
+      font-size: .65rem;
+      color: var(--muted);
+      margin-bottom: .4rem;
+      letter-spacing: .07em
+    }
+
+    .q-row-del {
+      position: absolute;
+      top: .6rem;
+      right: .6rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: .2rem
+    }
+
+    .q-row-del:hover {
+      color: var(--danger)
+    }
+
+    .type-toggle {
+      display: flex;
+      gap: .35rem;
+      margin-bottom: .9rem
+    }
+
+    .type-btn {
+      flex: 1;
+      padding: .55rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted2);
+      font-family: var(--font-hud);
+      font-size: .75rem;
+      cursor: pointer;
+      transition: all .15s;
+      text-align: center
+    }
+
+    .type-btn.active.sq {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: rgba(74, 158, 255, 0.08)
+    }
+
+    .type-btn.active.lq {
+      border-color: var(--warn);
+      color: var(--warn);
+      background: rgba(255, 201, 74, 0.08)
+    }
+
+    /* ── Game ── */
+    #screen-game {
+      flex-direction: column;
+      padding: 0;
+      position: relative
+    }
+
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .4rem .6rem;
+      background: rgba(7, 8, 15, 0.88);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--border);
+      z-index: 20;
+      flex-wrap: wrap
+    }
+
+    .hud-pill {
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-family: var(--font-hud);
+      border: 1px solid currentColor
+    }
+
+    .hud-role-crew {
+      color: var(--blue);
+      background: rgba(74, 158, 255, 0.1)
+    }
+
+    .hud-role-impostor {
+      color: var(--danger);
+      background: rgba(255, 74, 107, 0.1)
+    }
+
+    .hud-role-jester {
+      color: var(--warn);
+      background: rgba(255, 201, 74, 0.1)
+    }
+
+    .hud-role-dead {
+      color: var(--muted);
+      background: rgba(74, 85, 128, 0.1)
+    }
+
+    .hud-spacer {
+      flex: 1
+    }
+
+    #game-canvas {
+      flex: 1;
+      width: 100%;
+      display: block;
+      margin-top: 38px
+    }
+
+    #action-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      gap: .5rem;
+      padding: .5rem .6rem;
+      background: rgba(7, 8, 15, 0.88);
+      backdrop-filter: blur(6px);
+      border-top: 1px solid var(--border);
+      z-index: 20
+    }
+
+    #action-bar .btn {
+      flex: 1;
+      padding: .6rem .4rem;
+      font-size: .7rem
+    }
+
+    #joystick-wrap {
+      position: absolute;
+      bottom: 80px;
+      left: 24px;
+      width: 100px;
+      height: 100px;
+      z-index: 25;
+      display: none
+    }
+
+    #joystick {
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    #joystick-knob {
+      width: 36px;
+      height: 36px;
+      background: rgba(74, 255, 164, 0.6);
+      border-radius: 50%;
+      pointer-events: none
+    }
+
+    #room-label {
+      position: absolute;
+      top: 46px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(7, 8, 15, 0.9);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: .2rem .8rem;
+      border-radius: 999px;
+      font-size: .7rem;
+      letter-spacing: .1em;
+      z-index: 21;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .3s;
+      white-space: nowrap
+    }
+
+    #room-label.visible {
+      opacity: 1
+    }
+
+    #kill-flash {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 74, 107, 0);
+      pointer-events: none;
+      z-index: 200;
+      transition: background .1s
+    }
+
+    #kill-flash.flash {
+      background: rgba(255, 74, 107, 0.25)
+    }
+
+    /* ── Task modal ── */
+    #task-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      display: none
+    }
+
+    #task-modal.open {
+      display: flex
+    }
+
+    .task-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: min(460px, 95vw)
+    }
+
+    .task-box h3 {
+      font-family: var(--font-title);
+      color: var(--accent);
+      margin-bottom: 1rem;
+      font-size: .9rem
+    }
+
+    /* ── Meeting overlay ── */
+    #meeting-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      padding: 1.2rem 1.5rem;
+      display: none;
+      flex-direction: column
+    }
+
+    #meeting-overlay.active {
+      display: flex
+    }
+
+    #meeting-overlay h2 {
+      font-family: var(--font-title);
+      color: var(--danger);
+      font-size: 1.1rem;
+      margin-bottom: .3rem
+    }
+
+    #timer-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: .5rem 0;
+      overflow: hidden
+    }
+
+    #timer-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 1s linear
+    }
+
+    #timer-label {
+      font-size: .72rem;
+      color: var(--muted)
+    }
+
+    #vote-phase-banner {
+      padding: .4rem .8rem;
+      border-radius: 8px;
+      font-size: .72rem;
+      text-align: center;
+      margin: .5rem 0;
+      letter-spacing: .06em;
+      border: 1px solid var(--muted);
+      color: var(--muted);
+      background: rgba(74, 85, 128, 0.08)
+    }
+
+    #vote-phase-banner.voting {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: rgba(255, 74, 107, 0.08)
+    }
+
+    #vote-list {
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+      margin-top: .4rem;
+      overflow-y: auto;
+      flex: 1
+    }
+
+    .vote-btn {
+      padding: .65rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      color: var(--text);
+      font-family: var(--font-hud);
+      font-size: .83rem;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .2s, opacity .2s;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      width: 100%
+    }
+
+    .vote-btn:not(:disabled):hover {
+      border-color: var(--danger);
+      color: var(--danger)
+    }
+
+    .vote-btn:disabled {
+      opacity: .38;
+      cursor: default
+    }
+
+    .vote-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0
+    }
+
+    #chat-wrap {
+      display: none;
+      flex-direction: column;
+      gap: .4rem;
+      margin-bottom: .5rem
+    }
+
+    #chat-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: .75rem;
+      height: 110px;
+      overflow-y: auto;
+      font-size: .78rem
+    }
+
+    #vote-result {
+      margin-top: .6rem;
+      padding: .9rem;
+      background: var(--surface);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      font-size: .84rem;
+      display: none
+    }
+
+    /* ── End ── */
+    #end-title {
+      font-family: var(--font-title);
+      font-size: 2rem;
+      margin-bottom: .5rem
+    }
+
+    /* ── CRT scanlines ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px)
+    }
+
+    /* ── Star field (menu only) ── */
+    #star-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0
+    }
+
+    #screen-menu .panel-wrap {
+      position: relative;
+      z-index: 1
+    }
   </style>
 </head>
+
 <body>
-<div id="kill-flash"></div>
+  <div id="kill-flash"></div>
+  <canvas id="star-canvas"></canvas>
 
-<!-- LOBBY -->
-<div id="screen-lobby" class="screen active">
-  <div class="panel">
-    <h1>thing<span style="color:var(--blue)">y</span></h1>
-    <p class="sub">▸ LEARN ◆ DECEIVE ◆ SURVIVE ◀</p>
-    <input id="player-name" type="text" placeholder="Callsign (your name)" maxlength="16" autocomplete="off"/>
-    <input id="match-id"    type="text" placeholder="Match code — blank to create" maxlength="8" autocomplete="off"/>
-    <div id="host-settings">
+  <!-- ═══════════════════════════════════════
+     MAIN MENU
+════════════════════════════════════════ -->
+  <div id="screen-menu" class="screen active">
+    <div class="panel-wrap">
+      <div class="menu-logo">
+        <h1>EMISSARY</h1>
+        <p>▸ LEARN ◆ DECEIVE ◆ SURVIVE ◀</p>
+      </div>
+      <div class="menu-btns">
+        <button class="menu-btn primary" id="menu-btn-play">
+          <span class="icon">▶</span>
+          <div>
+            <div>JOIN GAME</div>
+            <div class="menu-btn-desc">Enter a match code to join</div>
+          </div>
+        </button>
+        <button class="menu-btn" id="menu-btn-host">
+          <span class="icon">◈</span>
+          <div>
+            <div>HOST GAME</div>
+            <div class="menu-btn-desc">Create a new match &amp; invite players</div>
+          </div>
+        </button>
+        <button class="menu-btn" id="menu-btn-addq">
+          <span class="icon">✦</span>
+          <div>
+            <div>ADD QUESTIONS</div>
+            <div class="menu-btn-desc">Upload question sets to the database</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+     JOIN (PLAY) SCREEN
+════════════════════════════════════════ -->
+  <div id="screen-play" class="screen">
+    <div class="panel">
+      <span class="back-link" id="play-back">◀ BACK</span>
+      <h1>JOIN GAME</h1>
+      <p class="sub">Enter the match code your host shared</p>
+      <div class="field">
+        <label>Your callsign</label>
+        <input id="play-name" type="text" placeholder="e.g. Agent Zero" maxlength="16" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Match code</label>
+        <input id="play-code" type="text" placeholder="e.g. ABC12" maxlength="8" autocomplete="off"
+          style="text-transform:uppercase;letter-spacing:.12em" />
+        <div class="hint">Ask your host for the 5-letter code shown on their screen</div>
+      </div>
+      <button class="btn" id="btn-join-play">CONNECT →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+     HOST SCREEN
+════════════════════════════════════════ -->
+  <div id="screen-host" class="screen">
+    <div class="panel panel-scroll">
+      <span class="back-link" id="host-back">◀ BACK</span>
+      <h1>HOST GAME</h1>
+      <p class="sub">Configure your match before sharing the code</p>
+
+      <div class="field">
+        <label>Your callsign</label>
+        <input id="host-name" type="text" placeholder="e.g. Commander" maxlength="16" autocomplete="off" />
+      </div>
+
       <div class="divider"></div>
-      <select id="setting-chat">
-        <option value="chat">💬 In-game chat during meetings</option>
-        <option value="class">🏫 Discuss aloud in class</option>
-      </select>
-      <input id="setting-discuss"    type="number" placeholder="Discussion time (sec)" value="120"/>
-      <input id="setting-vote"       type="number" placeholder="Voting time (sec)" value="60"/>
-      <input id="setting-zone-calls" type="number" placeholder="Meeting-zone calls per player" value="1"/>
-    </div>
-    <div class="divider"></div>
-    <button class="btn" id="btn-join">LAUNCH</button>
-  </div>
-</div>
+      <p class="section-label">📚 Question Set</p>
+      <p style="font-size:.7rem;color:var(--muted);margin-bottom:.7rem;line-height:1.5">
+        Choose which subject category players will answer questions from during tasks and meetings. Questions are sorted
+        by the <em>category</em> column in your database.
+      </p>
+      <div class="qset-grid" id="qset-grid">
+        <div style="color:var(--muted);font-size:.8rem;text-align:center;padding:.8rem">Loading categories…</div>
+      </div>
+      <button class="btn ghost sm" id="qset-refresh" style="margin-bottom:.5rem">↻ Refresh categories</button>
 
-<!-- WAITING -->
-<div id="screen-waiting" class="screen">
-  <div class="panel">
-    <h1>STANDING<br>BY</h1>
-    <p class="sub">MATCH CODE: <strong id="waiting-code" style="color:var(--accent)"></strong></p>
-    <div class="divider"></div>
-    <ul id="player-list"></ul>
-    <button class="btn hidden" id="btn-start">START GAME</button>
-  </div>
-</div>
+      <div class="divider"></div>
+      <p class="section-label">⚙️ Match Settings</p>
 
-<!-- GAME -->
-<div id="screen-game" class="screen">
-  <div id="hud">
-    <span id="hud-role"   class="hud-pill hud-role-crew">CREW</span>
-    <span id="hud-shield" class="hud-pill" style="color:var(--muted);border-color:var(--muted)">NO SHIELD</span>
-    <span class="hud-spacer"></span>
-    <span id="hud-kill-status" style="font-size:.7rem;color:var(--muted)"></span>
-    <span id="hud-room" style="font-size:.7rem;color:var(--muted);margin-left:.5rem">—</span>
-  </div>
-  <div id="room-label"></div>
-  <canvas id="game-canvas"></canvas>
-  <div id="joystick-wrap">
-    <div id="joystick"><div id="joystick-knob"></div></div>
-  </div>
-  <div id="action-bar">
-    <button class="btn ghost hidden" id="btn-task">⬡ TASK</button>
-    <button class="btn danger hidden" id="btn-kill">✕ KILL</button>
-    <button class="btn hidden"        id="btn-swap">⇄ SWAP</button>
-    <button class="btn ghost"         id="btn-report">⚑ REPORT</button>
-    <button class="btn ghost hidden"  id="btn-meeting">◈ MEETING</button>
-  </div>
-</div>
+      <div class="field">
+        <label>Discussion time (seconds)</label>
+        <input id="host-discuss" type="number" value="120" min="20" max="600" />
+        <div class="hint">How long players can discuss before voting opens. Recommended: 90–180s for classroom use.
+        </div>
+      </div>
 
-<!-- END -->
-<div id="screen-end" class="screen">
-  <div class="panel" style="text-align:center">
-    <h1 id="end-title">GAME OVER</h1>
-    <p id="end-body" style="color:var(--muted);margin:1rem 0;font-size:.85rem"></p>
-    <button class="btn" onclick="location.reload()">BACK TO LOBBY</button>
-  </div>
-</div>
+      <div class="field">
+        <label>Voting time (seconds)</label>
+        <input id="host-vote" type="number" value="60" min="15" max="300" />
+        <div class="hint">Time limit for the vote. If everyone votes early, the meeting ends automatically.</div>
+      </div>
 
-<!-- TASK MODAL -->
-<div id="task-modal">
-  <div class="task-box">
-    <h3>⬡ TASK STATION</h3>
-    <div id="task-content"></div>
-    <div class="divider"></div>
-    <button class="btn ghost" id="btn-close-task">CLOSE</button>
-  </div>
-</div>
+      <div class="field">
+        <label>Emergency meeting calls per player</label>
+        <input id="host-calls" type="number" value="1" min="0" max="5" />
+        <div class="hint">How many times each crew member can call a meeting from the Meeting Zone (requires answering a
+          Long Question).</div>
+      </div>
 
-<!-- MEETING OVERLAY -->
-<div id="meeting-overlay">
-  <h2 id="meeting-title">🚨 EMERGENCY MEETING</h2>
-  <p id="meeting-reason" style="color:var(--muted);font-size:.8rem;margin-bottom:.25rem"></p>
-  <div id="timer-bar"><div id="timer-fill" style="width:100%"></div></div>
-  <p id="timer-label">DISCUSSION</p>
-  <div id="chat-wrap" style="display:none;flex-direction:column;gap:.4rem;margin-bottom:.5rem">
-    <div id="chat-box" style="background:var(--bg);border:1px solid var(--border);
-         border-radius:var(--r);padding:.75rem;height:120px;overflow-y:auto;font-size:.8rem"></div>
-    <div style="display:flex;gap:.4rem">
-      <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" style="margin:0;flex:1"/>
-      <button class="btn" id="btn-chat-send" style="width:auto;padding:.4rem .8rem;font-size:.75rem">SEND</button>
+      <div class="field">
+        <label>Discussion mode</label>
+        <select id="host-chat">
+          <option value="class">🏫 Discuss aloud in class (no in-game chat)</option>
+          <option value="chat">💬 In-game text chat during meetings</option>
+        </select>
+        <div class="hint">For classroom settings, "aloud" is recommended so students must speak to each other.</div>
+      </div>
+
+      <div class="divider"></div>
+      <button class="btn" id="btn-create-match">CREATE MATCH →</button>
     </div>
   </div>
-  <div id="vote-list"></div>
-  <div id="vote-result"></div>
-</div>
 
-<script type="module">
-import { GAME_CONFIG }                    from "./config.js";
-import { createMatch, joinMatch,
-         onPlayersChange, onPhaseChange,
-         assignRoles, setPhase,
-         callMeeting, castVote,
-         applyKill, onMeetingChange,
-         setKillReady,
-         getMatchSettings, getPlayerData,
-         sendChatMessage, onChatMessage }  from "./realtime.js";
-import { Impostor, Jester, Crew }         from "./roles.js";
-import { World, randomColor }             from "./world.js";
-import { SwipeTask, ConnectorTask,
-         FruitNinjaTask }                 from "./tasks.js";
+  <!-- ═══════════════════════════════════════
+     ADD QUESTIONS SCREEN
+════════════════════════════════════════ -->
+  <div id="screen-addq" class="screen">
+    <div class="panel panel-scroll">
+      <span class="back-link" id="addq-back">◀ BACK</span>
+      <h1>ADD QUESTIONS</h1>
+      <p class="sub">Upload new questions to the Supabase database</p>
 
-const $ = id => document.getElementById(id);
-const show = id => {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  $(id).classList.add("active");
-};
+      <div class="field">
+        <label>Category / Question Set Name</label>
+        <input id="addq-cat-input" type="text" placeholder="e.g. Biology Ch.3, US History" maxlength="64"
+          autocomplete="off" />
+        <div class="hint">This is how hosts will identify and select this question set. Must match existing names
+          exactly to add to a set.</div>
+      </div>
 
-let matchId, localPlayer, world;
-let allPlayers = {}, settings = {}, isHost = false;
-let meetingTimerInterval = null;
-let killReady = false;
-let hasVoted  = false;
-let chatUnsubscribe = null;
+      <div style="margin-bottom:.6rem">
+        <p
+          style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">
+          Or pick an existing category</p>
+        <select id="addq-cat-select" style="margin-bottom:0">
+          <option value="">— select existing —</option>
+        </select>
+      </div>
 
-// ── Touch detection ──────────────────────────────────────────
-if (window.matchMedia("(pointer:coarse)").matches)
-  $("joystick-wrap").style.display = "block";
+      <div class="divider"></div>
 
-// ── Listen to role-based events from roles.js ────────────────
-document.addEventListener("game:killReady", () => {
-  $("hud-kill-status").textContent = "🔪 KILL READY";
-  $("hud-kill-status").style.color = "var(--danger)";
-});
-document.addEventListener("game:killProgress", e => {
-  const { progress, needed } = e.detail;
-  $("hud-kill-status").textContent = `🔪 SQ ${progress}/${needed}`;
-  $("hud-kill-status").style.color = "var(--muted)";
-});
-document.addEventListener("game:shieldGranted", () => {
-  $("hud-shield").textContent      = "🛡 SHIELDED";
-  $("hud-shield").style.color       = "var(--accent)";
-  $("hud-shield").style.borderColor = "var(--accent)";
-});
-document.addEventListener("game:jesterProgress", e => {
-  const { progress, needed } = e.detail;
-  flashHud(`⇄ Swap charge: ${progress}/${needed}`, "info");
-});
-document.addEventListener("game:jesterSwapReady", e => {
-  const { impostorPos } = e.detail;
-  flashHud(`⇄ Swap ready! Impostor nearby (${Math.round(impostorPos?.x ?? 0)},${Math.round(impostorPos?.y ?? 0)})`, "warn");
-});
+      <p class="section-label">❓ Questions</p>
+      <div class="type-toggle">
+        <button class="type-btn active sq" id="addq-type-sq" data-type="sq">
+          ⚡ Short Questions<br><span style="font-size:.6rem;opacity:.7">Quick recall (SQ)</span>
+        </button>
+        <button class="type-btn lq" id="addq-type-lq" data-type="lq">
+          📖 Long Questions<br><span style="font-size:.6rem;opacity:.7">Deep understanding (LQ)</span>
+        </button>
+      </div>
+      <p style="font-size:.67rem;color:var(--muted);margin-bottom:.7rem;line-height:1.45">
+        <strong style="color:var(--blue)">Short (SQ)</strong> — used in Swipe and Fruit Ninja tasks, kill preloading.
+        Quick facts.<br>
+        <strong style="color:var(--warn)">Long (LQ)</strong> — used in Connector task and calling meetings. Deeper
+        analysis.
+      </p>
 
-// ── Lobby ────────────────────────────────────────────────────
-$("match-id").addEventListener("input", () => {
-  $("host-settings").style.display = $("match-id").value ? "none" : "block";
-});
+      <div id="addq-rows"></div>
 
-$("btn-join").addEventListener("click", async () => {
-  const name = $("player-name").value.trim();
-  if (!name) { $("player-name").focus(); return; }
+      <button class="btn ghost" id="addq-add-row" style="margin-bottom:.8rem">+ ADD ANOTHER QUESTION</button>
+      <div class="divider"></div>
+      <button class="btn" id="addq-submit">UPLOAD TO DATABASE →</button>
+      <div id="addq-status" style="margin-top:.6rem;font-size:.78rem;text-align:center;display:none"></div>
+    </div>
+  </div>
 
-  isHost      = !$("match-id").value.trim();
-  matchId     = $("match-id").value.trim() ||
-                Math.random().toString(36).slice(2,7).toUpperCase();
-  localPlayer = { id: crypto.randomUUID(), name, color: randomColor() };
+  <!-- ═══════════════════════════════════════
+     WAITING ROOM
+════════════════════════════════════════ -->
+  <div id="screen-waiting" class="screen">
+    <div class="panel">
+      <h1>STANDING<br>BY</h1>
+      <p class="sub">MATCH CODE: <strong id="waiting-code" style="color:var(--accent);letter-spacing:.15em"></strong>
+      </p>
+      <p style="font-size:.7rem;color:var(--muted);margin-bottom:.8rem">Share this code with players to join</p>
+      <div class="divider"></div>
+      <p style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">
+        Players in lobby</p>
+      <ul id="player-list"></ul>
+      <div id="host-qset-display" style="display:none;font-size:.72rem;color:var(--muted);
+         padding:.4rem .7rem;border-radius:6px;border:1px solid var(--border);margin-bottom:.6rem">
+        📚 Question set: <strong id="host-qset-name" style="color:var(--accent)">—</strong>
+      </div>
+      <button class="btn hidden" id="btn-start">START GAME</button>
+    </div>
+  </div>
 
-  if (isHost) {
-    settings = {
-      useChat:        $("setting-chat").value,
-      discussionTime: +$("setting-discuss").value  || 120,
-      votingTime:     +$("setting-vote").value      || 60,
-      meetingCalls:   +$("setting-zone-calls").value || 1,
+  <!-- ═══════════════════════════════════════
+     GAME
+════════════════════════════════════════ -->
+  <div id="screen-game" class="screen">
+    <div id="hud">
+      <span id="hud-role" class="hud-pill hud-role-crew">CREW</span>
+      <span id="hud-shield" class="hud-pill" style="color:var(--muted);border-color:var(--muted)">NO SHIELD</span>
+      <span class="hud-spacer"></span>
+      <span id="hud-kill-status" style="font-size:.7rem;color:var(--muted)"></span>
+      <span id="hud-room" style="font-size:.7rem;color:var(--muted);margin-left:.5rem">—</span>
+    </div>
+    <div id="room-label"></div>
+    <canvas id="game-canvas"></canvas>
+    <div id="joystick-wrap">
+      <div id="joystick">
+        <div id="joystick-knob"></div>
+      </div>
+    </div>
+    <div id="action-bar">
+      <button class="btn ghost hidden" id="btn-task">⬡ TASK</button>
+      <button class="btn danger hidden" id="btn-kill">✕ KILL</button>
+      <button class="btn hidden" id="btn-swap">⇄ SWAP</button>
+      <button class="btn ghost" id="btn-report">⚑ REPORT</button>
+      <button class="btn ghost hidden" id="btn-meeting">◈ MEETING</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+     END
+════════════════════════════════════════ -->
+  <div id="screen-end" class="screen">
+    <div class="panel" style="text-align:center">
+      <h1 id="end-title">GAME OVER</h1>
+      <p id="end-body" style="color:var(--muted);margin:1rem 0;font-size:.85rem"></p>
+      <button class="btn" onclick="location.reload()">BACK TO LOBBY</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+     TASK MODAL
+════════════════════════════════════════ -->
+  <div id="task-modal">
+    <div class="task-box">
+      <h3>⬡ TASK STATION</h3>
+      <div id="task-content"></div>
+      <div class="divider"></div>
+      <button class="btn ghost" id="btn-close-task">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+     MEETING OVERLAY
+════════════════════════════════════════ -->
+  <div id="meeting-overlay">
+    <h2 id="meeting-title">🚨 EMERGENCY MEETING</h2>
+    <p id="meeting-reason" style="color:var(--muted);font-size:.78rem;margin-bottom:.25rem"></p>
+    <div id="timer-bar">
+      <div id="timer-fill" style="width:100%"></div>
+    </div>
+    <p id="timer-label">DISCUSSION</p>
+    <div id="vote-phase-banner">🔒 DISCUSSION IN PROGRESS — voting opens when timer ends</div>
+    <div id="chat-wrap">
+      <div id="chat-box"></div>
+      <div style="display:flex;gap:.4rem">
+        <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" style="margin:0;flex:1" />
+        <button class="btn" id="btn-chat-send" style="width:auto;padding:.4rem .8rem;font-size:.75rem">SEND</button>
+      </div>
+    </div>
+    <div id="vote-list"></div>
+    <div id="vote-result"></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════ -->
+  <script type="module">
+    import { GAME_CONFIG } from "./config.js";
+    import {
+      createMatch, joinMatch,
+      onPlayersChange, onPhaseChange,
+      assignRoles, setPhase,
+      callMeeting, castVote,
+      applyKill, onMeetingChange,
+      setKillReady,
+      getMatchSettings, getPlayerData,
+      sendChatMessage, onChatMessage
+    } from "./realtime.js";
+    import { Impostor, Jester, Crew } from "./roles.js";
+    import { World, randomColor } from "./world.js";
+    import {
+      SwipeTask, ConnectorTask,
+      FruitNinjaTask
+    } from "./tasks.js";
+    import { fetchCategories, addQuestions } from "./questions.js";
+
+    const $ = id => document.getElementById(id);
+    const show = id => {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      $(id).classList.add("active");
     };
-    await createMatch(matchId, localPlayer.id, settings);
-    $("btn-start").classList.remove("hidden");
-  }
 
-  await joinMatch(matchId, localPlayer);
-  $("waiting-code").textContent = matchId;
-  show("screen-waiting");
+    // ── State ────────────────────────────────────────────────────
+    let matchId, localPlayer, world;
+    let allPlayers = {}, settings = {}, isHost = false;
+    let meetingTimerInterval = null;
+    let meetingPhase = "discussion"; // "discussion" | "voting"
+    let tallyingVotes = false;
+    let hasVoted = false;
+    let killReady = false;
+    let chatUnsubscribe = null;
+    let selectedCategory = null; // the chosen question set category
 
-  onPlayersChange(matchId, snap => {
-    allPlayers = snap ?? {};
-    $("player-list").innerHTML = Object.values(allPlayers)
-      .map(p => `<li style="border-left:3px solid ${p.color}">${p.name}</li>`).join("");
-  });
+    // ── Touch detection ──────────────────────────────────────────
+    if (window.matchMedia("(pointer:coarse)").matches)
+      $("joystick-wrap").style.display = "block";
 
-  // ── Non-host: watch for game start ──────────────────────────
-  if (!isHost) {
-    onPhaseChange(matchId, async phase => {
-      if (phase === "playing" && !world) {
-        // BUG FIX: fetch settings from Firebase for non-host players
-        settings = await getMatchSettings(matchId);
-
-        // BUG FIX: read role — wait for player data if not yet loaded
-        let me = allPlayers[localPlayer.id];
-        if (!me || !me.role) {
-          me = await getPlayerData(matchId, localPlayer.id);
+    // ── Starfield (menu decoration) ──────────────────────────────
+    (function initStars() {
+      const cv = $("star-canvas"), ctx = cv.getContext("2d");
+      let stars = [];
+      const resize = () => {
+        cv.width = window.innerWidth; cv.height = window.innerHeight;
+        stars = Array.from({ length: 160 }, () => ({
+          x: Math.random() * cv.width, y: Math.random() * cv.height,
+          r: Math.random() * 1.2 + 0.2, v: Math.random() * 0.18 + 0.05,
+          o: Math.random(),
+        }));
+      };
+      resize(); window.addEventListener("resize", resize);
+      (function tick() {
+        if (!$("screen-menu").classList.contains("active")) { requestAnimationFrame(tick); return; }
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        for (const s of stars) {
+          s.o += (Math.random() - 0.5) * 0.04;
+          s.o = Math.max(0.05, Math.min(0.7, s.o));
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(200,220,255,${s.o})`; ctx.fill();
+          s.y -= s.v; if (s.y < 0) { s.y = cv.height; s.x = Math.random() * cv.width; }
         }
-        localPlayer.role = me?.role ?? "crew";
-        launchGame();
-      }
+        requestAnimationFrame(tick);
+      })();
+    })();
+
+    // ── Role event listeners ─────────────────────────────────────
+    document.addEventListener("game:killReady", () => {
+      $("hud-kill-status").textContent = "🔪 KILL READY";
+      $("hud-kill-status").style.color = "var(--danger)";
     });
-  }
-});
+    document.addEventListener("game:killProgress", e => {
+      const { progress, needed } = e.detail;
+      $("hud-kill-status").textContent = `🔪 SQ ${progress}/${needed}`;
+      $("hud-kill-status").style.color = "var(--muted)";
+    });
+    document.addEventListener("game:shieldGranted", () => {
+      $("hud-shield").textContent = "🛡 SHIELDED";
+      $("hud-shield").style.color = "var(--accent)";
+      $("hud-shield").style.borderColor = "var(--accent)";
+    });
+    document.addEventListener("game:jesterProgress", e => {
+      const { progress, needed } = e.detail;
+      flashHud(`⇄ Swap: ${progress}/${needed}`, "info");
+    });
 
-// ── Start game (host) ────────────────────────────────────────
-$("btn-start").addEventListener("click", async () => {
-  const ids = Object.keys(allPlayers);
-  if (ids.length < 3) { alert("Need at least 3 players"); return; }
-  const shuffled = [...ids].sort(() => Math.random() - 0.5);
-  const roleMap  = {};
-  shuffled.forEach((id, i) =>
-    roleMap[id] = i === 0 ? "impostor" : i === 1 ? "jester" : "crew");
-  await assignRoles(matchId, roleMap);
-  await setPhase(matchId, "playing");
-  localPlayer.role = roleMap[localPlayer.id];
-  launchGame();
-});
+    // ═══════════════════════════════════════════════
+    //  MAIN MENU
+    // ═══════════════════════════════════════════════
+    $("menu-btn-play").addEventListener("click", () => show("screen-play"));
+    $("menu-btn-host").addEventListener("click", () => { show("screen-host"); loadCategories(); });
+    $("menu-btn-addq").addEventListener("click", () => { show("screen-addq"); loadAddqCategories(); addqEnsureRow(); });
 
-// ── Launch game ──────────────────────────────────────────────
-function launchGame() {
-  show("screen-game");
-  const canvas = $("game-canvas");
+    $("play-back").addEventListener("click", () => show("screen-menu"));
+    $("host-back").addEventListener("click", () => show("screen-menu"));
+    $("addq-back").addEventListener("click", () => show("screen-menu"));
 
-  const resize = () => {
-    canvas.width  = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-  };
-  setTimeout(resize, 50);
-  window.addEventListener("resize", resize);
+    // ═══════════════════════════════════════════════
+    //  HOST SCREEN — category loading
+    // ═══════════════════════════════════════════════
+    let categories = [];
 
-  world = new World(canvas, matchId, localPlayer);
-
-  world.onEnterRoom = room => {
-    const lbl = $("room-label");
-    $("hud-room").textContent = room?.label ?? "—";
-    if (room) {
-      lbl.textContent = room.label.toUpperCase();
-      lbl.classList.add("visible");
-      setTimeout(() => lbl.classList.remove("visible"), 2000);
-    }
-    $("btn-task").classList.toggle("hidden", !room?.taskZone);
-    $("btn-meeting").classList.toggle("hidden", !room?.meetingZone);
-  };
-
-  setTimeout(() => world.start(), 60);
-
-  // HUD role pill
-  const role = localPlayer.role ?? "crew";
-  const pill = $("hud-role");
-  pill.textContent = role.toUpperCase();
-  pill.className   = `hud-pill hud-role-${role}`;
-
-  // Show role-specific buttons
-  if (role === "impostor") {
-    $("btn-kill").classList.remove("hidden");
-    $("hud-kill-status").textContent = "🔪 NEED SQ";
-  }
-  if (role === "jester") $("btn-swap").classList.remove("hidden");
-
-  // Watch phase for meeting overlay
-  onPhaseChange(matchId, phase => {
-    if (phase === "meeting") openMeeting();
-    else                     closeMeeting();
-    checkWinConditions(allPlayers);
-  });
-
-  // Watch players
-  onPlayersChange(matchId, snap => {
-    allPlayers = snap ?? {};
-    const me = allPlayers[localPlayer.id];
-    if (me && role === "impostor") {
-      killReady = me.killReady ?? false;
-      $("hud-kill-status").textContent = killReady ? "🔪 KILL READY" : "🔪 NEED SQ";
-      $("hud-kill-status").style.color = killReady ? "var(--danger)" : "var(--muted)";
-    }
-    // Update shield HUD from Firebase (e.g. ghost shield given by dead player)
-    if (me) {
-      if (me.shield) {
-        $("hud-shield").textContent      = "🛡 SHIELDED";
-        $("hud-shield").style.color       = "var(--accent)";
-        $("hud-shield").style.borderColor = "var(--accent)";
-      } else {
-        $("hud-shield").textContent      = "NO SHIELD";
-        $("hud-shield").style.color       = "var(--muted)";
-        $("hud-shield").style.borderColor = "var(--muted)";
+    async function loadCategories() {
+      const grid = $("qset-grid");
+      grid.innerHTML = `<div style="color:var(--muted);font-size:.8rem;text-align:center;padding:.8rem">Loading…</div>`;
+      try {
+        categories = await fetchCategories();
+        renderQSetGrid();
+      } catch (err) {
+        grid.innerHTML = `<div style="color:var(--danger);font-size:.78rem;padding:.6rem">Failed to load: ${err.message}</div>`;
       }
     }
-    checkWinConditions(allPlayers);
-  });
 
-  // BUG FIX: onMeetingChange with matchId must be set up INSIDE launchGame,
-  // after matchId is defined — not at module level where matchId is undefined.
-  onMeetingChange(matchId, mtg => {
-    window._latestMeeting = mtg;
-    if (!mtg) return;
-    if (settings.useChat === "chat") syncChat(mtg);
-  });
-}
-
-// ── Kill ─────────────────────────────────────────────────────
-$("btn-kill").addEventListener("click", async () => {
-  if (localPlayer.role !== "impostor") return;
-  if (!killReady) {
-    flashHud("Complete an SQ first to preload a kill!");
-    return;
-  }
-  const target = world?.findNearest(50);
-  if (!target) {
-    flashHud("No one in range!");
-    return;
-  }
-
-  // Shield check — impostor is notified silently, crew is NOT told
-  if (target.shield) {
-    const blocked = Math.random() < target.shield.chance;
-    if (blocked) {
-      // BUG FIX: was calling Impostor.onSqCorrect() which incremented the
-      // kill counter instead of resetting it.  Directly reset kill-ready.
-      flashHud("Kill blocked by shield!", "warn");
-      killReady = false;
-      await Impostor.resetKill(matchId, localPlayer.id);
-      $("hud-kill-status").textContent = "🔪 NEED SQ";
-      $("hud-kill-status").style.color  = "var(--muted)";
-      return;
+    function renderQSetGrid() {
+      const grid = $("qset-grid");
+      if (!categories.length) {
+        grid.innerHTML = `<div style="color:var(--muted);font-size:.78rem;text-align:center;padding:.8rem">No categories found.<br>Add some questions first.</div>`;
+        return;
+      }
+      grid.innerHTML = `
+    <div class="qset-card ${selectedCategory === null ? 'selected' : ''}" data-cat="">
+      <div>
+        <div class="qset-name">All Questions</div>
+        <div class="qset-meta">Draw from every category in the database</div>
+      </div>
+    </div>
+    ${categories.map(c => `
+      <div class="qset-card ${selectedCategory === c.name ? 'selected' : ''}" data-cat="${c.name}">
+        <div style="flex:1;min-width:0">
+          <div class="qset-name">${c.name}</div>
+          <div class="qset-meta">${c.sqCount} short · ${c.lqCount} long</div>
+        </div>
+        <div class="qset-badges">
+          ${c.sqCount ? `<span class="qset-badge sq">SQ ×${c.sqCount}</span>` : ""}
+          ${c.lqCount ? `<span class="qset-badge lq">LQ ×${c.lqCount}</span>` : ""}
+        </div>
+      </div>
+    `).join("")}
+  `;
+      grid.querySelectorAll(".qset-card").forEach(card => {
+        card.addEventListener("click", () => {
+          selectedCategory = card.dataset.cat || null;
+          grid.querySelectorAll(".qset-card").forEach(c => c.classList.toggle("selected", c === card));
+        });
+      });
     }
-  }
 
-  // Kill lands
-  await applyKill(matchId, target.id);
-  killReady = false;
-  await setKillReady(matchId, localPlayer.id, false);
+    $("qset-refresh").addEventListener("click", loadCategories);
 
-  const f = $("kill-flash");
-  f.classList.add("flash");
-  setTimeout(() => f.classList.remove("flash"), 300);
-  $("hud-kill-status").textContent = "🔪 NEED SQ";
-  $("hud-kill-status").style.color  = "var(--muted)";
-});
+    // ═══════════════════════════════════════════════
+    //  JOIN GAME (PLAY SCREEN)
+    // ═══════════════════════════════════════════════
+    $("btn-join-play").addEventListener("click", async () => {
+      const name = $("play-name").value.trim();
+      const code = $("play-code").value.trim().toUpperCase();
+      if (!name) { $("play-name").focus(); return; }
+      if (!code) { $("play-code").focus(); return; }
+      await doJoin(name, code, false);
+    });
 
-// ── Meeting ───────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════
+    //  HOST GAME
+    // ═══════════════════════════════════════════════
+    $("btn-create-match").addEventListener("click", async () => {
+      const name = $("host-name").value.trim();
+      if (!name) { $("host-name").focus(); return; }
 
-// Report corpse button
-$("btn-report").addEventListener("click", async () => {
-  if (!localPlayer) return;
-  await callMeeting(matchId, localPlayer.id, "corpse");
-  await setPhase(matchId, "meeting");
-});
+      isHost = true;
+      matchId = Math.random().toString(36).slice(2, 7).toUpperCase();
+      localPlayer = { id: crypto.randomUUID(), name, color: randomColor() };
 
-// Meeting zone button
-$("btn-meeting").addEventListener("click", async () => {
-  const me = allPlayers[localPlayer.id];
-  if ((me?.meetingCallsLeft ?? 1) <= 0) { flashHud("No meeting calls left!"); return; }
-  await callMeeting(matchId, localPlayer.id, "zone");
-  await setPhase(matchId, "meeting");
-});
+      settings = {
+        useChat: $("host-chat").value,
+        discussionTime: +$("host-discuss").value || 120,
+        votingTime: +$("host-vote").value || 60,
+        meetingCalls: +$("host-calls").value || 1,
+        questionCategory: selectedCategory,
+      };
 
-function openMeeting() {
-  hasVoted = false;
-  $("meeting-overlay").classList.add("active");
-  $("vote-result").style.display = "none";
-  $("vote-result").textContent   = "";
+      await createMatch(matchId, localPlayer.id, settings);
+      await joinMatch(matchId, localPlayer);
 
-  // Chat
-  const useChat = settings.useChat === "chat";
-  $("chat-wrap").style.display = useChat ? "flex" : "none";
+      $("waiting-code").textContent = matchId;
+      if (selectedCategory) {
+        $("host-qset-display").style.display = "block";
+        $("host-qset-name").textContent = selectedCategory;
+      }
+      $("btn-start").classList.remove("hidden");
+      show("screen-waiting");
+      setupWaitingListeners();
+    });
 
-  // Build vote list
-  buildVoteList();
+    // ═══════════════════════════════════════════════
+    //  SHARED JOIN LOGIC
+    // ═══════════════════════════════════════════════
+    async function doJoin(name, code, host) {
+      isHost = host;
+      matchId = code;
+      localPlayer = { id: crypto.randomUUID(), name, color: randomColor() };
+      await joinMatch(matchId, localPlayer);
+      $("waiting-code").textContent = matchId;
+      show("screen-waiting");
+      setupWaitingListeners();
 
-  // Timer: discussion phase
-  startMeetingTimer(
-    settings.discussionTime ?? 120,
-    "DISCUSSION",
-    () => startVotingPhase()
-  );
-}
+      // Non-host: watch for game start
+      onPhaseChange(matchId, async phase => {
+        if (phase === "playing" && !world) {
+          settings = await getMatchSettings(matchId);
+          selectedCategory = settings.questionCategory ?? null;
+          let me = allPlayers[localPlayer.id];
+          if (!me || !me.role) me = await getPlayerData(matchId, localPlayer.id);
+          localPlayer.role = me?.role ?? "crew";
+          launchGame();
+        }
+      });
+    }
 
-function buildVoteList() {
-  const alive = Object.entries(allPlayers).filter(([,p]) => p.alive);
-  $("vote-list").innerHTML = alive.map(([id, p]) => `
-    <button class="vote-btn" data-id="${id}" ${id === localPlayer.id ? "disabled" : ""}>
+    function setupWaitingListeners() {
+      onPlayersChange(matchId, snap => {
+        allPlayers = snap ?? {};
+        $("player-list").innerHTML = Object.values(allPlayers).map(p =>
+          `<li style="color:${p.color}">${p.name}</li>`
+        ).join("");
+      });
+    }
+
+    // ═══════════════════════════════════════════════
+    //  START GAME (host)
+    // ═══════════════════════════════════════════════
+    $("btn-start").addEventListener("click", async () => {
+      const ids = Object.keys(allPlayers);
+      if (ids.length < 3) { alert("Need at least 3 players"); return; }
+      const shuffled = [...ids].sort(() => Math.random() - 0.5);
+      const roleMap = {};
+      shuffled.forEach((id, i) =>
+        roleMap[id] = i === 0 ? "impostor" : i === 1 ? "jester" : "crew"
+      );
+      await assignRoles(matchId, roleMap);
+      await setPhase(matchId, "playing");
+      localPlayer.role = roleMap[localPlayer.id];
+      launchGame();
+    });
+
+    // ═══════════════════════════════════════════════
+    //  LAUNCH GAME
+    // ═══════════════════════════════════════════════
+    function launchGame() {
+      show("screen-game");
+      const canvas = $("game-canvas");
+      const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+      setTimeout(resize, 50);
+      window.addEventListener("resize", resize);
+
+      world = new World(canvas, matchId, localPlayer);
+      world.onEnterRoom = room => {
+        const lbl = $("room-label");
+        $("hud-room").textContent = room?.label ?? "—";
+        if (room) {
+          lbl.textContent = room.label.toUpperCase();
+          lbl.classList.add("visible");
+          setTimeout(() => lbl.classList.remove("visible"), 2000);
+        }
+        $("btn-task").classList.toggle("hidden", !room?.taskZone);
+        $("btn-meeting").classList.toggle("hidden", !room?.meetingZone);
+      };
+      setTimeout(() => world.start(), 60);
+
+      // HUD role pill
+      const role = localPlayer.role ?? "crew";
+      const pill = $("hud-role");
+      pill.textContent = role.toUpperCase();
+      pill.className = `hud-pill hud-role-${role}`;
+
+      if (role === "impostor") {
+        $("btn-kill").classList.remove("hidden");
+        $("hud-kill-status").textContent = "🔪 NEED SQ";
+      }
+      if (role === "jester") $("btn-swap").classList.remove("hidden");
+
+      // Phase changes
+      onPhaseChange(matchId, phase => {
+        if (phase === "meeting") openMeeting();
+        else closeMeeting();
+        checkWinConditions(allPlayers);
+      });
+
+      // Player updates
+      onPlayersChange(matchId, snap => {
+        allPlayers = snap ?? {};
+        const me = allPlayers[localPlayer.id];
+        if (me && role === "impostor") {
+          killReady = me.killReady ?? false;
+          $("hud-kill-status").textContent = killReady ? "🔪 KILL READY" : "🔪 NEED SQ";
+          $("hud-kill-status").style.color = killReady ? "var(--danger)" : "var(--muted)";
+        }
+        if (me) {
+          if (me.shield) {
+            $("hud-shield").textContent = "🛡 SHIELDED";
+            $("hud-shield").style.color = "var(--accent)";
+            $("hud-shield").style.borderColor = "var(--accent)";
+          } else {
+            $("hud-shield").textContent = "NO SHIELD";
+            $("hud-shield").style.color = "var(--muted)";
+            $("hud-shield").style.borderColor = "var(--muted)";
+          }
+        }
+        checkWinConditions(allPlayers);
+      });
+
+      // Meeting changes — also drives auto-skip when all voted
+      onMeetingChange(matchId, mtg => {
+        window._latestMeeting = mtg;
+        if (!mtg) return;
+
+        // Auto-skip: if voting phase and everyone has voted → tally immediately
+        if (meetingPhase === "voting" && !tallyingVotes) {
+          const voteCount = Object.keys(mtg.votes ?? {}).length;
+          const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
+          if (aliveCount > 0 && voteCount >= aliveCount) {
+            tallyingVotes = true;
+            clearInterval(meetingTimerInterval);
+            flashHud("All votes in — tallying!", "info");
+            setTimeout(() => tallyVotes(), 800);
+          }
+        }
+
+        if (settings.useChat === "chat") syncChat(mtg);
+      });
+    }
+
+    // ═══════════════════════════════════════════════
+    //  KILL
+    // ═══════════════════════════════════════════════
+    $("btn-kill").addEventListener("click", async () => {
+      if (localPlayer.role !== "impostor") return;
+      if (!killReady) { flashHud("Complete an SQ first to preload a kill!"); return; }
+      const target = world?.findNearest(50);
+      if (!target) { flashHud("No one in range!"); return; }
+
+      if (target.shield) {
+        const blocked = Math.random() < target.shield.chance;
+        if (blocked) {
+          flashHud("Kill blocked by shield!", "warn");
+          killReady = false;
+          await Impostor.resetKill(matchId, localPlayer.id);
+          $("hud-kill-status").textContent = "🔪 NEED SQ";
+          $("hud-kill-status").style.color = "var(--muted)";
+          return;
+        }
+      }
+
+      await applyKill(matchId, target.id);
+      killReady = false;
+      await setKillReady(matchId, localPlayer.id, false);
+      const f = $("kill-flash");
+      f.classList.add("flash");
+      setTimeout(() => f.classList.remove("flash"), 300);
+      $("hud-kill-status").textContent = "🔪 NEED SQ";
+      $("hud-kill-status").style.color = "var(--muted)";
+    });
+
+    // ═══════════════════════════════════════════════
+    //  MEETING
+    // ═══════════════════════════════════════════════
+    $("btn-report").addEventListener("click", async () => {
+      if (!localPlayer) return;
+      await callMeeting(matchId, localPlayer.id, "corpse");
+      await setPhase(matchId, "meeting");
+    });
+
+    $("btn-meeting").addEventListener("click", async () => {
+      const me = allPlayers[localPlayer.id];
+      if ((me?.meetingCallsLeft ?? 1) <= 0) { flashHud("No meeting calls left!"); return; }
+      await callMeeting(matchId, localPlayer.id, "zone");
+      await setPhase(matchId, "meeting");
+    });
+
+    function openMeeting() {
+      hasVoted = false;
+      meetingPhase = "discussion";
+      tallyingVotes = false;
+
+      $("meeting-overlay").classList.add("active");
+      $("vote-result").style.display = "none";
+      $("vote-result").textContent = "";
+      $("vote-phase-banner").textContent = "🔒 DISCUSSION IN PROGRESS — voting opens when timer ends";
+      $("vote-phase-banner").classList.remove("voting");
+      $("timer-fill").style.background = "var(--accent)";
+
+      const useChat = settings.useChat === "chat";
+      $("chat-wrap").style.display = useChat ? "flex" : "none";
+
+      buildVoteList();   // buttons start disabled
+
+      startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => startVotingPhase());
+    }
+
+    function buildVoteList() {
+      const alive = Object.entries(allPlayers).filter(([, p]) => p.alive);
+      $("vote-list").innerHTML = alive.map(([id, p]) => `
+    <button class="vote-btn" data-id="${id}" disabled>
       <span class="vote-dot" style="background:${p.color}"></span>
       ${p.name}${id === localPlayer.id ? " (you)" : ""}
     </button>
   `).join("") + `
-    <button class="vote-btn" data-id="skip" style="color:var(--muted)">
+    <button class="vote-btn" data-id="skip" disabled style="color:var(--muted)">
       ⊘ Skip vote
     </button>
   `;
-  $("vote-list").querySelectorAll(".vote-btn[data-id]").forEach(btn => {
-    if (btn.disabled) return;
-    btn.addEventListener("click", async () => {
-      if (hasVoted) return;
-      hasVoted = true;
-      $("vote-list").querySelectorAll(".vote-btn").forEach(b => b.disabled = true);
-      btn.style.borderColor = "var(--accent)";
-      await castVote(matchId, localPlayer.id, btn.dataset.id);
-    });
-  });
-}
+      // Attach click handlers — will only fire if button is enabled (during voting)
+      $("vote-list").querySelectorAll(".vote-btn[data-id]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (hasVoted || btn.disabled || meetingPhase !== "voting") return;
+          hasVoted = true;
+          $("vote-list").querySelectorAll(".vote-btn").forEach(b => {
+            b.disabled = true; b.style.opacity = "0.4";
+          });
+          btn.style.opacity = "1";
+          btn.style.borderColor = "var(--accent)";
+          await castVote(matchId, localPlayer.id, btn.dataset.id);
+        });
+      });
+    }
 
-function startVotingPhase() {
-  $("timer-label").textContent = "VOTING";
-  $("timer-fill").style.background = "var(--danger)";
-  startMeetingTimer(
-    settings.votingTime ?? 60,
-    "VOTING",
-    () => tallyVotes()
-  );
-}
+    function startVotingPhase() {
+      meetingPhase = "voting";
+      $("vote-phase-banner").textContent = "🗳 VOTING OPEN — select a player to eject";
+      $("vote-phase-banner").classList.add("voting");
+      $("timer-fill").style.background = "var(--danger)";
 
-async function tallyVotes() {
-  // Allow last-second votes to arrive
-  await new Promise(r => setTimeout(r, 1500));
+      // Enable vote buttons (except own entry)
+      $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
+        if (btn.dataset.id !== localPlayer.id) btn.disabled = false;
+      });
 
-  const votes   = window._latestMeeting?.votes ?? {};
-  const tally   = {};
-  for (const v of Object.values(votes)) tally[v] = (tally[v] ?? 0) + 1;
+      startMeetingTimer(settings.votingTime ?? 60, "VOTING", () => {
+        if (!tallyingVotes) { tallyingVotes = true; tallyVotes(); }
+      });
+    }
 
-  const sorted   = Object.entries(tally).sort((a,b) => b[1] - a[1]);
-  const topId    = sorted[0]?.[0];
-  const topVotes = sorted[0]?.[1] ?? 0;
-  const tied     = sorted.length > 1 && sorted[1][1] === topVotes;
+    async function tallyVotes() {
+      await new Promise(r => setTimeout(r, 1200));
 
-  const result = $("vote-result");
-  result.style.display = "block";
+      const votes = window._latestMeeting?.votes ?? {};
+      const tally = {};
+      for (const v of Object.values(votes)) tally[v] = (tally[v] ?? 0) + 1;
 
-  if (!topId || topId === "skip" || tied) {
-    result.textContent = tied
-      ? "🤝 Tied vote — no one ejected."
-      : "⊘ No votes — no one ejected.";
-    result.style.color = "var(--muted)";
-  } else {
-    const ejected = allPlayers[topId];
-    result.innerHTML = `
+      const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+      const topId = sorted[0]?.[0];
+      const topVotes = sorted[0]?.[1] ?? 0;
+      const tied = sorted.length > 1 && sorted[1][1] === topVotes;
+
+      const result = $("vote-result");
+      result.style.display = "block";
+
+      if (!topId || topId === "skip" || tied) {
+        result.textContent = tied ? "🤝 Tied vote — no one ejected." : "⊘ No votes — no one ejected.";
+        result.style.color = "var(--muted)";
+      } else {
+        const ejected = allPlayers[topId];
+        result.innerHTML = `
       <strong style="color:var(--danger)">${ejected?.name ?? "?"}</strong>
-      was ejected with ${topVotes} vote${topVotes>1?"s":""}.<br>
-      <span style="color:var(--muted);font-size:.8rem">They were… 
-        <strong>${ejected?.role ?? "?"}</strong></span>
+      was ejected (${topVotes} vote${topVotes > 1 ? "s" : ""}).<br>
+      <span style="color:var(--muted);font-size:.8rem">They were… <strong>${ejected?.role ?? "?"}</strong></span>
     `;
-    await applyKill(matchId, topId);
-    checkWinConditions({ ...allPlayers, [topId]: { ...allPlayers[topId], alive: false }});
-  }
+        await applyKill(matchId, topId);
+        checkWinConditions({ ...allPlayers, [topId]: { ...allPlayers[topId], alive: false } });
+      }
 
-  // Resume game after 4 seconds
-  setTimeout(async () => {
-    await setPhase(matchId, "playing");
-  }, 4000);
-}
-
-function closeMeeting() {
-  $("meeting-overlay").classList.remove("active");
-  clearInterval(meetingTimerInterval);
-  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
-}
-
-function startMeetingTimer(secs, label, onDone) {
-  clearInterval(meetingTimerInterval);
-  let remaining = secs;
-  $("timer-label").textContent = label;
-  $("timer-fill").style.width  = "100%";
-  meetingTimerInterval = setInterval(() => {
-    remaining--;
-    $("timer-fill").style.width = `${(remaining/secs)*100}%`;
-    $("timer-label").textContent = `${label} — ${remaining}s`;
-    if (remaining <= 0) { clearInterval(meetingTimerInterval); onDone(); }
-  }, 1000);
-}
-
-// ── Chat ─────────────────────────────────────────────────────
-$("btn-chat-send")?.addEventListener("click", sendChat);
-$("chat-input")?.addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
-
-async function sendChat() {
-  const msg = $("chat-input")?.value.trim();
-  if (!msg || !matchId) return;
-  $("chat-input").value = "";
-  // BUG FIX: actually push message to Firebase using the realtime helper
-  await sendChatMessage(
-    matchId,
-    localPlayer.id,
-    localPlayer.name,
-    localPlayer.color,
-    msg
-  );
-}
-
-// BUG FIX: syncChat now subscribes to Firebase chat using onChatMessage
-// and renders live messages — previously it was a no-op stub.
-function syncChat(_mtg) {
-  // Unsubscribe any previous listener
-  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
-
-  chatUnsubscribe = onChatMessage(matchId, msgs => {
-    const box = $("chat-box");
-    if (!box) return;
-    box.innerHTML = msgs.map(m =>
-      `<div style="margin-bottom:.2rem">
-         <strong style="color:${m.color}">${_escHtml(m.playerName)}:</strong>
-         ${_escHtml(m.text)}
-       </div>`
-    ).join("");
-    box.scrollTop = box.scrollHeight;
-  });
-}
-
-function _escHtml(str) {
-  return String(str)
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
-// ── Swap (jester) ────────────────────────────────────────────
-$("btn-swap").addEventListener("click", () => {
-  const impPos = world?.getImpostorPosition();
-  if (!impPos) { flashHud("Can't locate impostor"); return; }
-  const confirmed = confirm(`Swap to impostor's position? Costs ${GAME_CONFIG.jesterSwapCostSq} SQs.`);
-  if (confirmed) {
-    const imp = Object.values(allPlayers).find(p => p.role === "impostor");
-    if (imp) Jester.triggerSwap(matchId, localPlayer.id, imp.id);
-  }
-});
-
-// ── Tasks ────────────────────────────────────────────────────
-$("btn-task").addEventListener("click", () => {
-  const room = world?.getLocalRoom();
-  if (!room?.taskZone) return;
-  openTask(room);
-});
-$("btn-close-task").addEventListener("click", () => $("task-modal").classList.remove("open"));
-
-function openTask(room) {
-  $("task-modal").classList.add("open");
-  $("task-content").innerHTML = "";
-  const type = room.id === "electrical" ? "connector"
-             : room.id === "weapons"    ? "ninja"
-             : "swipe";
-
-  const onDone = async (score, total, pass) => {
-    $("task-modal").classList.remove("open");
-    if (pass) {
-      await Crew.onTaskComplete(matchId, localPlayer.id);
-      // Shield HUD is updated by the "game:shieldGranted" event from roles.js
+      setTimeout(async () => { await setPhase(matchId, "playing"); }, 4000);
     }
-    // Impostor: completing a task also preloads a kill
-    if (localPlayer.role === "impostor" && pass) {
-      await Impostor.onSqCorrect(matchId, localPlayer.id);
+
+    function closeMeeting() {
+      $("meeting-overlay").classList.remove("active");
+      clearInterval(meetingTimerInterval);
+      if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
     }
-  };
 
-  if (type === "swipe") {
-    const t = new SwipeTask("task-content");
-    t.onComplete = (s,total) => onDone(s,total, s >= Math.ceil(total*0.6));
-    t.init();
-  } else if (type === "connector") {
-    const t = new ConnectorTask("task-content");
-    t.onComplete = (s,total) => onDone(s,total, s >= 1);
-    t.init();
-  } else {
-    const cvs = document.createElement("canvas");
-    cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
-    $("task-content").appendChild(cvs);
-    const t = new FruitNinjaTask("ninja-canvas");
-    t.onComplete = (s,total) => { onDone(s,total, s >= Math.ceil(total*0.5)); t.destroy(); };
-    t.init();
-  }
-}
+    function startMeetingTimer(secs, label, onDone) {
+      clearInterval(meetingTimerInterval);
+      let remaining = secs;
+      $("timer-label").textContent = `${label} — ${remaining}s`;
+      $("timer-fill").style.width = "100%";
+      meetingTimerInterval = setInterval(() => {
+        remaining--;
+        $("timer-fill").style.width = `${(remaining / secs) * 100}%`;
+        $("timer-label").textContent = `${label} — ${remaining}s`;
+        if (remaining <= 0) { clearInterval(meetingTimerInterval); onDone(); }
+      }, 1000);
+    }
 
-// ── Win conditions ────────────────────────────────────────────
-let gameOver = false;
-function checkWinConditions(players) {
-  if (gameOver) return;
-  const list       = Object.values(players);
-  const alive      = list.filter(p => p.alive);
-  const imps       = alive.filter(p => p.role === "impostor");
-  const crew       = alive.filter(p => p.role === "crew");
-  const jesterDead = list.find(p => p.role === "jester" && !p.alive);
-  if (imps.length === 0 && jesterDead) { gameOver = true; endGame("jester"); return; }
-  if (imps.length === 0)               { gameOver = true; endGame("crew");   return; }
-  if (imps.length >= crew.length)      { gameOver = true; endGame("impostor"); }
-}
+    // ── Chat ─────────────────────────────────────────────────────
+    $("btn-chat-send").addEventListener("click", sendChat);
+    $("chat-input").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
 
-function endGame(winner) {
-  world?.stop();
-  clearInterval(meetingTimerInterval);
-  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
-  const data = {
-    crew:     ["CREW WINS",     "The impostor was ejected. Well played."],
-    impostor: ["IMPOSTOR WINS", "Sabotage complete. No survivors."],
-    jester:   ["JESTER WINS",   "Voted out on purpose."],
-  };
-  $("end-title").textContent = data[winner][0];
-  $("end-title").style.color = {crew:"var(--accent)",impostor:"var(--danger)",jester:"var(--warn)"}[winner];
-  $("end-body").textContent  = data[winner][1];
-  show("screen-end");
-}
+    async function sendChat() {
+      const msg = $("chat-input").value.trim();
+      if (!msg || !matchId) return;
+      $("chat-input").value = "";
+      await sendChatMessage(matchId, localPlayer.id, localPlayer.name, localPlayer.color, msg);
+    }
 
-// ── HUD flash helper ──────────────────────────────────────────
-function flashHud(msg, type = "info") {
-  const lbl = $("room-label");
-  lbl.textContent = msg;
-  lbl.style.borderColor = type === "warn" ? "var(--warn)" : "var(--muted)";
-  lbl.style.color       = type === "warn" ? "var(--warn)" : "var(--muted)";
-  lbl.classList.add("visible");
-  setTimeout(() => {
-    lbl.classList.remove("visible");
-    lbl.style.borderColor = "";
-    lbl.style.color       = "";
-  }, 2500);
-}
-</script>
+    function syncChat(_mtg) {
+      if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+      chatUnsubscribe = onChatMessage(matchId, msgs => {
+        const box = $("chat-box");
+        if (!box) return;
+        box.innerHTML = msgs.map(m =>
+          `<div style="margin-bottom:.2rem"><strong style="color:${m.color}">${esc(m.playerName)}:</strong> ${esc(m.text)}</div>`
+        ).join("");
+        box.scrollTop = box.scrollHeight;
+      });
+    }
+
+    // ── Swap (jester) ────────────────────────────────────────────
+    $("btn-swap").addEventListener("click", () => {
+      const impPos = world?.getImpostorPosition();
+      if (!impPos) { flashHud("Can't locate impostor"); return; }
+      if (confirm(`Swap to impostor's position? Costs ${GAME_CONFIG.jesterSwapCostSq} SQs.`)) {
+        const imp = Object.values(allPlayers).find(p => p.role === "impostor");
+        if (imp) Jester.triggerSwap(matchId, localPlayer.id, imp.id);
+      }
+    });
+
+    // ── Tasks ────────────────────────────────────────────────────
+    $("btn-task").addEventListener("click", () => {
+      const room = world?.getLocalRoom();
+      if (!room?.taskZone) return;
+      openTask(room);
+    });
+    $("btn-close-task").addEventListener("click", () => $("task-modal").classList.remove("open"));
+
+    function openTask(room) {
+      $("task-modal").classList.add("open");
+      $("task-content").innerHTML = "";
+      const cat = selectedCategory;
+      const type = room.id === "electrical" ? "connector"
+        : room.id === "weapons" ? "ninja"
+          : "swipe";
+
+      const onDone = async (_score, _total, pass) => {
+        $("task-modal").classList.remove("open");
+        if (pass) await Crew.onTaskComplete(matchId, localPlayer.id);
+        if (localPlayer.role === "impostor" && pass)
+          await Impostor.onSqCorrect(matchId, localPlayer.id);
+      };
+
+      if (type === "swipe") {
+        const t = new SwipeTask("task-content", cat);
+        t.onComplete = (s, n) => onDone(s, n, s >= Math.ceil(n * 0.6));
+        t.init();
+      } else if (type === "connector") {
+        const t = new ConnectorTask("task-content", cat);
+        t.onComplete = (s, n) => onDone(s, n, s >= 1);
+        t.init();
+      } else {
+        const cvs = document.createElement("canvas");
+        cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
+        $("task-content").appendChild(cvs);
+        const t = new FruitNinjaTask("ninja-canvas", cat);
+        t.onComplete = (s, n) => { onDone(s, n, s >= Math.ceil(n * 0.5)); t.destroy(); };
+        t.init();
+      }
+    }
+
+    // ── Win conditions ────────────────────────────────────────────
+    let gameOver = false;
+    function checkWinConditions(players) {
+      if (gameOver) return;
+      const list = Object.values(players);
+      const alive = list.filter(p => p.alive);
+      const imps = alive.filter(p => p.role === "impostor");
+      const crew = alive.filter(p => p.role === "crew");
+      const jesterDead = list.find(p => p.role === "jester" && !p.alive);
+      if (imps.length === 0 && jesterDead) { gameOver = true; endGame("jester"); return; }
+      if (imps.length === 0) { gameOver = true; endGame("crew"); return; }
+      if (imps.length >= crew.length) { gameOver = true; endGame("impostor"); }
+    }
+
+    function endGame(winner) {
+      world?.stop();
+      clearInterval(meetingTimerInterval);
+      if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+      const data = {
+        crew: ["CREW WINS", "The impostor was ejected. Well played."],
+        impostor: ["IMPOSTOR WINS", "Sabotage complete. No survivors."],
+        jester: ["JESTER WINS", "Voted out on purpose. Clever."],
+      };
+      $("end-title").textContent = data[winner][0];
+      $("end-title").style.color = { crew: "var(--accent)", impostor: "var(--danger)", jester: "var(--warn)" }[winner];
+      $("end-body").textContent = data[winner][1];
+      show("screen-end");
+    }
+
+    // ── HUD flash ────────────────────────────────────────────────
+    function flashHud(msg, type = "info") {
+      const lbl = $("room-label");
+      lbl.textContent = msg;
+      lbl.style.borderColor = type === "warn" ? "var(--warn)" : "var(--muted)";
+      lbl.style.color = type === "warn" ? "var(--warn)" : "var(--muted)";
+      lbl.classList.add("visible");
+      setTimeout(() => {
+        lbl.classList.remove("visible");
+        lbl.style.borderColor = ""; lbl.style.color = "";
+      }, 2500);
+    }
+
+    function esc(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+
+    // ═══════════════════════════════════════════════
+    //  ADD QUESTIONS SCREEN
+    // ═══════════════════════════════════════════════
+    let addqType = "sq";
+    let addqRowCount = 0;
+
+    $("addq-type-sq").addEventListener("click", () => setAddqType("sq"));
+    $("addq-type-lq").addEventListener("click", () => setAddqType("lq"));
+
+    function setAddqType(type) {
+      addqType = type;
+      $("addq-type-sq").classList.toggle("active", type === "sq");
+      $("addq-type-sq").classList.toggle("sq", type === "sq");
+      $("addq-type-lq").classList.toggle("active", type === "lq");
+      $("addq-type-lq").classList.toggle("lq", type === "lq");
+    }
+
+    async function loadAddqCategories() {
+      try {
+        const cats = await fetchCategories();
+        const sel = $("addq-cat-select");
+        sel.innerHTML = `<option value="">— select existing —</option>` +
+          cats.map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${c.sqCount} SQ · ${c.lqCount} LQ)</option>`).join("");
+      } catch (_) { }
+    }
+
+    $("addq-cat-select").addEventListener("change", () => {
+      const v = $("addq-cat-select").value;
+      if (v) $("addq-cat-input").value = v;
+    });
+
+    function addqEnsureRow() {
+      if (!$("addq-rows").children.length) addqAddRow();
+    }
+
+    $("addq-add-row").addEventListener("click", addqAddRow);
+
+    function addqAddRow() {
+      addqRowCount++;
+      const n = addqRowCount;
+      const div = document.createElement("div");
+      div.className = "q-row";
+      div.dataset.row = n;
+      div.innerHTML = `
+    <div class="q-row-num">QUESTION ${n}</div>
+    <button class="q-row-del" title="Remove" data-del="${n}">✕</button>
+    <div class="field" style="margin-bottom:.5rem">
+      <label>Question</label>
+      <textarea class="addq-q" placeholder="e.g. What is the powerhouse of the cell?" rows="2"></textarea>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Correct Answer</label>
+      <input class="addq-a" type="text" placeholder="e.g. Mitochondria"/>
+    </div>
+  `;
+      $("addq-rows").appendChild(div);
+      div.querySelector("[data-del]").addEventListener("click", () => div.remove());
+    }
+
+    $("addq-submit").addEventListener("click", async () => {
+      const cat = $("addq-cat-input").value.trim();
+      if (!cat) { $("addq-cat-input").focus(); showAddqStatus("Please enter a category name.", "error"); return; }
+
+      const rows = [];
+      let anyBlank = false;
+      $("addq-rows").querySelectorAll(".q-row").forEach(row => {
+        const q = row.querySelector(".addq-q").value.trim();
+        const a = row.querySelector(".addq-a").value.trim();
+        if (!q || !a) { anyBlank = true; return; }
+        rows.push({ question: q, answer: a, category: cat, type: addqType });
+      });
+
+      if (anyBlank) { showAddqStatus("Some questions are missing question or answer text.", "error"); return; }
+      if (!rows.length) { showAddqStatus("Add at least one question.", "error"); return; }
+
+      $("addq-submit").disabled = true;
+      $("addq-submit").textContent = "Uploading…";
+      try {
+        await addQuestions(rows);
+        showAddqStatus(`✓ ${rows.length} question${rows.length > 1 ? "s" : ""} added to "${cat}" successfully!`, "ok");
+        $("addq-rows").innerHTML = "";
+        addqRowCount = 0;
+        addqAddRow();
+        loadAddqCategories();
+      } catch (err) {
+        showAddqStatus(`Upload failed: ${err.message}`, "error");
+      } finally {
+        $("addq-submit").disabled = false;
+        $("addq-submit").textContent = "UPLOAD TO DATABASE →";
+      }
+    });
+
+    function showAddqStatus(msg, type) {
+      const el = $("addq-status");
+      el.textContent = msg;
+      el.style.color = type === "error" ? "var(--danger)" : "var(--accent)";
+      el.style.display = "block";
+      setTimeout(() => { el.style.display = "none"; }, 5000);
+    }
+  </script>
 </body>
+
 </html>
