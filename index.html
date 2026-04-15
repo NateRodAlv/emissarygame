@@ -1747,7 +1747,7 @@
       const imps = alive.filter(p => p.role === "impostor");
       const crew = alive.filter(p => p.role === "crew");
       const jesterDead = list.find(p => p.role === "jester" && !p.alive);
-      if (imps.length === 0 && jesterDead) { gameOver = true; endGame("jester"); return; }
+      if (jesterDead) { gameOver = true; endGame("jester"); return; }
       if (imps.length === 0) { gameOver = true; endGame("crew"); return; }
       if (imps.length >= crew.length) { gameOver = true; endGame("impostor"); }
     }

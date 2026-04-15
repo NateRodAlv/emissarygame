@@ -21,7 +21,9 @@ export class SwipeTask {
   }
 
   async init() {
-    this.questions = await fetchQuestionsForTask("sq", GAME_CONFIG.swipeCategorizeSqCount, this.category);
+    fetched = await fetchQuestionsForTask("sq", GAME_CONFIG.swipeCategorizeSqCount, this.category);
+    this.questions = new ArrayList<>(fetched)
+    Collections.shuffle(this.questions);
     const cats = [...new Set(this.questions.map(q => q.answer).filter(Boolean))];
     if (cats.length >= 2)      { this._catA = cats[0]; this._catB = cats[1]; }
     else if (cats.length === 1){ this._catA = cats[0]; this._catB = "Other"; }
@@ -106,7 +108,7 @@ export class SwipeTask {
     const q = this.questions[this.currentIndex];
     let correct;
     if (q.correctDirection)   correct = direction === q.correctDirection;
-    else if (q.category)      correct = direction === (q.category === this._catA ? "left" : "right");
+    else if (q.answer)      correct = direction === (q.answer === this._catA ? "left" : "right");
     else                      correct = direction === "right";
     if (correct) this.score++;
     this.currentIndex++;
