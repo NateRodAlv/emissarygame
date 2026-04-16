@@ -6,6 +6,11 @@ import { GAME_CONFIG } from "./config.js";
 
 // ─────────────────────────────────────────────────────────────
 // TASK 1: Swipe to Categorize (SQ)
+//
+// Each card shows a QUESTION. The correct answer appears on one
+// randomly chosen side; a decoy (another question's answer)
+// appears on the other. Player swipes toward the correct answer.
+// This works regardless of how many categories are in the DB.
 // ─────────────────────────────────────────────────────────────
 export class SwipeTask {
   constructor(containerId, category = null) {
@@ -15,51 +20,41 @@ export class SwipeTask {
     this.currentIndex = 0;
     this.score        = 0;
     this.onComplete   = null;
-    this._catA        = "False";
-    this._catB        = "True";
+    this._correctDir  = null; // "left" | "right" per card
     this._animating   = false;
   }
 
-async init() {
-  const fetched = await fetchQuestionsForTask(
-    "sq",
-    GAME_CONFIG.swipeCategorizeSqCount,
-    this.category
-  );
-
-  this.questions = [...fetched];
-
-  // 🔀 Fisher-Yates shuffle (better randomness)
-  for (let i = this.questions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [this.questions[i], this.questions[j]] = [this.questions[j], this.questions[i]];
+  async init() {
+    this.questions = await fetchQuestionsForTask("sq", GAME_CONFIG.swipeCategorizeSqCount, this.category);
+    if (!this.questions.length) {
+      this.container.innerHTML = `<p style="color:var(--muted);text-align:center;padding:1rem">No questions available for this category.</p>`;
+      return;
+    }
+    this._renderCard();
   }
-
-  // ✂️ Keep only first 3 questions
-  this.questions = this.questions.slice(0, 3);
-
-  // categories logic stays the same
-  const cats = [...new Set(this.questions.map(q => q.answer).filter(Boolean))];
-
-  if (cats.length >= 2) {
-    this._catA = cats[0];
-    this._catB = cats[1];
-  } else if (cats.length === 1) {
-    this._catA = cats[0];
-    this._catB = "Other";
-  }
-
-  this._renderCard();
-}
-
 
   _renderCard() {
     if (this.currentIndex >= this.questions.length) {
       this.onComplete?.(this.score, this.questions.length);
       return;
     }
-    const q   = this.questions[this.currentIndex];
+
+    const q = this.questions[this.currentIndex];
+
+    // Pick a decoy from another question in the set
+    const others = this.questions.filter((_, i) => i !== this.currentIndex);
+    const decoy  = others.length
+      ? others[Math.floor(Math.random() * others.length)].answer
+      : "None of the above";
+
+    // Randomly assign which side is the correct answer
+    const correctOnRight  = Math.random() < 0.5;
+    this._correctDir      = correctOnRight ? "right" : "left";
+    const leftLabel       = correctOnRight ? decoy    : q.answer;
+    const rightLabel      = correctOnRight ? q.answer : decoy;
+
     const pct = Math.round((this.currentIndex / this.questions.length) * 100);
+
     this.container.innerHTML = `
       <div style="margin-bottom:.6rem">
         <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
@@ -69,19 +64,32 @@ async init() {
           ${this.currentIndex + 1} / ${this.questions.length} &nbsp;✓ ${this.score}
         </p>
       </div>
+
+      <p style="font-size:.65rem;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase;
+                text-align:center;margin-bottom:.4rem">SWIPE TOWARD THE CORRECT ANSWER</p>
+
       <div style="position:relative;height:148px;overflow:hidden;margin-bottom:.7rem">
         <div id="swipe-card" tabindex="0" style="
           position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
           background:var(--bg);border:2px solid var(--border);border-radius:14px;
-          padding:1rem 1.2rem;text-align:center;font-size:.9rem;line-height:1.5;
+          padding:1rem 1.2rem;text-align:center;font-size:.88rem;line-height:1.5;
           cursor:grab;user-select:none;touch-action:none;will-change:transform;outline:none
         ">${q.question}</div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:.78rem;font-weight:700;padding:0 .3rem;margin-bottom:.35rem">
-        <span style="color:var(--danger)">⬅ ${this._catA}</span>
-        <span style="color:var(--accent)">${this._catB} ➡</span>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.35rem">
+        <div style="background:rgba(255,74,107,0.08);border:1px solid rgba(255,74,107,0.3);
+                    border-radius:8px;padding:.5rem .7rem;font-size:.72rem;color:var(--danger);text-align:center">
+          ← ${_trunc(leftLabel, 22)}
+        </div>
+        <div style="background:rgba(74,255,164,0.08);border:1px solid rgba(74,255,164,0.3);
+                    border-radius:8px;padding:.5rem .7rem;font-size:.72rem;color:var(--accent);text-align:center">
+          ${_trunc(rightLabel, 22)} →
+        </div>
       </div>
-      <p style="text-align:center;font-size:.67rem;color:var(--muted)">Swipe or drag the card • Arrow keys also work</p>
+      <p style="text-align:center;font-size:.63rem;color:var(--muted)">
+        Drag the card • Arrow keys also work
+      </p>
     `;
     this._attachCardListeners();
   }
@@ -90,10 +98,11 @@ async init() {
     const card = this.container.querySelector("#swipe-card");
     if (!card) return;
     let startX = 0, dragging = false;
+
     const begin = x => { startX = x; dragging = true; card.style.transition = "none"; };
     const move  = x => {
       if (!dragging || this._animating) return;
-      const dx = x - startX, rot = dx * 0.07;
+      const dx  = x - startX, rot = dx * 0.07;
       card.style.transform   = `translateX(${dx}px) rotate(${rot}deg)`;
       card.style.borderColor = dx < -25 ? "var(--danger)" : dx > 25 ? "var(--accent)" : "var(--border)";
     };
@@ -101,8 +110,13 @@ async init() {
       if (!dragging) return; dragging = false;
       const dx = x - startX;
       if (Math.abs(dx) > 65) this._flyOut(dx < 0 ? "left" : "right");
-      else { card.style.transition = "transform .25s, border-color .2s"; card.style.transform = ""; card.style.borderColor = ""; }
+      else {
+        card.style.transition  = "transform .25s, border-color .2s";
+        card.style.transform   = "";
+        card.style.borderColor = "";
+      }
     };
+
     card.addEventListener("mousedown",   e => begin(e.clientX));
     window.addEventListener("mousemove", e => { if (dragging) move(e.clientX); });
     window.addEventListener("mouseup",   e => { if (dragging) end(e.clientX); });
@@ -113,6 +127,7 @@ async init() {
       if (e.key === "ArrowLeft")  { e.preventDefault(); this._flyOut("left");  }
       if (e.key === "ArrowRight") { e.preventDefault(); this._flyOut("right"); }
     });
+    setTimeout(() => card.focus(), 30);
   }
 
   _flyOut(direction) {
@@ -120,7 +135,14 @@ async init() {
     this._animating = true;
     const card = this.container.querySelector("#swipe-card");
     if (!card) return;
-    const tx = direction === "left" ? -520 : 520, rot = direction === "left" ? -22 : 22;
+    const tx  = direction === "left" ? -520 : 520;
+    const rot = direction === "left" ? -22  : 22;
+
+    // Flash the chosen side
+    const cols = this.container.querySelectorAll("[style*='border-radius:8px']");
+    const chosen = direction === "left" ? cols[0] : cols[1];
+    if (chosen) chosen.style.borderWidth = "2px";
+
     card.style.transition = "transform .28s ease-in, opacity .28s";
     card.style.transform  = `translateX(${tx}px) rotate(${rot}deg)`;
     card.style.opacity    = "0";
@@ -128,15 +150,14 @@ async init() {
   }
 
   _handleAnswer(direction) {
-    const q = this.questions[this.currentIndex];
-    let correct;
-    if (q.correctDirection)   correct = direction === q.correctDirection;
-    else if (q.answer)      correct = direction === (q.answer === this._catA ? "left" : "right");
-    else                      correct = direction === "right";
-    if (correct) this.score++;
+    if (direction === this._correctDir) this.score++;
     this.currentIndex++;
     setTimeout(() => this._renderCard(), 40);
   }
+}
+
+function _trunc(str, n) {
+  return str && str.length > n ? str.slice(0, n) + "…" : (str ?? "");
 }
 
 
@@ -267,6 +288,11 @@ export class FruitNinjaTask {
 
   async init() {
     this.questions = await fetchQuestionsForTask("sq", GAME_CONFIG.fruitNinjaSqCount, this.category);
+    if (!this.questions.length) {
+      this._done = true;
+      this.onComplete?.(0, 0);
+      return;
+    }
     this._spawnWave(0);
     this._attachSliceListeners();
     this._loop();
@@ -320,8 +346,8 @@ export class FruitNinjaTask {
     if (item.sliced) {
       item.alpha = Math.max(0, item.alpha - 0.055); if (item.alpha <= 0) return;
       ctx.globalAlpha = item.alpha;
-      const c = item.isCorrect ? "#3f899b" : "#0f318b";
-      ctx.fillStyle = item.isCorrect ? "rgba(74,255,164,0.35)" : "rgba(5, 35, 117, 0.28)";
+      const c = item.isCorrect ? "#4affa4" : "#ff4a6b";
+      ctx.fillStyle = item.isCorrect ? "rgba(74,255,164,0.35)" : "rgba(255,74,107,0.28)";
       ctx.beginPath(); ctx.ellipse(item.x - 10, item.y - 5, item.r * 0.7, item.r * 0.35, -0.35, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(item.x + 10, item.y + 5, item.r * 0.7, item.r * 0.35,  0.35, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = c; ctx.font = "bold 16px monospace"; ctx.textAlign = "center";
