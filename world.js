@@ -56,12 +56,19 @@ export const MAP = {
 // ── Collision ─────────────────────────────────────────────────
 const WALKABLE = [...MAP.rooms, ...MAP.corridors];
 
-function inRect(x, y, rect) {
-  return x >= rect.x + R && x <= rect.x + rect.w - R &&
-         y >= rect.y + R && y <= rect.y + rect.h - R;
+function inRect(x, y, rect, pad = R) {
+  return x >= rect.x + pad && x <= rect.x + rect.w - pad &&
+         y >= rect.y + pad && y <= rect.y + rect.h - pad;
 }
-function canMoveTo(x, y) { return WALKABLE.some(r => inRect(x, y, r)); }
-function currentRoom(x, y) { return MAP.rooms.find(r => inRect(x, y, r)) ?? null; }
+// Rooms use full R padding so the player can't hug walls.
+// Corridors use zero padding — they're already tight; shrinking them further
+// makes many of them impassable.
+function canMoveTo(x, y) {
+  if (MAP.rooms.some(r => inRect(x, y, r, R))) return true;
+  if (MAP.corridors.some(c => inRect(x, y, c, 0))) return true;
+  return false;
+}
+function currentRoom(x, y) { return MAP.rooms.find(r => inRect(x, y, r, R)) ?? null; }
 
 // ── World ─────────────────────────────────────────────────────
 export class World {

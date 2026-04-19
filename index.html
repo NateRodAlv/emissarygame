@@ -80,6 +80,12 @@
     .type-btn.active.sq{border-color:var(--blue);color:var(--blue);background:rgba(74,158,255,0.08)}
     .type-btn.active.lq{border-color:var(--warn);color:var(--warn);background:rgba(255,201,74,0.08)}
 
+    /* Color picker */
+    .color-picker{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.35rem}
+    .color-swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .12s,border-color .12s;flex-shrink:0}
+    .color-swatch:hover{transform:scale(1.18)}
+    .color-swatch.selected{border-color:#fff;transform:scale(1.22)}
+
     /* Game */
     #screen-game{flex-direction:column;padding:0;position:relative}
     #hud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;background:rgba(7,8,15,0.88);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);z-index:20;flex-wrap:wrap}
@@ -155,6 +161,10 @@
     <span class="back-link" id="play-back">◀ BACK</span>
     <h1>JOIN GAME</h1><p class="sub">Enter the match code your host shared</p>
     <div class="field"><label>Your callsign</label><input id="play-name" type="text" placeholder="e.g. Agent Zero" maxlength="16" autocomplete="off"/></div>
+    <div class="field">
+      <label>Your colour</label>
+      <div class="color-picker" id="play-color-picker"></div>
+    </div>
     <div class="field"><label>Match code</label><input id="play-code" type="text" placeholder="e.g. ABC12" maxlength="8" autocomplete="off" style="text-transform:uppercase;letter-spacing:.12em"/></div>
     <button class="btn" id="btn-join-play">CONNECT →</button>
   </div>
@@ -166,6 +176,10 @@
     <span class="back-link" id="host-back">◀ BACK</span>
     <h1>HOST GAME</h1><p class="sub">Configure your match</p>
     <div class="field"><label>Your callsign</label><input id="host-name" type="text" placeholder="e.g. Commander" maxlength="16" autocomplete="off"/></div>
+    <div class="field">
+      <label>Your colour</label>
+      <div class="color-picker" id="host-color-picker"></div>
+    </div>
     <div class="divider"></div>
     <p class="section-label">📚 Question Set</p>
     <div class="qset-grid" id="qset-grid"><div style="color:var(--muted);font-size:.8rem;text-align:center;padding:.8rem">Loading…</div></div>
@@ -191,7 +205,7 @@
     <div style="margin-bottom:.6rem"><p style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">Or pick existing</p><select id="addq-cat-select" style="margin-bottom:0"><option value="">— select existing —</option></select></div>
     <div class="divider"></div>
     <p class="section-label">❓ Questions</p>
-    <div class="type-toggle"><button class="type-btn active sq" id="addq-type-sq">⚡ Short (SQ)<br><span style="font-size:.6rem;opacity:.7">Quick recall</span></button><button class="type-btn lq" id="addq-type-lq">📖 Long (LQ)<br><span style="font-size:.6rem;opacity:.7">Deep analysis</span></button></div>
+    <p style="font-size:.67rem;color:var(--muted);margin-bottom:.7rem;line-height:1.45">Each question has its own type. <strong style="color:var(--blue)">Short (SQ)</strong> = quick recall used in Swipe &amp; Fruit Ninja tasks. <strong style="color:var(--warn)">Long (LQ)</strong> = deeper analysis used in Connector tasks &amp; meetings.</p>
     <div id="addq-rows"></div>
     <button class="btn ghost" id="addq-add-row" style="margin-bottom:.8rem">+ ADD ANOTHER QUESTION</button>
     <div class="divider"></div>
@@ -286,7 +300,7 @@ import { createMatch, joinMatch,
          getMatchSettings, getPlayerData,
          sendChatMessage, onChatMessage }     from "./realtime.js";
 import { Impostor, Crew }                    from "./roles.js";
-import { World, randomColor }                from "./world.js";
+import { World }                             from "./world.js";
 import { SwipeTask, ConnectorTask,
          FruitNinjaTask }                    from "./tasks.js";
 import { fetchCategories, addQuestions,
@@ -314,6 +328,33 @@ let isAlive = true;
 let localCompletedRooms = new Set(); // task rooms this player has finished
 let tasksNeeded = 3;                 // set from settings when game starts
 let jesterSqCount = 0;               // jester's swap charge counter
+
+// ── Color pickers ─────────────────────────────────────────────
+const SWATCH_COLORS = [
+  "#ff4a6b","#4a9eff","#4affa4","#ffc94a",
+  "#c44aff","#ff8c4a","#4affed","#ff4ae8",
+  "#a0ff4a","#ffffff",
+];
+let playPickedColor = SWATCH_COLORS[0];
+let hostPickedColor = SWATCH_COLORS[1];
+
+function initColorPicker(containerId, initial, onChange) {
+  const el = $(containerId);
+  el.innerHTML = SWATCH_COLORS.map(c => `
+    <div class="color-swatch${c === initial ? ' selected' : ''}"
+         data-color="${c}" style="background:${c}"></div>
+  `).join("");
+  el.querySelectorAll(".color-swatch").forEach(sw => {
+    sw.addEventListener("click", () => {
+      el.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
+      sw.classList.add("selected");
+      onChange(sw.dataset.color);
+    });
+  });
+}
+
+initColorPicker("play-color-picker", playPickedColor, c => { playPickedColor = c; });
+initColorPicker("host-color-picker", hostPickedColor, c => { hostPickedColor = c; });
 
 // ── Touch detection ──────────────────────────────────────────
 if (window.matchMedia("(pointer:coarse)").matches)
@@ -401,7 +442,7 @@ $("btn-create-match").addEventListener("click", async () => {
   if (!name) { $("host-name").focus(); return; }
   isHost = true;
   matchId = Math.random().toString(36).slice(2,7).toUpperCase();
-  localPlayer = { id: crypto.randomUUID(), name, color: randomColor() };
+  localPlayer = { id: crypto.randomUUID(), name, color: hostPickedColor };
   settings = {
     useChat:          $("host-chat").value,
     discussionTime:   +$("host-discuss").value || 120,
@@ -421,7 +462,7 @@ $("btn-create-match").addEventListener("click", async () => {
 
 async function doJoin(name, code) {
   matchId = code;
-  localPlayer = { id: crypto.randomUUID(), name, color: randomColor() };
+  localPlayer = { id: crypto.randomUUID(), name, color: playPickedColor };
   await joinMatch(matchId, localPlayer);
   $("waiting-code").textContent = matchId;
   show("screen-waiting");
@@ -1052,14 +1093,9 @@ function esc(str) {
 // ═══════════════════════════════════════════════
 //  ADD QUESTIONS
 // ═══════════════════════════════════════════════
-let addqType = "sq", addqRowCount = 0;
-$("addq-type-sq").addEventListener("click", () => setAddqType("sq"));
-$("addq-type-lq").addEventListener("click", () => setAddqType("lq"));
-function setAddqType(type) {
-  addqType = type;
-  $("addq-type-sq").classList.toggle("active", type==="sq"); $("addq-type-sq").classList.toggle("sq", type==="sq");
-  $("addq-type-lq").classList.toggle("active", type==="lq"); $("addq-type-lq").classList.toggle("lq", type==="lq");
-}
+let addqRowCount = 0;
+// (no global addqType — each row now has its own type selector)
+
 async function loadAddqCategories() {
   try {
     const cats = await fetchCategories();
@@ -1074,9 +1110,33 @@ function addqAddRow() {
   addqRowCount++;
   const n = addqRowCount, div = document.createElement("div");
   div.className = "q-row"; div.dataset.row = n;
-  div.innerHTML = `<div class="q-row-num">QUESTION ${n}</div><button class="q-row-del" data-del="${n}">✕</button><div class="field" style="margin-bottom:.5rem"><label>Question</label><textarea class="addq-q" placeholder="e.g. What is the powerhouse of the cell?" rows="2"></textarea></div><div class="field" style="margin-bottom:0"><label>Correct Answer</label><input class="addq-a" type="text" placeholder="e.g. Mitochondria"/></div>`;
+  div.innerHTML = `
+    <div class="q-row-num">QUESTION ${n}</div>
+    <button class="q-row-del" data-del="${n}">✕</button>
+    <div style="display:flex;gap:.35rem;margin-bottom:.6rem">
+      <button class="row-type-btn active sq" data-type="sq" style="flex:1;padding:.4rem;border-radius:7px;border:1px solid var(--blue);background:rgba(74,158,255,0.10);color:var(--blue);font-family:var(--font-hud);font-size:.72rem;cursor:pointer">⚡ Short (SQ)</button>
+      <button class="row-type-btn lq" data-type="lq" style="flex:1;padding:.4rem;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--muted2);font-family:var(--font-hud);font-size:.72rem;cursor:pointer">📖 Long (LQ)</button>
+    </div>
+    <div class="field" style="margin-bottom:.5rem"><label>Question</label><textarea class="addq-q" placeholder="e.g. What is the powerhouse of the cell?" rows="2"></textarea></div>
+    <div class="field" style="margin-bottom:0"><label>Correct Answer</label><input class="addq-a" type="text" placeholder="e.g. Mitochondria"/></div>
+  `;
   $("addq-rows").appendChild(div);
   div.querySelector("[data-del]").addEventListener("click", () => div.remove());
+
+  // Per-row type toggle
+  div.querySelectorAll(".row-type-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      div.querySelectorAll(".row-type-btn").forEach(b => {
+        const isSq = b.dataset.type === "sq";
+        b.classList.toggle("active", b === btn);
+        b.style.borderColor = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--border)";
+        b.style.background  = b === btn ? (isSq ? "rgba(74,158,255,0.10)" : "rgba(255,201,74,0.10)") : "var(--bg)";
+        b.style.color       = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--muted2)";
+      });
+      div.dataset.qtype = btn.dataset.type;
+    });
+  });
+  div.dataset.qtype = "sq"; // default
 }
 $("addq-submit").addEventListener("click", async () => {
   const cat = $("addq-cat-input").value.trim();
@@ -1085,7 +1145,7 @@ $("addq-submit").addEventListener("click", async () => {
   $("addq-rows").querySelectorAll(".q-row").forEach(row => {
     const q = row.querySelector(".addq-q").value.trim(), a = row.querySelector(".addq-a").value.trim();
     if (!q || !a) { anyBlank = true; return; }
-    rows.push({ question: q, answer: a, category: cat, type: addqType });
+    rows.push({ question: q, answer: a, category: cat, type: row.dataset.qtype || "sq" });
   });
   if (anyBlank) { showAddqStatus("Some questions are missing text.", "error"); return; }
   if (!rows.length) { showAddqStatus("Add at least one question.", "error"); return; }
