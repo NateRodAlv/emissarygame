@@ -84,9 +84,16 @@ export class World {
     this.rafId    = null;
     this.syncTick = 0;
     this.lastRoom = null;
-    this.onEnterRoom       = null;
+    this.onEnterRoom        = null;
     this.onNearCorpseChange = null; // cb(corpse | null)
     this._lastNearCorpseId  = null;
+
+    // Pausing stops key-driven movement (task/meeting/menu open)
+    this.paused = false;
+
+    // Corpse positions frozen at death — cleared after each meeting.
+    // Structure: { [playerId]: { x, y, name, color } }
+    this.deathPositions = {};
 
     // Spawn in cafeteria centre
     this.lx = 600; this.ly = 130;
@@ -105,6 +112,19 @@ export class World {
     document.removeEventListener("keyup",   this._onKeyUp);
   }
 
+  /** Pause/resume movement input. Call with true when any modal/overlay opens. */
+  setPaused(val) {
+    this.paused = val;
+    if (val) this.keys = {}; // release all held keys immediately
+  }
+
+  /** Call when a meeting ends to remove all corpses from the map. */
+  clearCorpses() {
+    this.deathPositions = {};
+    this._lastNearCorpseId = null;
+    this.onNearCorpseChange?.(null);
+  }
+
   _resizeCanvas() {
     this.canvas.width  = this.canvas.offsetWidth  || 800;
     this.canvas.height = this.canvas.offsetHeight || 450;
@@ -112,10 +132,14 @@ export class World {
 
   // ── Input ─────────────────────────────────────────────────
   _attachInput() {
+    const MOVE_KEYS = ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight",
+                       "w","a","s","d","W","A","S","D"];
     this._onKeyDown = (e) => {
+      // When paused (task/meeting/menu), never consume movement keys so
+      // the browser can handle normal text input in those UIs.
+      if (this.paused) return;
       this.keys[e.key] = true;
-      if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight",
-           "w","a","s","d","W","A","S","D"].includes(e.key)) e.preventDefault();
+      if (MOVE_KEYS.includes(e.key)) e.preventDefault();
     };
     this._onKeyUp = (e) => { this.keys[e.key] = false; };
     document.addEventListener("keydown", this._onKeyDown);
@@ -153,10 +177,31 @@ export class World {
 
   // ── Firebase ──────────────────────────────────────────────
   _subscribeToPlayers() {
-    onPlayersChange(this.matchId, (snap) => { this.players = snap ?? {}; });
+    onPlayersChange(this.matchId, (snap) => {
+      const prev = this.players;
+      this.players = snap ?? {};
+
+      // Detect newly-dead players → freeze their corpse position
+      for (const [id, p] of Object.entries(this.players)) {
+        if (id === this.local.id) continue;
+        const wasAlive = prev[id]?.alive !== false; // treat missing as alive
+        const nowDead  = p.alive === false;
+        if (wasAlive && nowDead && !this.deathPositions[id]) {
+          // Freeze corpse at the position they had just before death
+          this.deathPositions[id] = {
+            x:     p.x     ?? 600,
+            y:     p.y     ?? 130,
+            name:  p.name  ?? "?",
+            color: p.color ?? "#888",
+          };
+        }
+      }
+    });
   }
 
   _syncPosition() {
+    // Don't update Firebase position once dead — corpse stays frozen
+    if (this.players[this.local.id]?.alive === false) return;
     movePlayer(this.matchId, this.local.id, Math.round(this.lx), Math.round(this.ly));
   }
 
@@ -168,19 +213,21 @@ export class World {
   }
 
   _update() {
-    // Movement
+    // Movement — skip entirely when paused (task/meeting/menu open)
     let dx = 0, dy = 0;
-    if (this.keys["ArrowLeft"]  || this.keys["a"] || this.keys["A"]) dx -= SPEED;
-    if (this.keys["ArrowRight"] || this.keys["d"] || this.keys["D"]) dx += SPEED;
-    if (this.keys["ArrowUp"]    || this.keys["w"] || this.keys["W"]) dy -= SPEED;
-    if (this.keys["ArrowDown"]  || this.keys["s"] || this.keys["S"]) dy += SPEED;
-    if (this.joyVec) { dx += this.joyVec.x * SPEED; dy += this.joyVec.y * SPEED; }
-    if (dx && dy) { dx *= 0.707; dy *= 0.707; }
+    if (!this.paused) {
+      if (this.keys["ArrowLeft"]  || this.keys["a"] || this.keys["A"]) dx -= SPEED;
+      if (this.keys["ArrowRight"] || this.keys["d"] || this.keys["D"]) dx += SPEED;
+      if (this.keys["ArrowUp"]    || this.keys["w"] || this.keys["W"]) dy -= SPEED;
+      if (this.keys["ArrowDown"]  || this.keys["s"] || this.keys["S"]) dy += SPEED;
+      if (this.joyVec) { dx += this.joyVec.x * SPEED; dy += this.joyVec.y * SPEED; }
+      if (dx && dy) { dx *= 0.707; dy *= 0.707; }
 
-    const nx = this.lx + dx, ny = this.ly + dy;
-    if      (canMoveTo(nx, ny))      { this.lx = nx; this.ly = ny; }
-    else if (canMoveTo(nx, this.ly)) { this.lx = nx; }
-    else if (canMoveTo(this.lx, ny)) { this.ly = ny; }
+      const nx = this.lx + dx, ny = this.ly + dy;
+      if      (canMoveTo(nx, ny))      { this.lx = nx; this.ly = ny; }
+      else if (canMoveTo(nx, this.ly)) { this.lx = nx; }
+      else if (canMoveTo(this.lx, ny)) { this.ly = ny; }
+    }
 
     // Camera
     const cw = this.canvas.width, ch = this.canvas.height;
@@ -194,7 +241,7 @@ export class World {
       this.onEnterRoom?.(room);
     }
 
-    // Near-corpse detection (for report button)
+    // Near-corpse detection using frozen deathPositions
     const nearCorpse = this.findNearestCorpse(KILL_RANGE);
     const ncId = nearCorpse?.id ?? null;
     if (ncId !== this._lastNearCorpseId) {
@@ -279,13 +326,23 @@ export class World {
 
   // ── Players & Corpses ─────────────────────────────────────
   _drawOtherPlayers() {
+    const localDead = this.players[this.local.id]?.alive === false;
+
     for (const [id, p] of Object.entries(this.players)) {
       if (id === this.local.id) continue;
-      const x = p.x ?? 600, y = p.y ?? 130;
+
       if (p.alive) {
-        this._drawPlayer(x, y, p.name, p.color ?? "#aaa", false);
+        // Everyone sees alive players
+        this._drawPlayer(p.x ?? 600, p.y ?? 130, p.name, p.color ?? "#aaa", false);
+      } else if (localDead) {
+        // Dead players see other dead players as roaming ghosts (current x,y)
+        this.ctx.globalAlpha = 0.55;
+        this._drawPlayer(p.x ?? 600, p.y ?? 130, p.name + " 👻", p.color ?? "#aaa", true);
+        this.ctx.globalAlpha = 1;
       } else {
-        this._drawCorpse(x, y, p.name, p.color ?? "#888");
+        // Alive players only see the frozen corpse sprite — not the ghost
+        const corp = this.deathPositions[id];
+        if (corp) this._drawCorpse(corp.x, corp.y, corp.name, corp.color);
       }
     }
   }
@@ -440,17 +497,24 @@ export class World {
     }
 
     // Draw alive players and corpse X marks
+    const localDead = this.players[this.local.id]?.alive === false;
     for (const [id, p] of Object.entries(this.players)) {
       if (id === this.local.id) continue;
       if (p.alive) {
         ctx.beginPath(); ctx.arc(p.x ?? 600, p.y ?? 130, 9, 0, Math.PI * 2);
         ctx.fillStyle = p.color ?? "#aaa"; ctx.fill();
+      } else if (localDead) {
+        // Ghost dot for dead viewers
+        ctx.beginPath(); ctx.arc(p.x ?? 600, p.y ?? 130, 7, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(136,136,255,0.5)"; ctx.fill();
       } else {
-        // Corpse: small red X on minimap
-        const cx = p.x ?? 600, cy = p.y ?? 130;
-        ctx.strokeStyle = "rgba(255,74,107,0.8)"; ctx.lineWidth = 6;
-        ctx.beginPath(); ctx.moveTo(cx-8, cy-8); ctx.lineTo(cx+8, cy+8); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx+8, cy-8); ctx.lineTo(cx-8, cy+8); ctx.stroke();
+        // Corpse X for alive viewers — only if we have a frozen position
+        const corp = this.deathPositions[id];
+        if (corp) {
+          ctx.strokeStyle = "rgba(255,74,107,0.8)"; ctx.lineWidth = 6;
+          ctx.beginPath(); ctx.moveTo(corp.x-8, corp.y-8); ctx.lineTo(corp.x+8, corp.y+8); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(corp.x+8, corp.y-8); ctx.lineTo(corp.x-8, corp.y+8); ctx.stroke();
+        }
       }
     }
 
@@ -481,13 +545,12 @@ export class World {
     return closest;
   }
 
-  /** Nearest dead body within range. Used to enable the report button. */
+  /** Nearest frozen corpse within range. Uses deathPositions, not live player x/y. */
   findNearestCorpse(range = KILL_RANGE) {
     let closest = null, best = Infinity;
-    for (const [id, p] of Object.entries(this.players)) {
-      if (p.alive !== false) continue; // skip alive players (null safe)
-      const d = Math.hypot((p.x ?? 0) - this.lx, (p.y ?? 0) - this.ly);
-      if (d < best && d <= range) { best = d; closest = { ...p, id }; }
+    for (const [id, corp] of Object.entries(this.deathPositions)) {
+      const d = Math.hypot(corp.x - this.lx, corp.y - this.ly);
+      if (d < best && d <= range) { best = d; closest = { ...corp, id }; }
     }
     return closest;
   }

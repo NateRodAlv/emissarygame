@@ -716,15 +716,19 @@ $("btn-task").addEventListener("click", () => {
     if (localCompletedRooms.has(room.id)) return; // already done
     openCrewTask(room);
   } else if (role === "impostor") {
-    openRoleQuestionModal("impostor");
+    openImpostorTask(room);
   } else if (role === "jester") {
     openRoleQuestionModal("jester");
   }
 });
-$("btn-close-task").addEventListener("click", () => $("task-modal").classList.remove("open"));
+$("btn-close-task").addEventListener("click", () => {
+  $("task-modal").classList.remove("open");
+  world?.setPaused(false);
+});
 
 // ── Crew task flow ────────────────────────────────────────────
 function openCrewTask(room) {
+  world?.setPaused(true);
   $("task-modal").classList.add("open");
   $("task-modal-title").textContent = "⬡ TASK STATION";
   $("task-content").innerHTML = "";
@@ -736,6 +740,7 @@ function openCrewTask(room) {
 
   const onDone = async (_score, _total, pass) => {
     $("task-modal").classList.remove("open");
+    world?.setPaused(false);
     if (pass) {
       localCompletedRooms.add(room.id);
       await completeRoomTask(matchId, localPlayer.id, room.id);
@@ -764,36 +769,68 @@ function openCrewTask(room) {
   }
 }
 
-// ── Impostor / Jester question modal ─────────────────────────
+// ── Impostor task — random minigame, awards kill charge on pass ──
+function openImpostorTask(room) {
+  world?.setPaused(true);
+  $("task-modal").classList.add("open");
+  $("task-modal-title").textContent = "⬡ PREP KILL";
+  $("task-content").innerHTML = "";
+
+  const cat   = selectedCategory;
+  // Pick a random task type regardless of which room we're in
+  const types = ["swipe", "connector", "ninja"];
+  const type  = types[Math.floor(Math.random() * types.length)];
+
+  const onDone = async (_score, _total, pass) => {
+    $("task-modal").classList.remove("open");
+    world?.setPaused(false);
+    if (pass) {
+      await Impostor.onSqCorrect(matchId, localPlayer.id);
+    } else {
+      flashHud("Task failed — no kill charge gained.");
+    }
+  };
+
+  if (type === "swipe") {
+    const t = new SwipeTask("task-content", cat);
+    t.onComplete = (s,n) => onDone(s,n, s >= Math.ceil(n*0.6));
+    t.init();
+  } else if (type === "connector") {
+    const t = new ConnectorTask("task-content", cat);
+    t.onComplete = (s,n) => onDone(s,n, s >= 1);
+    t.init();
+  } else {
+    const cvs = document.createElement("canvas");
+    cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
+    $("task-content").appendChild(cvs);
+    const t = new FruitNinjaTask("ninja-canvas", cat);
+    t.onComplete = (s,n) => { onDone(s,n, s >= Math.ceil(n*0.5)); t.destroy(); };
+    t.init();
+  }
+}
+
+// ── Jester question modal — answer SQ to charge swap ────────────
 async function openRoleQuestionModal(role) {
-  const isImp    = role === "impostor";
-  const title    = isImp ? "⬡ PREP KILL — Answer a question" : "⬡ CHARGE SWAP — Answer a question";
-  const subtitle = isImp
-    ? "SQ charges your kill. LQ grants a shield-breaker bonus."
-    : "SQ charges your swap. You need " + GAME_CONFIG.jesterSwapCostSq + " SQs to swap.";
+  // Only jester uses this now; impostor uses openImpostorTask()
+  const subtitle = "SQ charges your swap. You need " + GAME_CONFIG.jesterSwapCostSq + " SQs to swap.";
 
-  const type = await showQuestionTypeModal(title, subtitle);
-  if (!type) return;
+  world?.setPaused(true);
+  const type = await showQuestionTypeModal("⬡ CHARGE SWAP — Answer a question", subtitle);
+  if (!type) { world?.setPaused(false); return; }
 
-  const cat  = selectedCategory;
-  const qs   = type === "sq" ? await fetchSQ(1, cat) : await fetchLQ(1, cat);
-  if (!qs.length) { flashHud("No questions available for this category."); return; }
+  const cat = selectedCategory;
+  const qs  = type === "sq" ? await fetchSQ(1, cat) : await fetchLQ(1, cat);
+  if (!qs.length) { world?.setPaused(false); flashHud("No questions available for this category."); return; }
 
   const correct = await showQuestionModal(qs[0]);
+  world?.setPaused(false);
   if (!correct) { flashHud("Wrong answer — no charge gained."); return; }
 
-  if (role === "impostor") {
-    await Impostor.onSqCorrect(matchId, localPlayer.id);
-    // LQ bonus: grant an extra SQ charge (charge counts 2x)
-    if (type === "lq") await Impostor.onSqCorrect(matchId, localPlayer.id);
-  } else {
-    // Jester: SQ → +1 swap charge
-    jesterSqCount = Math.min(jesterSqCount + 1, GAME_CONFIG.jesterSwapCostSq);
-    updateSwapButton();
-    const needed = GAME_CONFIG.jesterSwapCostSq;
-    if (jesterSqCount >= needed) flashHud("⇄ Swap fully charged! Press SWAP to teleport.", "warn");
-    else flashHud(`⇄ Swap charge: ${jesterSqCount}/${needed}`);
-  }
+  jesterSqCount = Math.min(jesterSqCount + 1, GAME_CONFIG.jesterSwapCostSq);
+  updateSwapButton();
+  const needed = GAME_CONFIG.jesterSwapCostSq;
+  if (jesterSqCount >= needed) flashHud("⇄ Swap fully charged! Press SWAP to teleport.", "warn");
+  else flashHud(`⇄ Swap charge: ${jesterSqCount}/${needed}`);
 }
 
 // ── Swap (jester) ────────────────────────────────────────────
@@ -807,14 +844,13 @@ $("btn-swap").addEventListener("click", async () => {
   const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
   if (!imp) { flashHud("Impostor not found or already dead!"); return; }
 
+  world?.setPaused(true);
   const confirmed = await showSwapConfirmModal(imp);
+  world?.setPaused(false);
   if (!confirmed) return;
 
-  // Record impostor's current position before the swap
   const impX = imp.x ?? 600, impY = imp.y ?? 130;
   await applyJesterSwap(matchId, localPlayer.id, imp.id);
-
-  // Teleport local player canvas position
   world.teleport(impX, impY);
   await movePlayer(matchId, localPlayer.id, Math.round(impX), Math.round(impY));
 
@@ -827,6 +863,7 @@ $("btn-swap").addEventListener("click", async () => {
 //  MEETING
 // ═══════════════════════════════════════════════
 function openMeeting() {
+  world?.setPaused(true);
   hasVoted      = false;
   meetingPhase  = "discussion";
   tallyingVotes = false;
@@ -909,6 +946,13 @@ async function tallyVotes() {
     const ejected = allPlayers[topId];
     result.innerHTML = `<strong style="color:var(--danger)">${esc(ejected?.name ?? "?")}</strong> ejected (${topVotes} vote${topVotes>1?"s":""}).<br><span style="color:var(--muted);font-size:.8rem">They were… <strong>${ejected?.role ?? "?"}</strong></span>`;
     await applyKill(matchId, topId);
+
+    // Jester wins immediately on being voted out — don't wait for checkWinConditions
+    if (ejected?.role === "jester") {
+      setTimeout(() => endGame("jester"), 2000);
+      return; // skip the normal playing-phase resume
+    }
+
     checkWinConditions({ ...allPlayers, [topId]: { ...allPlayers[topId], alive: false } });
   }
   setTimeout(async () => { await setPhase(matchId, "playing"); }, 4000);
@@ -918,6 +962,8 @@ function closeMeeting() {
   $("meeting-overlay").classList.remove("active");
   clearInterval(meetingTimerInterval);
   if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+  world?.setPaused(false);
+  world?.clearCorpses();
 }
 
 function startMeetingTimer(secs, label, onDone) {
@@ -957,22 +1003,21 @@ function syncChat(_mtg) {
 let gameOver = false;
 function checkWinConditions(players) {
   if (gameOver) return;
-  const list       = Object.values(players);
-  const alive      = list.filter(p => p.alive);
-  const imps       = alive.filter(p => p.role === "impostor");
-  const crew       = alive.filter(p => p.role === "crew");
-  const jesterDead = list.find(p => p.role === "jester" && !p.alive);
+  const list  = Object.values(players);
+  const alive = list.filter(p => p.alive);
+  const imps  = alive.filter(p => p.role === "impostor");
+  const crew  = alive.filter(p => p.role === "crew");
 
-  // Task win: all crew (dead or alive) have completed enough tasks
+  // Task win: all crew have completed enough tasks (impostor still alive)
   const allCrew = list.filter(p => p.role === "crew");
   if (allCrew.length > 0 && imps.length > 0) {
     const allDone = allCrew.every(p => Object.keys(p.completedRooms ?? {}).length >= tasksNeeded);
     if (allDone) { gameOver = true; endGame("crew"); return; }
   }
 
-  if (imps.length === 0 && jesterDead) { gameOver = true; endGame("jester"); return; }
-  if (imps.length === 0)               { gameOver = true; endGame("crew");   return; }
-  if (imps.length >= crew.length)      { gameOver = true; endGame("impostor"); }
+  // Impostor eliminated → crew wins (jester does NOT win here — only via vote)
+  if (imps.length === 0) { gameOver = true; endGame("crew"); return; }
+  if (imps.length >= crew.length) { gameOver = true; endGame("impostor"); }
 }
 
 function endGame(winner) {
