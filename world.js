@@ -80,7 +80,7 @@ export class World {
     this.players = {};
     this.keys = {};
     this.joyVec = null;
-    this.camera = { x: 0, y: 0, zoom: 3 };
+    this.camera = { x: 600, y: 130, zoom: 3 };
     this.rafId = null;
     this.syncTick = 0;
     this.lastRoom = null;
