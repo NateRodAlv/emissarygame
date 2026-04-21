@@ -230,11 +230,13 @@ export class World {
     }
 
     // Camera
+    // Camera (always center on player)
     const cw = this.canvas.width / this.camera.zoom;
     const ch = this.canvas.height / this.camera.zoom;
 
-    this.camera.x = Math.max(0, Math.min(this.lx - cw / 2, MAP.width - cw));
-    this.camera.y = Math.max(0, Math.min(this.ly - ch / 2, MAP.height - ch));
+    this.camera.x = this.lx - cw / 2;
+    this.camera.y = this.ly - ch / 2;
+
 
 
     // Room events
@@ -263,12 +265,9 @@ export class World {
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     ctx.save();
-
-    // Apply zoom first
     ctx.scale(camera.zoom, camera.zoom);
-
-    // Then move camera (adjusted for zoom automatically)
     ctx.translate(-camera.x, -camera.y);
+
 
     this._drawBackground();
     this._drawCorridors();
