@@ -264,12 +264,10 @@ export class World {
 
     ctx.save();
 
-    // Apply zoom (scale from center of screen)
-    ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+    // Apply zoom first
     ctx.scale(camera.zoom, camera.zoom);
-    ctx.translate(-this.canvas.width / 2, -this.canvas.height / 2);
 
-    // Then apply camera position
+    // Then move camera (adjusted for zoom automatically)
     ctx.translate(-camera.x, -camera.y);
 
     this._drawBackground();
@@ -283,6 +281,7 @@ export class World {
 
     this._drawMinimap();
   }
+
 
 
   _drawBackground() {
