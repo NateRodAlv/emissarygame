@@ -63,7 +63,7 @@ export const GAME_CONFIG = {
   defaultMeetingZoneCallsPerPlayer: 1,
 
   // Task / question draw counts per minigame round
-  swipeCategorizeSqCount: 5,
+  swipeCategorizeSqCount: 3,
   connectorLqCount: 4,
-  fruitNinjaSqCount: 8,
+  fruitNinjaSqCount: 4,
 };
