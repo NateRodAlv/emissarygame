@@ -292,12 +292,15 @@
 import { GAME_CONFIG }                       from "./config.js";
 import { createMatch, joinMatch,
          onPlayersChange, onPhaseChange,
-         assignRoles, setPhase,
+         onGameStateChange,
+         assignRoles, setPhase, setGameResult,
          callMeeting, castVote,
          applyKill, applyJesterSwap,
          onMeetingChange, setKillReady,
          completeRoomTask, movePlayer,
          getMatchSettings, getPlayerData,
+         getMatchPlayers, deleteMatch,
+         cleanupStaleMatches,
          sendChatMessage, onChatMessage }     from "./realtime.js";
 import { Impostor, Crew }                    from "./roles.js";
 import { World }                             from "./world.js";
@@ -305,6 +308,9 @@ import { SwipeTask, ConnectorTask,
          FruitNinjaTask }                    from "./tasks.js";
 import { fetchCategories, addQuestions,
          fetchSQ, fetchLQ }                  from "./questions.js";
+
+// Clean up stale matches from previous sessions (runs silently in background)
+cleanupStaleMatches().catch(() => {});
 
 const $ = id => document.getElementById(id);
 const show = id => {
@@ -461,13 +467,26 @@ $("btn-create-match").addEventListener("click", async () => {
 });
 
 async function doJoin(name, code) {
-  matchId = code;
-  localPlayer = { id: crypto.randomUUID(), name, color: playPickedColor };
+  matchId = code.toUpperCase().trim(); // always uppercase, defensive
+
+  // Deduplicate name: if someone in the lobby already has this name, append a number
+  const existingPlayers = await getMatchPlayers(matchId);
+  const takenNames = Object.values(existingPlayers).map(p => p.name?.toLowerCase());
+  let finalName = name;
+  if (takenNames.includes(name.toLowerCase())) {
+    let n = 2;
+    while (takenNames.includes(`${name.toLowerCase()}${n}`)) n++;
+    finalName = `${name}${n}`;
+  }
+
+  localPlayer = { id: crypto.randomUUID(), name: finalName, color: playPickedColor };
   await joinMatch(matchId, localPlayer);
   $("waiting-code").textContent = matchId;
   show("screen-waiting");
   setupWaitingListeners();
-  onPhaseChange(matchId, async phase => {
+
+  onGameStateChange(matchId, async state => {
+    const { phase, winner } = state;
     if (phase === "playing" && !world) {
       settings = await getMatchSettings(matchId);
       selectedCategory = settings.questionCategory ?? null;
@@ -475,6 +494,9 @@ async function doJoin(name, code) {
       if (!me || !me.role) me = await getPlayerData(matchId, localPlayer.id);
       localPlayer.role = me?.role ?? "crew";
       launchGame();
+    } else if (phase === "ended" && winner && !gameOver) {
+      gameOver = true;
+      endGame(winner);
     }
   });
 }
@@ -555,9 +577,11 @@ function launchGame() {
   }
   if (role === "crew") updateTasksHUD();
 
-  onPhaseChange(matchId, phase => {
+  onGameStateChange(matchId, state => {
+    const { phase, winner } = state;
     if (phase === "meeting") openMeeting();
-    else closeMeeting();
+    else if (phase === "playing") closeMeeting();
+    else if (phase === "ended" && winner && !gameOver) { gameOver = true; endGame(winner); return; }
     checkWinConditions(allPlayers);
   });
 
@@ -579,9 +603,16 @@ function launchGame() {
       $("hud-shield").textContent = "NO SHIELD"; $("hud-shield").style.color = "var(--muted)"; $("hud-shield").style.borderColor = "var(--muted)";
     }
 
-    // Auto-skip: all alive players voted → tally immediately
-    if (meetingPhase === "voting" && !tallyingVotes && window._latestMeeting?.votes) {
-      const voteCount  = Object.keys(window._latestMeeting.votes).length;
+    checkWinConditions(allPlayers);
+  });
+
+  onMeetingChange(matchId, mtg => {
+    window._latestMeeting = mtg;
+    if (!mtg) return;
+
+    // Auto-skip: votes are in the meeting node, so check here on every vote update
+    if (meetingPhase === "voting" && !tallyingVotes) {
+      const voteCount  = Object.keys(mtg.votes ?? {}).length;
       const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
       if (aliveCount > 0 && voteCount >= aliveCount) {
         tallyingVotes = true;
@@ -591,12 +622,6 @@ function launchGame() {
       }
     }
 
-    checkWinConditions(allPlayers);
-  });
-
-  onMeetingChange(matchId, mtg => {
-    window._latestMeeting = mtg;
-    if (!mtg) return;
     if (settings.useChat === "chat") syncChat(mtg);
   });
 }
@@ -939,23 +964,33 @@ async function tallyVotes() {
   const tied     = sorted.length > 1 && sorted[1][1] === topVotes;
   const result   = $("vote-result");
   result.style.display = "block";
+
+  let ejectedRole = null;
+
   if (!topId || topId === "skip" || tied) {
     result.textContent = tied ? "🤝 Tied vote — no one ejected." : "⊘ No votes cast.";
     result.style.color = "var(--muted)";
   } else {
     const ejected = allPlayers[topId];
-    result.innerHTML = `<strong style="color:var(--danger)">${esc(ejected?.name ?? "?")}</strong> ejected (${topVotes} vote${topVotes>1?"s":""}).<br><span style="color:var(--muted);font-size:.8rem">They were… <strong>${ejected?.role ?? "?"}</strong></span>`;
+    ejectedRole = ejected?.role ?? null;
+    result.innerHTML = `<strong style="color:var(--danger)">${esc(ejected?.name ?? "?")}</strong> ejected (${topVotes} vote${topVotes>1?"s":""}).<br><span style="color:var(--muted);font-size:.8rem">They were… <strong>${ejectedRole ?? "?"}</strong></span>`;
     await applyKill(matchId, topId);
 
-    // Jester wins immediately on being voted out — don't wait for checkWinConditions
-    if (ejected?.role === "jester") {
-      setTimeout(() => endGame("jester"), 2000);
-      return; // skip the normal playing-phase resume
+    if (ejectedRole !== "jester") {
+      checkWinConditions({ ...allPlayers, [topId]: { ...allPlayers[topId], alive: false } });
     }
-
-    checkWinConditions({ ...allPlayers, [topId]: { ...allPlayers[topId], alive: false } });
   }
-  setTimeout(async () => { await setPhase(matchId, "playing"); }, 4000);
+
+  // Jester win: broadcast via Firebase (endGame handles setGameResult for all clients)
+  if (ejectedRole === "jester") {
+    setTimeout(() => { gameOver = true; endGame("jester"); }, 2000);
+    return; // don't resume game
+  }
+
+  // Normal path: if game isn't over, resume playing
+  setTimeout(async () => {
+    if (!gameOver) await setPhase(matchId, "playing");
+  }, 4000);
 }
 
 function closeMeeting() {
@@ -1021,8 +1056,13 @@ function checkWinConditions(players) {
 }
 
 function endGame(winner) {
+  if (!gameOver) { gameOver = true; }
   world?.stop(); clearInterval(meetingTimerInterval);
   if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+
+  // Broadcast result to all clients via Firebase (no-op if already set)
+  if (matchId) setGameResult(matchId, winner).catch(() => {});
+
   const data = {
     crew:     ["CREW WINS",     "All tasks complete — or the impostor was ejected."],
     impostor: ["IMPOSTOR WINS", "Sabotage complete. No survivors."],
@@ -1032,6 +1072,9 @@ function endGame(winner) {
   $("end-title").style.color = {crew:"var(--accent)",impostor:"var(--danger)",jester:"var(--warn)"}[winner];
   $("end-body").textContent  = data[winner][1];
   show("screen-end");
+
+  // Delete the match from Firebase after 60 seconds so stale data doesn't linger
+  if (matchId) setTimeout(() => deleteMatch(matchId).catch(() => {}), 60_000);
 }
 
 // ═══════════════════════════════════════════════

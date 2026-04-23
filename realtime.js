@@ -23,7 +23,24 @@ export async function createMatch(matchId, hostId, settings) {
     settings,
     phase: "lobby",
     createdAt: Date.now(),
+    lastActivity: Date.now(),
   });
+}
+
+/**
+ * Delete any matches older than maxAgeMs that are still in lobby phase.
+ * Call on app startup to prevent stale lobby data accumulating.
+ */
+export async function cleanupStaleMatches(maxAgeMs = 2 * 60 * 60 * 1000) {
+  const snap = await get(ref(db, DB_PATHS.matches));
+  const all  = snap.val() ?? {};
+  const now  = Date.now();
+  const ops  = [];
+  for (const [id, match] of Object.entries(all)) {
+    const age = now - (match.lastActivity ?? match.createdAt ?? 0);
+    if (age > maxAgeMs) ops.push(remove(ref(db, `${DB_PATHS.matches}/${id}`)));
+  }
+  if (ops.length) await Promise.all(ops);
 }
 
 export async function joinMatch(matchId, player) {
@@ -66,6 +83,27 @@ export async function assignRoles(matchId, roleMap) {
 
 export async function setPhase(matchId, phase) {
   await update(stateRef(matchId), { phase });
+}
+
+/** Broadcast game-over result to all clients. */
+export async function setGameResult(matchId, winner) {
+  await update(stateRef(matchId), { phase: "ended", winner });
+}
+
+/** Subscribe to full game-state changes (phase + winner). */
+export function onGameStateChange(matchId, cb) {
+  return onValue(stateRef(matchId), snap => cb(snap.val() ?? {}));
+}
+
+/** Read all current players once (for name deduplication etc). */
+export async function getMatchPlayers(matchId) {
+  const snap = await get(ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}`));
+  return snap.val() ?? {};
+}
+
+/** Delete the entire match from Firebase. */
+export async function deleteMatch(matchId) {
+  await remove(matchRef(matchId));
 }
 
 export async function movePlayer(matchId, playerId, x, y) {
