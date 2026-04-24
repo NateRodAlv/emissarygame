@@ -2269,6 +2269,7 @@
           const alive = list.filter(p => p.alive);
           const imps = alive.filter(p => p.role === "impostor");
           const crew = alive.filter(p => p.role === "crew");
+          const jesters = alive.filter(p => p.role === "jester")
 
           // Task win: all crew have completed enough tasks (impostor still alive)
           const allCrew = list.filter(p => p.role === "crew");
@@ -2279,7 +2280,9 @@
 
           // Impostor eliminated → crew wins (jester does NOT win here — only via vote)
           if (imps.length === 0) { gameOver = true; endGame("crew"); return; }
-          if (imps.length >= crew.length) { gameOver = true; endGame("impostor"); }
+          console.log(imps.length);
+          console.log (crew.length + jesters.length);
+          if (imps.length >= crew.length + jesters.length) { gameOver = true; endGame("impostor"); }
         }
 
         function endGame(winner) {
