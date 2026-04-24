@@ -1684,8 +1684,8 @@
           });
         }
 
-        function setupWaitingListeners() {
-          settings = getMatchSettings(matchId);
+        async function setupWaitingListeners() {
+          settings = await getMatchSettings(matchId);
           onPlayersChange(matchId, snap => {
             allPlayers = snap ?? {};
             $("player-list").innerHTML = Object.values(allPlayers).map(p => `<li style="color:${p.color}">${p.name}</li>`).join("");
