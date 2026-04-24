@@ -221,9 +221,8 @@
     </div>
     <input id="setpicker-search" type="search" placeholder="🔍  Search sets…" autocomplete="off"/>
   </div>
-  <div id="setpicker-list">
-    <div id="setpicker-none" style="display:none">No matching sets found.</div>
-  </div>
+  <div id="setpicker-list"></div>
+  <div id="setpicker-none" style="display:none">No matching sets found.</div>
   <div id="setpicker-footer">
     <button class="btn" id="setpicker-confirm">USE SELECTED SET →</button>
   </div>
@@ -436,30 +435,38 @@ getCurrentUser().then(u => { currentUser = u; updateAuthUI(); });
 
 function updateAuthUI() {
   // Addq screen: show content or gate
-  if ($("addq-auth-required")) {
-    $("addq-auth-required").style.display = currentUser ? "none"    : "block";
-    $("addq-content").style.display        = currentUser ? "block"   : "none";
-    if (currentUser) {
-      $("addq-signed-as").textContent = `Signed in as ${currentUser.email}`;
+  const authRequired = $("addq-auth-required");
+  const addqContent  = $("addq-signed-as");
+  if (authRequired) {
+    $("addq-auth-required").style.display = currentUser ? "none"  : "block";
+    $("addq-content").style.display        = currentUser ? "block" : "none";
+    if (currentUser && addqContent) {
+      addqContent.textContent = `Signed in as ${currentUser.email}`;
       loadAddqCategories();
       addqEnsureRow();
     }
   }
   // Auth screen: show signed-in state
-  if ($("auth-signed-in")) {
+  const authSignedIn  = $("auth-signed-in");
+  const authSubmitEl  = $("auth-submit");
+  const authEmailEl   = $("auth-email");
+  const authPassEl    = $("auth-password");
+  const authTabsEl    = document.querySelector(".auth-tabs");
+  if (authSignedIn) {
     if (currentUser) {
-      $("auth-signed-in").style.display  = "block";
-      $("auth-user-email").textContent   = currentUser.email;
-      $("auth-submit").style.display     = "none";
-      $("auth-email").style.display      = "none";
-      $("auth-password").style.display   = "none";
-      document.querySelector(".auth-tabs").style.display = "none";
+      authSignedIn.style.display = "block";
+      const uEmail = $("auth-user-email");
+      if (uEmail) uEmail.textContent = currentUser.email;
+      if (authSubmitEl) authSubmitEl.style.display = "none";
+      if (authEmailEl)  authEmailEl.style.display  = "none";
+      if (authPassEl)   authPassEl.style.display   = "none";
+      if (authTabsEl)   authTabsEl.style.display   = "none";
     } else {
-      $("auth-signed-in").style.display  = "none";
-      $("auth-submit").style.display     = "block";
-      $("auth-email").style.display      = "block";
-      $("auth-password").style.display   = "block";
-      document.querySelector(".auth-tabs").style.display = "flex";
+      authSignedIn.style.display = "none";
+      if (authSubmitEl) authSubmitEl.style.display = "block";
+      if (authEmailEl)  authEmailEl.style.display  = "block";
+      if (authPassEl)   authPassEl.style.display   = "block";
+      if (authTabsEl)   authTabsEl.style.display   = "flex";
     }
   }
 }
