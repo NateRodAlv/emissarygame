@@ -1,622 +1,1500 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Emissary</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@600;800&display=swap"
+    rel="stylesheet">
   <style>
     :root {
-      --bg:#07080f; --surface:#0e1120; --surface2:#131728;
-      --border:#1a2540; --border2:#243060;
-      --accent:#4affa4; --danger:#ff4a6b; --warn:#ffc94a; --blue:#4a9eff;
-      --text:#c8d4f0; --muted:#4a5580; --muted2:#6878a8;
-      --font-hud:'Share Tech Mono',monospace; --font-title:'Orbitron',monospace; --r:10px;
+      --bg: #07080f;
+      --surface: #0e1120;
+      --surface2: #131728;
+      --border: #1a2540;
+      --border2: #243060;
+      --accent: #4affa4;
+      --danger: #ff4a6b;
+      --warn: #ffc94a;
+      --blue: #4a9eff;
+      --text: #c8d4f0;
+      --muted: #4a5580;
+      --muted2: #6878a8;
+      --font-hud: 'Share Tech Mono', monospace;
+      --font-title: 'Orbitron', monospace;
+      --r: 10px;
     }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--text);font-family:var(--font-hud);height:100dvh;overflow:hidden;display:flex;flex-direction:column}
-    .screen{display:none;width:100%;height:100dvh;align-items:center;justify-content:center;flex-direction:column}
-    .screen.active{display:flex}
-    .panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;width:min(440px,94vw)}
-    .panel-scroll{overflow-y:auto;max-height:calc(100dvh - 2rem)}
-    h1{font-family:var(--font-title);font-size:clamp(1.6rem,5vw,2.4rem);color:var(--accent);letter-spacing:.05em;text-shadow:0 0 20px rgba(74,255,164,0.4);margin-bottom:.25rem}
-    .sub{color:var(--muted);font-size:.75rem;margin-bottom:1.5rem;letter-spacing:.1em}
-    .field{margin-bottom:.9rem}
-    .field label{display:block;font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem}
-    .field .hint{font-size:.62rem;color:var(--muted);margin-top:.25rem;line-height:1.4}
-    input,select,textarea{width:100%;padding:.7rem 1rem;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:var(--r);font-family:var(--font-hud);font-size:.9rem;outline:none;transition:border-color .2s;-webkit-appearance:none;margin-bottom:0}
-    input:focus,select:focus,textarea:focus{border-color:var(--accent)}
-    select option{background:var(--bg)}
-    textarea{resize:vertical;min-height:70px}
-    .btn{display:block;width:100%;padding:.75rem;background:var(--accent);color:#07080f;border:none;border-radius:var(--r);font-family:var(--font-title);font-size:.85rem;font-weight:800;letter-spacing:.08em;cursor:pointer;transition:opacity .15s,transform .1s;text-align:center}
-    .btn:hover{opacity:.85}.btn:active{transform:scale(.97)}
-    .btn.danger{background:var(--danger);color:#fff}
-    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted2)}
-    .btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
-    .btn.warn{background:var(--warn);color:#07080f}
-    .btn.hidden{display:none!important}
-    .btn.sm{padding:.5rem .9rem;font-size:.72rem;width:auto;display:inline-block}
-    .divider{height:1px;background:var(--border);margin:1rem 0}
-    .section-label{font-size:.65rem;color:var(--muted2);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem;margin-top:1.1rem}
-    .back-link{font-size:.72rem;color:var(--muted);cursor:pointer;letter-spacing:.08em;margin-bottom:1.2rem;display:inline-flex;align-items:center;gap:.35rem}
-    .back-link:hover{color:var(--accent)}
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-hud);
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100dvh;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column
+    }
+
+    .screen.active {
+      display: flex
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      width: min(440px, 94vw)
+    }
+
+    .panel-scroll {
+      overflow-y: auto;
+      max-height: calc(100dvh - 2rem)
+    }
+
+    h1 {
+      font-family: var(--font-title);
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      color: var(--accent);
+      letter-spacing: .05em;
+      text-shadow: 0 0 20px rgba(74, 255, 164, 0.4);
+      margin-bottom: .25rem
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: .75rem;
+      margin-bottom: 1.5rem;
+      letter-spacing: .1em
+    }
+
+    .field {
+      margin-bottom: .9rem
+    }
+
+    .field label {
+      display: block;
+      font-size: .68rem;
+      color: var(--muted2);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .3rem
+    }
+
+    .field .hint {
+      font-size: .62rem;
+      color: var(--muted);
+      margin-top: .25rem;
+      line-height: 1.4
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: .7rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--r);
+      font-family: var(--font-hud);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+      -webkit-appearance: none;
+      margin-bottom: 0
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent)
+    }
+
+    select option {
+      background: var(--bg)
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: .75rem;
+      background: var(--accent);
+      color: #07080f;
+      border: none;
+      border-radius: var(--r);
+      font-family: var(--font-title);
+      font-size: .85rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      text-align: center
+    }
+
+    .btn:hover {
+      opacity: .85
+    }
+
+    .btn:active {
+      transform: scale(.97)
+    }
+
+    .btn.danger {
+      background: var(--danger);
+      color: #fff
+    }
+
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted2)
+    }
+
+    .btn.ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent)
+    }
+
+    .btn.warn {
+      background: var(--warn);
+      color: #07080f
+    }
+
+    .btn.hidden {
+      display: none !important
+    }
+
+    .btn.sm {
+      padding: .5rem .9rem;
+      font-size: .72rem;
+      width: auto;
+      display: inline-block
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1rem 0
+    }
+
+    .section-label {
+      font-size: .65rem;
+      color: var(--muted2);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: .6rem;
+      margin-top: 1.1rem
+    }
+
+    .back-link {
+      font-size: .72rem;
+      color: var(--muted);
+      cursor: pointer;
+      letter-spacing: .08em;
+      margin-bottom: 1.2rem;
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem
+    }
+
+    .back-link:hover {
+      color: var(--accent)
+    }
 
     /* Menu */
-    #screen-menu{background:var(--bg)}
-    .menu-logo{text-align:center;margin-bottom:2.5rem}
-    .menu-logo h1{font-size:clamp(2rem,8vw,3.2rem);margin-bottom:.15rem}
-    .menu-logo p{font-size:.7rem;color:var(--muted);letter-spacing:.18em}
-    .menu-btns{display:flex;flex-direction:column;gap:.75rem;width:min(340px,88vw)}
-    .menu-btn{padding:1rem 1.5rem;border-radius:14px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-title);font-size:.82rem;letter-spacing:.07em;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.9rem;transition:border-color .2s,background .2s}
-    .menu-btn:hover{border-color:var(--accent);background:rgba(74,255,164,0.04)}
-    .menu-btn .icon{font-size:1.3rem;flex-shrink:0;width:28px;text-align:center}
-    .menu-btn.primary{background:var(--accent);color:#07080f;border-color:transparent}
-    .menu-btn.primary:hover{opacity:.88}
-    .menu-btn-desc{font-family:var(--font-hud);font-size:.65rem;color:var(--muted);margin-top:.15rem;letter-spacing:.04em;font-weight:400}
-    .menu-btn.primary .menu-btn-desc{color:rgba(0,0,0,0.55)}
-    #star-canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
-    #screen-menu .panel-wrap{position:relative;z-index:1}
+    #screen-menu {
+      background: var(--bg)
+    }
+
+    .menu-logo {
+      text-align: center;
+      margin-bottom: 2.5rem
+    }
+
+    .menu-logo h1 {
+      font-size: clamp(2rem, 8vw, 3.2rem);
+      margin-bottom: .15rem
+    }
+
+    .menu-logo p {
+      font-size: .7rem;
+      color: var(--muted);
+      letter-spacing: .18em
+    }
+
+    .menu-btns {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      width: min(340px, 88vw)
+    }
+
+    .menu-btn {
+      padding: 1rem 1.5rem;
+      border-radius: 14px;
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-title);
+      font-size: .82rem;
+      letter-spacing: .07em;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: .9rem;
+      transition: border-color .2s, background .2s
+    }
+
+    .menu-btn:hover {
+      border-color: var(--accent);
+      background: rgba(74, 255, 164, 0.04)
+    }
+
+    .menu-btn .icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center
+    }
+
+    .menu-btn.primary {
+      background: var(--accent);
+      color: #07080f;
+      border-color: transparent
+    }
+
+    .menu-btn.primary:hover {
+      opacity: .88
+    }
+
+    .menu-btn-desc {
+      font-family: var(--font-hud);
+      font-size: .65rem;
+      color: var(--muted);
+      margin-top: .15rem;
+      letter-spacing: .04em;
+      font-weight: 400
+    }
+
+    .menu-btn.primary .menu-btn-desc {
+      color: rgba(0, 0, 0, 0.55)
+    }
+
+    #star-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0
+    }
+
+    #screen-menu .panel-wrap {
+      position: relative;
+      z-index: 1
+    }
 
     /* Auth screen */
-    #screen-auth .auth-tabs{display:flex;margin-bottom:1.4rem;border-bottom:1px solid var(--border)}
-    .auth-tab{flex:1;padding:.6rem;background:none;border:none;border-bottom:2px solid transparent;
-              color:var(--muted2);font-family:var(--font-title);font-size:.75rem;letter-spacing:.08em;
-              cursor:pointer;margin-bottom:-1px;transition:color .15s,border-color .15s}
-    .auth-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-    #auth-error{color:var(--danger);font-size:.75rem;margin-bottom:.5rem;display:none}
+    #screen-auth .auth-tabs {
+      display: flex;
+      margin-bottom: 1.4rem;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: .6rem;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted2);
+      font-family: var(--font-title);
+      font-size: .75rem;
+      letter-spacing: .08em;
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: color .15s, border-color .15s
+    }
+
+    .auth-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent)
+    }
+
+    #auth-error {
+      color: var(--danger);
+      font-size: .75rem;
+      margin-bottom: .5rem;
+      display: none
+    }
 
     /* Set picker screen */
-    #screen-setpicker{align-items:stretch;justify-content:flex-start;padding:0}
-    .setpicker-header{padding:1rem 1.2rem .6rem;background:var(--surface);
-                      border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
-    .setpicker-header h2{font-family:var(--font-title);color:var(--accent);font-size:1rem;
-                         margin-bottom:.7rem;letter-spacing:.06em}
-    #setpicker-search{padding:.6rem 1rem;background:var(--bg);border:1px solid var(--border);
-                      color:var(--text);border-radius:var(--r);font-family:var(--font-hud);
-                      font-size:.88rem;width:100%;outline:none}
-    #setpicker-search:focus{border-color:var(--accent)}
-    #setpicker-list{flex:1;overflow-y:auto;padding:.8rem 1.2rem 6rem}
-    .setpicker-card{padding:.75rem 1rem;border-radius:11px;border:2px solid var(--border);
-                    background:var(--surface);cursor:pointer;margin-bottom:.5rem;
-                    transition:border-color .15s,background .15s;
-                    display:flex;align-items:center;justify-content:space-between;gap:.6rem}
-    .setpicker-card:hover{border-color:var(--border2)}
-    .setpicker-card.selected{border-color:var(--accent);background:rgba(74,255,164,0.06)}
-    .setpicker-card .sp-name{font-size:.86rem;font-weight:700;color:var(--text);margin-bottom:.15rem}
-    .setpicker-card .sp-meta{font-size:.63rem;color:var(--muted);letter-spacing:.04em}
-    #setpicker-footer{position:fixed;bottom:0;left:0;right:0;padding:.9rem 1.2rem;
-                      background:rgba(7,8,15,.95);backdrop-filter:blur(8px);
-                      border-top:1px solid var(--border)}
-    #setpicker-none{padding:2rem;text-align:center;color:var(--muted);font-size:.82rem}
+    #screen-setpicker {
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 0
+    }
+
+    .setpicker-header {
+      padding: 1rem 1.2rem .6rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 2
+    }
+
+    .setpicker-header h2 {
+      font-family: var(--font-title);
+      color: var(--accent);
+      font-size: 1rem;
+      margin-bottom: .7rem;
+      letter-spacing: .06em
+    }
+
+    #setpicker-search {
+      padding: .6rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--r);
+      font-family: var(--font-hud);
+      font-size: .88rem;
+      width: 100%;
+      outline: none
+    }
+
+    #setpicker-search:focus {
+      border-color: var(--accent)
+    }
+
+    #setpicker-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: .8rem 1.2rem 6rem
+    }
+
+    .setpicker-card {
+      padding: .75rem 1rem;
+      border-radius: 11px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      margin-bottom: .5rem;
+      transition: border-color .15s, background .15s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .6rem
+    }
+
+    .setpicker-card:hover {
+      border-color: var(--border2)
+    }
+
+    .setpicker-card.selected {
+      border-color: var(--accent);
+      background: rgba(74, 255, 164, 0.06)
+    }
+
+    .setpicker-card .sp-name {
+      font-size: .86rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: .15rem
+    }
+
+    .setpicker-card .sp-meta {
+      font-size: .63rem;
+      color: var(--muted);
+      letter-spacing: .04em
+    }
+
+    #setpicker-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: .9rem 1.2rem;
+      background: rgba(7, 8, 15, .95);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid var(--border)
+    }
+
+    #setpicker-none {
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: .82rem
+    }
 
     /* Host set chip */
-    #host-set-chip{display:flex;align-items:center;justify-content:space-between;gap:.6rem;
-                   padding:.65rem .9rem;border-radius:10px;border:2px solid var(--border);
-                   background:var(--bg);cursor:pointer;transition:border-color .15s}
-    #host-set-chip:hover{border-color:var(--accent)}
-    #host-set-chip.chosen{border-color:var(--accent);background:rgba(74,255,164,0.05)}
-    .chip-label{font-size:.8rem;color:var(--muted2)}
-    .chip-value{font-size:.84rem;font-weight:700;color:var(--text)}
-    .chip-arrow{color:var(--muted);font-size:.85rem}
+    #host-set-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .6rem;
+      padding: .65rem .9rem;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      transition: border-color .15s
+    }
+
+    #host-set-chip:hover {
+      border-color: var(--accent)
+    }
+
+    #host-set-chip.chosen {
+      border-color: var(--accent);
+      background: rgba(74, 255, 164, 0.05)
+    }
+
+    .chip-label {
+      font-size: .8rem;
+      color: var(--muted2)
+    }
+
+    .chip-value {
+      font-size: .84rem;
+      font-weight: 700;
+      color: var(--text)
+    }
+
+    .chip-arrow {
+      color: var(--muted);
+      font-size: .85rem
+    }
 
     /* Qset (kept for addq existing-category select) */
-    .qset-badge{padding:.15rem .45rem;border-radius:999px;font-size:.6rem;letter-spacing:.05em}
-    .qset-badge.sq{background:rgba(74,158,255,0.15);color:var(--blue);border:1px solid rgba(74,158,255,0.3)}
-    .qset-badge.lq{background:rgba(255,201,74,0.15);color:var(--warn);border:1px solid rgba(255,201,74,0.3)}
-    .qset-badges{display:flex;gap:.3rem;flex-wrap:wrap}
+    .qset-badge {
+      padding: .15rem .45rem;
+      border-radius: 999px;
+      font-size: .6rem;
+      letter-spacing: .05em
+    }
+
+    .qset-badge.sq {
+      background: rgba(74, 158, 255, 0.15);
+      color: var(--blue);
+      border: 1px solid rgba(74, 158, 255, 0.3)
+    }
+
+    .qset-badge.lq {
+      background: rgba(255, 201, 74, 0.15);
+      color: var(--warn);
+      border: 1px solid rgba(255, 201, 74, 0.3)
+    }
+
+    .qset-badges {
+      display: flex;
+      gap: .3rem;
+      flex-wrap: wrap
+    }
 
     /* Existing question editor */
-    .existing-q-row{background:var(--bg);border:1px solid var(--border);border-radius:10px;
-                    padding:.7rem;margin-bottom:.5rem}
-    .existing-q-row:hover{border-color:var(--border2)}
+    .existing-q-row {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .7rem;
+      margin-bottom: .5rem
+    }
+
+    .existing-q-row:hover {
+      border-color: var(--border2)
+    }
 
     /* Add questions */
-    .q-row{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:.8rem;margin-bottom:.5rem;position:relative}
-    .q-row-num{font-size:.65rem;color:var(--muted);margin-bottom:.4rem;letter-spacing:.07em}
-    .q-row-del{position:absolute;top:.6rem;right:.6rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:.2rem}
-    .q-row-del:hover{color:var(--danger)}
-    .type-toggle{display:flex;gap:.35rem;margin-bottom:.9rem}
-    .type-btn{flex:1;padding:.55rem;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--muted2);font-family:var(--font-hud);font-size:.75rem;cursor:pointer;transition:all .15s;text-align:center}
-    .type-btn.active.sq{border-color:var(--blue);color:var(--blue);background:rgba(74,158,255,0.08)}
-    .type-btn.active.lq{border-color:var(--warn);color:var(--warn);background:rgba(255,201,74,0.08)}
+    .q-row {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .8rem;
+      margin-bottom: .5rem;
+      position: relative
+    }
+
+    .q-row-num {
+      font-size: .65rem;
+      color: var(--muted);
+      margin-bottom: .4rem;
+      letter-spacing: .07em
+    }
+
+    .q-row-del {
+      position: absolute;
+      top: .6rem;
+      right: .6rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: .2rem
+    }
+
+    .q-row-del:hover {
+      color: var(--danger)
+    }
+
+    .type-toggle {
+      display: flex;
+      gap: .35rem;
+      margin-bottom: .9rem
+    }
+
+    .type-btn {
+      flex: 1;
+      padding: .55rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted2);
+      font-family: var(--font-hud);
+      font-size: .75rem;
+      cursor: pointer;
+      transition: all .15s;
+      text-align: center
+    }
+
+    .type-btn.active.sq {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: rgba(74, 158, 255, 0.08)
+    }
+
+    .type-btn.active.lq {
+      border-color: var(--warn);
+      color: var(--warn);
+      background: rgba(255, 201, 74, 0.08)
+    }
 
     /* Color picker */
-    .color-picker{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.35rem}
-    .color-swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .12s,border-color .12s;flex-shrink:0}
-    .color-swatch:hover{transform:scale(1.18)}
-    .color-swatch.selected{border-color:#fff;transform:scale(1.22)}
+    .color-picker {
+      display: flex;
+      gap: .45rem;
+      flex-wrap: wrap;
+      margin-top: .35rem
+    }
+
+    .color-swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform .12s, border-color .12s;
+      flex-shrink: 0
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.18)
+    }
+
+    .color-swatch.selected {
+      border-color: #fff;
+      transform: scale(1.22)
+    }
 
     /* Game */
-    #screen-game{flex-direction:column;padding:0;position:relative}
-    #hud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;background:rgba(7,8,15,0.88);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);z-index:20;flex-wrap:wrap}
-    .hud-pill{padding:.2rem .6rem;border-radius:999px;font-size:.7rem;font-family:var(--font-hud);border:1px solid currentColor}
-    .hud-role-crew{color:var(--blue);background:rgba(74,158,255,0.1)}
-    .hud-role-impostor{color:var(--danger);background:rgba(255,74,107,0.1)}
-    .hud-role-jester{color:var(--warn);background:rgba(255,201,74,0.1)}
-    .hud-role-dead{color:var(--muted);background:rgba(74,85,128,0.1)}
-    .hud-spacer{flex:1}
-    #hud-tasks{font-size:.68rem;color:var(--muted2)}
-    #game-canvas{flex:1;width:100%;display:block;margin-top:38px}
-    #action-bar{position:absolute;bottom:0;left:0;right:0;display:flex;gap:.5rem;padding:.5rem .6rem;background:rgba(7,8,15,0.88);backdrop-filter:blur(6px);border-top:1px solid var(--border);z-index:20}
-    #action-bar .btn{flex:1;padding:.6rem .4rem;font-size:.7rem}
-    #joystick-wrap{position:absolute;bottom:80px;left:24px;width:100px;height:100px;z-index:25;display:none}
-    #joystick{width:100%;height:100%;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center}
-    #joystick-knob{width:36px;height:36px;background:rgba(74,255,164,0.6);border-radius:50%;pointer-events:none}
-    #room-label{position:absolute;top:46px;left:50%;transform:translateX(-50%);background:rgba(7,8,15,0.9);border:1px solid var(--accent);color:var(--accent);padding:.2rem .8rem;border-radius:999px;font-size:.7rem;letter-spacing:.1em;z-index:21;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;max-width:90vw;text-align:center}
-    #room-label.visible{opacity:1}
-    #kill-flash{position:fixed;inset:0;background:rgba(255,74,107,0);pointer-events:none;z-index:200;transition:background .1s}
-    #kill-flash.flash{background:rgba(255,74,107,0.25)}
+    #screen-game {
+      flex-direction: column;
+      padding: 0;
+      position: relative
+    }
+
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .4rem .6rem;
+      background: rgba(7, 8, 15, 0.88);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--border);
+      z-index: 20;
+      flex-wrap: wrap
+    }
+
+    .hud-pill {
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-family: var(--font-hud);
+      border: 1px solid currentColor
+    }
+
+    .hud-role-crew {
+      color: var(--blue);
+      background: rgba(74, 158, 255, 0.1)
+    }
+
+    .hud-role-impostor {
+      color: var(--danger);
+      background: rgba(255, 74, 107, 0.1)
+    }
+
+    .hud-role-jester {
+      color: var(--warn);
+      background: rgba(255, 201, 74, 0.1)
+    }
+
+    .hud-role-dead {
+      color: var(--muted);
+      background: rgba(74, 85, 128, 0.1)
+    }
+
+    .hud-spacer {
+      flex: 1
+    }
+
+    #hud-tasks {
+      font-size: .68rem;
+      color: var(--muted2)
+    }
+
+    #game-canvas {
+      flex: 1;
+      width: 100%;
+      display: block;
+      margin-top: 38px
+    }
+
+    #action-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      gap: .5rem;
+      padding: .5rem .6rem;
+      background: rgba(7, 8, 15, 0.88);
+      backdrop-filter: blur(6px);
+      border-top: 1px solid var(--border);
+      z-index: 20
+    }
+
+    #action-bar .btn {
+      flex: 1;
+      padding: .6rem .4rem;
+      font-size: .7rem
+    }
+
+    #joystick-wrap {
+      position: absolute;
+      bottom: 80px;
+      left: 24px;
+      width: 100px;
+      height: 100px;
+      z-index: 25;
+      display: none
+    }
+
+    #joystick {
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    #joystick-knob {
+      width: 36px;
+      height: 36px;
+      background: rgba(74, 255, 164, 0.6);
+      border-radius: 50%;
+      pointer-events: none
+    }
+
+    #room-label {
+      position: absolute;
+      top: 46px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(7, 8, 15, 0.9);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: .2rem .8rem;
+      border-radius: 999px;
+      font-size: .7rem;
+      letter-spacing: .1em;
+      z-index: 21;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .3s;
+      white-space: nowrap;
+      max-width: 90vw;
+      text-align: center
+    }
+
+    #room-label.visible {
+      opacity: 1
+    }
+
+    #kill-flash {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 74, 107, 0);
+      pointer-events: none;
+      z-index: 200;
+      transition: background .1s
+    }
+
+    #kill-flash.flash {
+      background: rgba(255, 74, 107, 0.25)
+    }
 
     /* Task modal */
-    #task-modal{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;z-index:50;display:none}
-    #task-modal.open{display:flex}
-    .task-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;width:min(460px,95vw)}
-    .task-box h3{font-family:var(--font-title);color:var(--accent);margin-bottom:1rem;font-size:.9rem}
+    #task-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      display: none
+    }
+
+    #task-modal.open {
+      display: flex
+    }
+
+    .task-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: min(460px, 95vw)
+    }
+
+    .task-box h3 {
+      font-family: var(--font-title);
+      color: var(--accent);
+      margin-bottom: 1rem;
+      font-size: .9rem
+    }
 
     /* Meeting */
-    #meeting-overlay{position:fixed;inset:0;background:var(--bg);z-index:100;padding:1.2rem 1.5rem;display:none;flex-direction:column}
-    #meeting-overlay.active{display:flex}
-    #meeting-overlay h2{font-family:var(--font-title);color:var(--danger);font-size:1.1rem;margin-bottom:.3rem}
-    #timer-bar{height:4px;background:var(--border);border-radius:2px;margin:.5rem 0;overflow:hidden}
-    #timer-fill{height:100%;background:var(--accent);transition:width 1s linear}
-    #timer-label{font-size:.72rem;color:var(--muted)}
-    #vote-phase-banner{padding:.4rem .8rem;border-radius:8px;font-size:.72rem;text-align:center;margin:.5rem 0;letter-spacing:.06em;border:1px solid var(--muted);color:var(--muted);background:rgba(74,85,128,0.08)}
-    #vote-phase-banner.voting{border-color:var(--danger);color:var(--danger);background:rgba(255,74,107,0.08)}
-    #vote-list{display:flex;flex-direction:column;gap:.4rem;margin-top:.4rem;overflow-y:auto;flex:1}
-    .vote-btn{padding:.65rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--font-hud);font-size:.83rem;cursor:pointer;text-align:left;transition:border-color .2s,opacity .2s;display:flex;align-items:center;gap:.75rem;width:100%}
-    .vote-btn:not(:disabled):hover{border-color:var(--danger);color:var(--danger)}
-    .vote-btn:disabled{opacity:.35;cursor:default}
-    .vote-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
-    #chat-wrap{display:none;flex-direction:column;gap:.4rem;margin-bottom:.5rem}
-    #chat-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:.75rem;height:110px;overflow-y:auto;font-size:.78rem}
-    #vote-result{margin-top:.6rem;padding:.9rem;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);font-size:.84rem;display:none}
+    #meeting-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      padding: 1.2rem 1.5rem;
+      display: none;
+      flex-direction: column
+    }
+
+    #meeting-overlay.active {
+      display: flex
+    }
+
+    #meeting-overlay h2 {
+      font-family: var(--font-title);
+      color: var(--danger);
+      font-size: 1.1rem;
+      margin-bottom: .3rem
+    }
+
+    #timer-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: .5rem 0;
+      overflow: hidden
+    }
+
+    #timer-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 1s linear
+    }
+
+    #timer-label {
+      font-size: .72rem;
+      color: var(--muted)
+    }
+
+    #vote-phase-banner {
+      padding: .4rem .8rem;
+      border-radius: 8px;
+      font-size: .72rem;
+      text-align: center;
+      margin: .5rem 0;
+      letter-spacing: .06em;
+      border: 1px solid var(--muted);
+      color: var(--muted);
+      background: rgba(74, 85, 128, 0.08)
+    }
+
+    #vote-phase-banner.voting {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: rgba(255, 74, 107, 0.08)
+    }
+
+    #vote-list {
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+      margin-top: .4rem;
+      overflow-y: auto;
+      flex: 1
+    }
+
+    .vote-btn {
+      padding: .65rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      color: var(--text);
+      font-family: var(--font-hud);
+      font-size: .83rem;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .2s, opacity .2s;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      width: 100%
+    }
+
+    .vote-btn:not(:disabled):hover {
+      border-color: var(--danger);
+      color: var(--danger)
+    }
+
+    .vote-btn:disabled {
+      opacity: .35;
+      cursor: default
+    }
+
+    .vote-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0
+    }
+
+    #chat-wrap {
+      display: none;
+      flex-direction: column;
+      gap: .4rem;
+      margin-bottom: .5rem
+    }
+
+    #chat-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: .75rem;
+      height: 110px;
+      overflow-y: auto;
+      font-size: .78rem
+    }
+
+    #vote-result {
+      margin-top: .6rem;
+      padding: .9rem;
+      background: var(--surface);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      font-size: .84rem;
+      display: none
+    }
 
     /* End */
-    #end-title{font-family:var(--font-title);font-size:2rem;margin-bottom:.5rem}
-    #player-list{list-style:none;margin-bottom:1rem}
-    #player-list li{padding:.4rem .7rem;background:var(--bg);border-radius:6px;margin-bottom:.35rem;font-size:.85rem;border:1px solid var(--border);display:flex;align-items:center;gap:.5rem}
+    #end-title {
+      font-family: var(--font-title);
+      font-size: 2rem;
+      margin-bottom: .5rem
+    }
 
-    body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px)}
+    #player-list {
+      list-style: none;
+      margin-bottom: 1rem
+    }
+
+    #player-list li {
+      padding: .4rem .7rem;
+      background: var(--bg);
+      border-radius: 6px;
+      margin-bottom: .35rem;
+      font-size: .85rem;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .5rem
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px)
+    }
   </style>
 </head>
+
 <body>
-<div id="kill-flash"></div>
-<canvas id="star-canvas"></canvas>
+  <div id="kill-flash"></div>
+  <canvas id="star-canvas"></canvas>
 
-<!-- MAIN MENU -->
-<div id="screen-menu" class="screen active">
-  <div class="panel-wrap">
-    <div class="menu-logo"><h1>EMISSARY</h1><p>▸ LEARN ◆ DECEIVE ◆ SURVIVE ◀</p></div>
-    <div class="menu-btns">
-      <button class="menu-btn primary" id="menu-btn-play"><span class="icon">▶</span><div><div>JOIN GAME</div><div class="menu-btn-desc">Enter a match code to join</div></div></button>
-      <button class="menu-btn" id="menu-btn-host"><span class="icon">◈</span><div><div>HOST GAME</div><div class="menu-btn-desc">Create a new match &amp; invite players</div></div></button>
-      <button class="menu-btn" id="menu-btn-addq"><span class="icon">✦</span><div><div>ADD QUESTIONS</div><div class="menu-btn-desc">Upload question sets to the database</div></div></button>
-    </div>
-  </div>
-</div>
-
-<!-- AUTH (required to upload questions) -->
-<div id="screen-auth" class="screen">
-  <div class="panel">
-    <span class="back-link" id="auth-back">◀ BACK</span>
-    <h1>ACCOUNT</h1>
-    <p class="sub">Sign in to upload and manage question sets</p>
-    <div id="auth-error" style="color:var(--danger);font-size:.75rem;margin-bottom:.7rem;display:none"></div>
-    <div id="auth-signin-area">
-      <p style="font-size:.8rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.5">
-        Your question sets are tied to your Google account so only you can edit or delete them.
-      </p>
-      <button class="btn" id="auth-google-btn" style="display:flex;align-items:center;justify-content:center;gap:.7rem">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-          <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-          <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-        </svg>
-        SIGN IN WITH GOOGLE
-      </button>
-    </div>
-    <div id="auth-signed-in" style="display:none;text-align:center;padding-top:.5rem">
-      <p style="font-size:.78rem;color:var(--accent);margin-bottom:.4rem">✓ Signed in as</p>
-      <p id="auth-user-email" style="font-size:.82rem;color:var(--text);margin-bottom:.9rem;font-weight:700"></p>
-      <button id="auth-signout" class="btn ghost sm">Sign out</button>
-    </div>
-  </div>
-</div>
-
-<!-- SET PICKER (full-page, opened from host screen) -->
-<div id="screen-setpicker" class="screen">
-  <div class="setpicker-header">
-    <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.7rem">
-      <span class="back-link" id="setpicker-back" style="margin-bottom:0">◀</span>
-      <h2 style="margin-bottom:0">CHOOSE QUESTION SET</h2>
-    </div>
-    <input id="setpicker-search" type="search" placeholder="🔍  Search sets…" autocomplete="off"/>
-  </div>
-  <div id="setpicker-list"></div>
-  <div id="setpicker-none" style="display:none">No matching sets found.</div>
-  <div id="setpicker-footer">
-    <button class="btn" id="setpicker-confirm">USE SELECTED SET →</button>
-  </div>
-</div>
-
-<!-- JOIN -->
-<div id="screen-play" class="screen">
-  <div class="panel">
-    <span class="back-link" id="play-back">◀ BACK</span>
-    <h1>JOIN GAME</h1><p class="sub">Enter the match code your host shared</p>
-    <div class="field"><label>Your callsign</label><input id="play-name" type="text" placeholder="e.g. Agent Zero" maxlength="16" autocomplete="off"/></div>
-    <div class="field">
-      <label>Your colour</label>
-      <div class="color-picker" id="play-color-picker"></div>
-    </div>
-    <div class="field"><label>Match code</label><input id="play-code" type="text" placeholder="e.g. ABC12" maxlength="8" autocomplete="off" style="text-transform:uppercase;letter-spacing:.12em"/></div>
-    <button class="btn" id="btn-join-play">CONNECT →</button>
-  </div>
-</div>
-
-<!-- HOST -->
-<div id="screen-host" class="screen">
-  <div class="panel panel-scroll">
-    <span class="back-link" id="host-back">◀ BACK</span>
-    <h1>HOST GAME</h1><p class="sub">Configure your match</p>
-    <div class="field"><label>Your callsign</label><input id="host-name" type="text" placeholder="e.g. Commander" maxlength="16" autocomplete="off"/></div>
-    <div class="field">
-      <label>Your colour</label>
-      <div class="color-picker" id="host-color-picker"></div>
-    </div>
-    <div class="divider"></div>
-    <p class="section-label">📚 Question Set</p>
-    <div id="host-set-chip" title="Click to choose a question set">
-      <div>
-        <div class="chip-label">Selected set</div>
-        <div class="chip-value" id="host-set-chip-value">— tap to choose —</div>
+  <!-- MAIN MENU -->
+  <div id="screen-menu" class="screen active">
+    <div class="panel-wrap">
+      <div class="menu-logo">
+        <h1>EMISSARY</h1>
+        <p>▸ LEARN ◆ DECEIVE ◆ SURVIVE ◀</p>
       </div>
-      <span class="chip-arrow">▸</span>
+      <div class="menu-btns">
+        <button class="menu-btn primary" id="menu-btn-play"><span class="icon">▶</span>
+          <div>
+            <div>JOIN GAME</div>
+            <div class="menu-btn-desc">Enter a match code to join</div>
+          </div>
+        </button>
+        <button class="menu-btn" id="menu-btn-host"><span class="icon">◈</span>
+          <div>
+            <div>HOST GAME</div>
+            <div class="menu-btn-desc">Create a new match &amp; invite players</div>
+          </div>
+        </button>
+        <button class="menu-btn" id="menu-btn-addq"><span class="icon">✦</span>
+          <div>
+            <div>ADD QUESTIONS</div>
+            <div class="menu-btn-desc">Upload question sets to the database</div>
+          </div>
+        </button>
+      </div>
     </div>
-    <div class="divider"></div>
-    <p class="section-label">⚙️ Match Settings</p>
-    <div class="field"><label>Discussion time (seconds)</label><input id="host-discuss" type="number" value="120" min="20"/><div class="hint">How long players discuss before voting opens. Recommended 90–180s for class.</div></div>
-    <div class="field"><label>Voting time (seconds)</label><input id="host-vote" type="number" value="60" min="15"/><div class="hint">Voting closes early if everyone votes.</div></div>
-    <div class="field"><label>Emergency meeting calls per player</label><input id="host-calls" type="number" value="1" min="0" max="5"/><div class="hint">How many times crew can call a meeting from the Meeting Zone (costs 1 LQ answer each).</div></div>
-    <div class="field"><label>Tasks each crewmate must complete</label><input id="host-tasks" type="number" value="3" min="1" max="9"/><div class="hint">When all crewmates finish this many tasks the crew wins, even if the impostor is alive.</div></div>
-    <div class="field"><label>Discussion mode</label><select id="host-chat"><option value="class">🏫 Discuss aloud in class (no in-game chat)</option><option value="chat">💬 In-game text chat</option></select></div>
-    <div class="divider"></div>
-    <button class="btn" id="btn-create-match">CREATE MATCH →</button>
   </div>
-</div>
 
-<!-- ADD QUESTIONS -->
-<div id="screen-addq" class="screen">
-  <div class="panel panel-scroll">
-    <span class="back-link" id="addq-back">◀ BACK</span>
-    <h1>ADD QUESTIONS</h1><p class="sub">Upload questions to Supabase</p>
-    <div id="addq-auth-required" style="text-align:center;padding:1.5rem 0">
-      <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">You must be signed in to upload questions.</p>
-      <button class="btn sm" id="addq-goto-auth">SIGN IN →</button>
-    </div>
-    <div id="addq-content" style="display:none">
-      <p id="addq-signed-as" style="font-size:.7rem;color:var(--muted2);margin-bottom:.8rem"></p>
-      <div class="field"><label>Category / Question Set Name</label><input id="addq-cat-input" type="text" placeholder="e.g. Biology Ch.3" maxlength="64" autocomplete="off"/><div class="hint">Hosts select this name when creating a match. Use the same name to add more questions to an existing set.</div></div>
-      <div style="margin-bottom:.6rem"><p style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">Or pick from your existing sets</p><select id="addq-cat-select" style="margin-bottom:0"><option value="">— select existing —</option></select></div>
-      <div class="divider"></div>
-      <div id="addq-existing-section" style="display:none">
-        <p class="section-label">✏️ Existing Questions in This Set</p>
-        <p style="font-size:.67rem;color:var(--muted);margin-bottom:.6rem;line-height:1.4">
-          Edit or delete questions you previously uploaded. Only your own questions are shown.
+  <!-- AUTH (required to upload questions) -->
+  <div id="screen-auth" class="screen">
+    <div class="panel">
+      <span class="back-link" id="auth-back">◀ BACK</span>
+      <h1>ACCOUNT</h1>
+      <p class="sub">Sign in to upload and manage question sets</p>
+      <div id="auth-error" style="color:var(--danger);font-size:.75rem;margin-bottom:.7rem;display:none"></div>
+      <div id="auth-signin-area">
+        <p style="font-size:.8rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.5">
+          Your question sets are tied to your Google account so only you can edit or delete them.
         </p>
-        <div id="addq-existing-list"></div>
-        <div class="divider"></div>
+        <button class="btn" id="auth-google-btn"
+          style="display:flex;align-items:center;justify-content:center;gap:.7rem">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"
+              fill="#4285F4" />
+            <path
+              d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"
+              fill="#34A853" />
+            <path
+              d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"
+              fill="#FBBC05" />
+            <path
+              d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"
+              fill="#EA4335" />
+          </svg>
+          SIGN IN WITH GOOGLE
+        </button>
       </div>
-      <p class="section-label">➕ Add New Questions</p>
-      <p style="font-size:.67rem;color:var(--muted);margin-bottom:.7rem;line-height:1.45">Each question has its own type. <strong style="color:var(--blue)">Short (SQ)</strong> = quick recall used in Swipe &amp; Fruit Ninja tasks. <strong style="color:var(--warn)">Long (LQ)</strong> = deeper analysis used in Connector tasks &amp; meetings.</p>
-      <div id="addq-rows"></div>
-      <button class="btn ghost" id="addq-add-row" style="margin-bottom:.8rem">+ ADD ANOTHER QUESTION</button>
+      <div id="auth-signed-in" style="display:none;text-align:center;padding-top:.5rem">
+        <p style="font-size:.78rem;color:var(--accent);margin-bottom:.4rem">✓ Signed in as</p>
+        <p id="auth-user-email" style="font-size:.82rem;color:var(--text);margin-bottom:.9rem;font-weight:700"></p>
+        <button id="auth-signout" class="btn ghost sm">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SET PICKER (full-page, opened from host screen) -->
+  <div id="screen-setpicker" class="screen">
+    <div class="setpicker-header">
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.7rem">
+        <span class="back-link" id="setpicker-back" style="margin-bottom:0">◀</span>
+        <h2 style="margin-bottom:0">CHOOSE QUESTION SET</h2>
+      </div>
+      <input id="setpicker-search" type="search" placeholder="🔍  Search sets…" autocomplete="off" />
+    </div>
+    <div id="setpicker-list"></div>
+    <div id="setpicker-none" style="display:none">No matching sets found.</div>
+    <div id="setpicker-footer">
+      <button class="btn" id="setpicker-confirm">USE SELECTED SET →</button>
+    </div>
+  </div>
+
+  <!-- JOIN -->
+  <div id="screen-play" class="screen">
+    <div class="panel">
+      <span class="back-link" id="play-back">◀ BACK</span>
+      <h1>JOIN GAME</h1>
+      <p class="sub">Enter the match code your host shared</p>
+      <div class="field"><label>Your callsign</label><input id="play-name" type="text" placeholder="e.g. Agent Zero"
+          maxlength="16" autocomplete="off" /></div>
+      <div class="field">
+        <label>Your colour</label>
+        <div class="color-picker" id="play-color-picker"></div>
+      </div>
+      <div class="field"><label>Match code</label><input id="play-code" type="text" placeholder="e.g. ABC12"
+          maxlength="8" autocomplete="off" style="text-transform:uppercase;letter-spacing:.12em" /></div>
+      <button class="btn" id="btn-join-play">CONNECT →</button>
+    </div>
+  </div>
+
+  <!-- HOST -->
+  <div id="screen-host" class="screen">
+    <div class="panel panel-scroll">
+      <span class="back-link" id="host-back">◀ BACK</span>
+      <h1>HOST GAME</h1>
+      <p class="sub">Configure your match</p>
+      <div class="field"><label>Your callsign</label><input id="host-name" type="text" placeholder="e.g. Commander"
+          maxlength="16" autocomplete="off" /></div>
+      <div class="field">
+        <label>Your colour</label>
+        <div class="color-picker" id="host-color-picker"></div>
+      </div>
       <div class="divider"></div>
-      <button class="btn" id="addq-submit">UPLOAD TO DATABASE →</button>
-      <div id="addq-status" style="margin-top:.6rem;font-size:.78rem;text-align:center;display:none"></div>
-    </div>
-  </div>
-</div>
+      <p class="section-label">📚 Question Set</p>
+      <div id="host-set-chip" title="Click to choose a question set">
+        <div>
+          <div class="chip-label">Selected set</div>
+          <div class="chip-value" id="host-set-chip-value">— tap to choose —</div>
+        </div>
+        <span class="chip-arrow">▸</span>
+      </div>
+      <div class="divider"></div>
+      <p class="section-label">⚙️ Match Settings</p>
+      <div class="field"><label>Discussion time (seconds)</label><input id="host-discuss" type="number" value="120"
+          min="20" />
+        <div class="hint">How long players discuss before voting opens. Recommended 90–180s for class.</div>
+      </div>
+      <div class="field"><label>Voting time (seconds)</label><input id="host-vote" type="number" value="60" min="15" />
+        <div class="hint">Voting closes early if everyone votes.</div>
+      </div>
+      <div class="field"><label>Emergency meeting calls per player</label><input id="host-calls" type="number" value="1"
+          min="0" max="5" />
+        <div class="hint">How many times crew can call a meeting from the Meeting Zone (costs 1 LQ answer each).</div>
+      </div>
+      <div class="field"><label>Tasks each crewmate must complete</label><input id="host-tasks" type="number" value="3"
+          min="1" max="9" />
+        <div class="hint">When all crewmates finish this many tasks the crew wins, even if the impostor is alive.</div>
+      </div>
+      <div class="field"><label>Amount of Impostors</label><input id="host-impostors" type="number" value="3" min="1"
+          max="3" />
+        <div class="field"><label>Amount of Jester roled players</label><input id="host-jesters" type="number" value="3"
+            min="1" max="3" />
+          <div class="field"><label>Discussion mode</label><select id="host-chat">
+              <option value="class">🏫 Discuss aloud in class (no in-game chat)</option>
+              <option value="chat">💬 In-game text chat</option>
+            </select></div>
+          <div class="divider"></div>
+          <button class="btn" id="btn-create-match">CREATE MATCH →</button>
+        </div>
+      </div>
 
-<!-- WAITING -->
-<div id="screen-waiting" class="screen">
-  <div class="panel">
-    <h1>STANDING BY</h1>
-    <p class="sub">MATCH CODE: <strong id="waiting-code" style="color:var(--accent);letter-spacing:.15em"></strong></p>
-    <p style="font-size:.7rem;color:var(--muted);margin-bottom:.5rem">Share this code with players</p>
-    <button class="btn ghost sm" id="btn-copy-link" style="margin-bottom:.8rem">📋 Copy join link</button>
-    <div class="divider"></div>
-    <p style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">Players in lobby</p>
-    <ul id="player-list"></ul>
-    <div id="host-qset-display" style="display:none;font-size:.72rem;color:var(--muted);padding:.4rem .7rem;border-radius:6px;border:1px solid var(--border);margin-bottom:.6rem">📚 Set: <strong id="host-qset-name" style="color:var(--accent)">—</strong></div>
-    <button class="btn hidden" id="btn-start">START GAME</button>
-  </div>
-</div>
+      <!-- ADD QUESTIONS -->
+      <div id="screen-addq" class="screen">
+        <div class="panel panel-scroll">
+          <span class="back-link" id="addq-back">◀ BACK</span>
+          <h1>ADD QUESTIONS</h1>
+          <p class="sub">Upload questions to Supabase</p>
+          <div id="addq-auth-required" style="text-align:center;padding:1.5rem 0">
+            <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">You must be signed in to upload questions.
+            </p>
+            <button class="btn sm" id="addq-goto-auth">SIGN IN →</button>
+          </div>
+          <div id="addq-content" style="display:none">
+            <p id="addq-signed-as" style="font-size:.7rem;color:var(--muted2);margin-bottom:.8rem"></p>
+            <div class="field"><label>Category / Question Set Name</label><input id="addq-cat-input" type="text"
+                placeholder="e.g. Biology Ch.3" maxlength="64" autocomplete="off" />
+              <div class="hint">Hosts select this name when creating a match. Use the same name to add more questions to
+                an
+                existing set.</div>
+            </div>
+            <div style="margin-bottom:.6rem">
+              <p
+                style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">
+                Or pick from your existing sets</p><select id="addq-cat-select" style="margin-bottom:0">
+                <option value="">— select existing —</option>
+              </select>
+            </div>
+            <div class="divider"></div>
+            <div id="addq-existing-section" style="display:none">
+              <p class="section-label">✏️ Existing Questions in This Set</p>
+              <p style="font-size:.67rem;color:var(--muted);margin-bottom:.6rem;line-height:1.4">
+                Edit or delete questions you previously uploaded. Only your own questions are shown.
+              </p>
+              <div id="addq-existing-list"></div>
+              <div class="divider"></div>
+            </div>
+            <p class="section-label">➕ Add New Questions</p>
+            <p style="font-size:.67rem;color:var(--muted);margin-bottom:.7rem;line-height:1.45">Each question has its
+              own
+              type. <strong style="color:var(--blue)">Short (SQ)</strong> = quick recall used in Swipe &amp; Fruit Ninja
+              tasks. <strong style="color:var(--warn)">Long (LQ)</strong> = deeper analysis used in Connector tasks
+              &amp;
+              meetings.</p>
+            <div id="addq-rows"></div>
+            <button class="btn ghost" id="addq-add-row" style="margin-bottom:.8rem">+ ADD ANOTHER QUESTION</button>
+            <div class="divider"></div>
+            <button class="btn" id="addq-submit">UPLOAD TO DATABASE →</button>
+            <div id="addq-status" style="margin-top:.6rem;font-size:.78rem;text-align:center;display:none"></div>
+          </div>
+        </div>
+      </div>
 
-<!-- GAME -->
-<div id="screen-game" class="screen">
-  <div id="hud">
-    <span id="hud-role" class="hud-pill hud-role-crew">CREW</span>
-    <span id="hud-shield" class="hud-pill" style="color:var(--muted);border-color:var(--muted)">NO SHIELD</span>
-    <span class="hud-spacer"></span>
-    <span id="hud-tasks" style="font-size:.68rem;color:var(--muted2)"></span>
-    <span id="hud-kill-status" style="font-size:.7rem;color:var(--muted);margin-left:.4rem"></span>
-    <span id="hud-room" style="font-size:.7rem;color:var(--muted);margin-left:.5rem">—</span>
-  </div>
-  <div id="room-label"></div>
-  <canvas id="game-canvas"></canvas>
-  <div id="joystick-wrap"><div id="joystick"><div id="joystick-knob"></div></div></div>
-  <div id="action-bar">
-    <button class="btn ghost hidden" id="btn-task">⬡ TASK</button>
-    <button class="btn danger hidden" id="btn-kill">✕ KILL</button>
-    <button class="btn hidden"        id="btn-swap">⇄ SWAP</button>
-    <button class="btn ghost hidden"  id="btn-report">⚑ REPORT</button>
-    <button class="btn ghost hidden"  id="btn-meeting">◈ MEETING</button>
-  </div>
-</div>
+      <!-- WAITING -->
+      <div id="screen-waiting" class="screen">
+        <div class="panel">
+          <h1>STANDING BY</h1>
+          <p class="sub">MATCH CODE: <strong id="waiting-code"
+              style="color:var(--accent);letter-spacing:.15em"></strong>
+          </p>
+          <p style="font-size:.7rem;color:var(--muted);margin-bottom:.5rem">Share this code with players</p>
+          <button class="btn ghost sm" id="btn-copy-link" style="margin-bottom:.8rem">📋 Copy join link</button>
+          <div class="divider"></div>
+          <p
+            style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">
+            Players in lobby</p>
+          <ul id="player-list"></ul>
+          <div id="host-qset-display"
+            style="display:none;font-size:.72rem;color:var(--muted);padding:.4rem .7rem;border-radius:6px;border:1px solid var(--border);margin-bottom:.6rem">
+            📚 Set: <strong id="host-qset-name" style="color:var(--accent)">—</strong></div>
+          <button class="btn hidden" id="btn-start">START GAME</button>
+        </div>
+      </div>
 
-<!-- END -->
-<div id="screen-end" class="screen">
-  <div class="panel" style="text-align:center">
-    <h1 id="end-title">GAME OVER</h1>
-    <p id="end-body" style="color:var(--muted);margin:.6rem 0 1rem;font-size:.85rem"></p>
-    <div id="end-reveal" style="text-align:left;margin-bottom:1rem"></div>
-    <button class="btn" onclick="location.reload()">BACK TO LOBBY</button>
-  </div>
-</div>
+      <!-- GAME -->
+      <div id="screen-game" class="screen">
+        <div id="hud">
+          <span id="hud-role" class="hud-pill hud-role-crew">CREW</span>
+          <span id="hud-shield" class="hud-pill" style="color:var(--muted);border-color:var(--muted)">NO SHIELD</span>
+          <span class="hud-spacer"></span>
+          <span id="hud-tasks" style="font-size:.68rem;color:var(--muted2)"></span>
+          <span id="hud-kill-status" style="font-size:.7rem;color:var(--muted);margin-left:.4rem"></span>
+          <span id="hud-room" style="font-size:.7rem;color:var(--muted);margin-left:.5rem">—</span>
+        </div>
+        <div id="room-label"></div>
+        <canvas id="game-canvas"></canvas>
+        <div id="joystick-wrap">
+          <div id="joystick">
+            <div id="joystick-knob"></div>
+          </div>
+        </div>
+        <div id="action-bar">
+          <button class="btn ghost hidden" id="btn-task">⬡ TASK</button>
+          <button class="btn danger hidden" id="btn-kill">✕ KILL</button>
+          <button class="btn hidden" id="btn-swap">⇄ SWAP</button>
+          <button class="btn ghost hidden" id="btn-report">⚑ REPORT</button>
+          <button class="btn ghost hidden" id="btn-meeting">◈ MEETING</button>
+        </div>
+      </div>
 
-<!-- TASK MODAL -->
-<div id="task-modal">
-  <div class="task-box">
-    <h3 id="task-modal-title">⬡ TASK STATION</h3>
-    <div id="task-content"></div>
-    <div class="divider"></div>
-    <button class="btn ghost" id="btn-close-task">CLOSE</button>
-  </div>
-</div>
+      <!-- END -->
+      <div id="screen-end" class="screen">
+        <div class="panel" style="text-align:center">
+          <h1 id="end-title">GAME OVER</h1>
+          <p id="end-body" style="color:var(--muted);margin:.6rem 0 1rem;font-size:.85rem"></p>
+          <div id="end-reveal" style="text-align:left;margin-bottom:1rem"></div>
+          <button class="btn" onclick="location.reload()">BACK TO LOBBY</button>
+        </div>
+      </div>
 
-<!-- MEETING OVERLAY -->
-<div id="meeting-overlay">
-  <h2 id="meeting-title">🚨 EMERGENCY MEETING</h2>
-  <p id="meeting-reason" style="color:var(--muted);font-size:.78rem;margin-bottom:.25rem"></p>
-  <div id="timer-bar"><div id="timer-fill" style="width:100%"></div></div>
-  <p id="timer-label">DISCUSSION</p>
-  <div id="vote-phase-banner">🔒 DISCUSSION — voting opens when timer ends</div>
-  <div id="chat-wrap">
-    <div id="chat-box"></div>
-    <div style="display:flex;gap:.4rem">
-      <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" style="flex:1"/>
-      <button class="btn" id="btn-chat-send" style="width:auto;padding:.4rem .8rem;font-size:.75rem">SEND</button>
-    </div>
-  </div>
-  <div id="vote-list"></div>
-  <div id="vote-result"></div>
-</div>
+      <!-- TASK MODAL -->
+      <div id="task-modal">
+        <div class="task-box">
+          <h3 id="task-modal-title">⬡ TASK STATION</h3>
+          <div id="task-content"></div>
+          <div class="divider"></div>
+          <button class="btn ghost" id="btn-close-task">CLOSE</button>
+        </div>
+      </div>
+
+      <!-- MEETING OVERLAY -->
+      <div id="meeting-overlay">
+        <h2 id="meeting-title">🚨 EMERGENCY MEETING</h2>
+        <p id="meeting-reason" style="color:var(--muted);font-size:.78rem;margin-bottom:.25rem"></p>
+        <div id="timer-bar">
+          <div id="timer-fill" style="width:100%"></div>
+        </div>
+        <p id="timer-label">DISCUSSION</p>
+        <div id="vote-phase-banner">🔒 DISCUSSION — voting opens when timer ends</div>
+        <div id="chat-wrap">
+          <div id="chat-box"></div>
+          <div style="display:flex;gap:.4rem">
+            <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" style="flex:1" />
+            <button class="btn" id="btn-chat-send" style="width:auto;padding:.4rem .8rem;font-size:.75rem">SEND</button>
+          </div>
+        </div>
+        <div id="vote-list"></div>
+        <div id="vote-result"></div>
+      </div>
 
 
-<script type="module">
-import { GAME_CONFIG }                       from "./config.js";
-import { createMatch, joinMatch,
-         onPlayersChange, onPhaseChange,
-         onGameStateChange,
-         assignRoles, setPhase, setGameResult,
-         callMeeting, castVote,
-         applyKill, applyJesterSwap,
-         onMeetingChange, setKillReady,
-         completeRoomTask, movePlayer,
-         getMatchSettings, getPlayerData,
-         getMatchPlayers, deleteMatch,
-         cleanupStaleMatches,
-         sendChatMessage, onChatMessage }     from "./realtime.js";
-import { Impostor, Crew }                    from "./roles.js";
-import { World }                             from "./world.js";
-import { SwipeTask, ConnectorTask,
-         FruitNinjaTask }                    from "./tasks.js";
-import { fetchCategories, addQuestions,
-         fetchSQ, fetchLQ,
-         fetchQuestionsForCategory,
-         updateQuestion, deleteQuestion,
-         signInWithGoogle, signOut,
-         getCurrentUser, onAuthChange }     from "./questions.js";
+      <script type="module">
+        import { GAME_CONFIG } from "./config.js";
+        import {
+          createMatch, joinMatch,
+          onPlayersChange, onPhaseChange,
+          onGameStateChange,
+          assignRoles, setPhase, setGameResult,
+          callMeeting, castVote,
+          applyKill, applyJesterSwap,
+          onMeetingChange, setKillReady,
+          completeRoomTask, movePlayer,
+          getMatchSettings, getPlayerData,
+          getMatchPlayers, deleteMatch,
+          cleanupStaleMatches,
+          sendChatMessage, onChatMessage
+        } from "./realtime.js";
+        import { Impostor, Crew } from "./roles.js";
+        import { World } from "./world.js";
+        import {
+          SwipeTask, ConnectorTask,
+          FruitNinjaTask
+        } from "./tasks.js";
+        import {
+          fetchCategories, addQuestions,
+          fetchSQ, fetchLQ,
+          fetchQuestionsForCategory,
+          updateQuestion, deleteQuestion,
+          signInWithGoogle, signOut,
+          getCurrentUser, onAuthChange
+        } from "./questions.js";
 
-// Clean up stale matches from previous sessions (runs silently in background)
-cleanupStaleMatches().catch(() => {});
+        // Clean up stale matches from previous sessions (runs silently in background)
+        cleanupStaleMatches().catch(() => { });
 
-const $ = id => document.getElementById(id);
-const show = id => {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  $(id).classList.add("active");
-};
+        const $ = id => document.getElementById(id);
+        const show = id => {
+          document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+          $(id).classList.add("active");
+        };
 
-// ── State ────────────────────────────────────────────────────
-let matchId, localPlayer, world;
-let allPlayers = {}, settings = {}, isHost = false;
-let meetingTimerInterval = null;
-let meetingPhase = "discussion";
-let tallyingVotes = false;
-let hasVoted = false;
-let killReady = false;
-let chatUnsubscribe = null;
-let selectedCategory = null;
-let currentUser = null;        // Supabase auth user
-let allSetCategories = [];     // full list for set picker
+        // ── State ────────────────────────────────────────────────────
+        let matchId, localPlayer, world;
+        let allPlayers = {}, settings = {}, isHost = false;
+        let meetingTimerInterval = null;
+        let meetingPhase = "discussion";
+        let tallyingVotes = false;
+        let hasVoted = false;
+        let killReady = false;
+        let chatUnsubscribe = null;
+        let selectedCategory = null;
+        let currentUser = null;        // Supabase auth user
+        let allSetCategories = [];     // full list for set picker
 
-// Ghost / task tracking
-let isAlive = true;
-let localCompletedRooms = new Set();
-let tasksNeeded = 3;
-let jesterSqCount = 0;
+        // Ghost / task tracking
+        let isAlive = true;
+        let localCompletedRooms = new Set();
+        let tasksNeeded = 3;
+        let jesterSqCount = 0;
 
-// ── Auth state listener ───────────────────────────────────────
-onAuthChange(user => {
-  currentUser = user;
-  updateAuthUI();
-});
-// Also seed from current session immediately
-getCurrentUser().then(u => { currentUser = u; updateAuthUI(); });
+        // ── Auth state listener ───────────────────────────────────────
+        onAuthChange(user => {
+          currentUser = user;
+          updateAuthUI();
+        });
+        // Also seed from current session immediately
+        getCurrentUser().then(u => { currentUser = u; updateAuthUI(); });
 
-function updateAuthUI() {
-  // Addq screen gate
-  const authRequired = $("addq-auth-required");
-  if (authRequired) {
-    authRequired.style.display        = currentUser ? "none"  : "block";
-    $("addq-content").style.display   = currentUser ? "block" : "none";
-    if (currentUser) {
-      const signedAs = $("addq-signed-as");
-      if (signedAs) signedAs.textContent = `Signed in as ${currentUser.email}`;
-      loadAddqCategories();
-      addqEnsureRow();
-    }
-  }
-  // Auth screen: toggle between sign-in button and signed-in state
-  const signinArea = $("auth-signin-area");
-  const signedIn   = $("auth-signed-in");
-  const emailEl    = $("auth-user-email");
-  const googleBtn  = $("auth-google-btn");
-  if (signinArea) signinArea.style.display = currentUser ? "none"  : "block";
-  if (signedIn)   signedIn.style.display   = currentUser ? "block" : "none";
-  if (emailEl && currentUser) emailEl.textContent = currentUser.email;
-  if (googleBtn)  { googleBtn.disabled = false; googleBtn.textContent = googleBtn.textContent.includes("Redirecting") ? "SIGN IN WITH GOOGLE" : googleBtn.textContent; }
-}
+        function updateAuthUI() {
+          // Addq screen gate
+          const authRequired = $("addq-auth-required");
+          if (authRequired) {
+            authRequired.style.display = currentUser ? "none" : "block";
+            $("addq-content").style.display = currentUser ? "block" : "none";
+            if (currentUser) {
+              const signedAs = $("addq-signed-as");
+              if (signedAs) signedAs.textContent = `Signed in as ${currentUser.email}`;
+              loadAddqCategories();
+              addqEnsureRow();
+            }
+          }
+          // Auth screen: toggle between sign-in button and signed-in state
+          const signinArea = $("auth-signin-area");
+          const signedIn = $("auth-signed-in");
+          const emailEl = $("auth-user-email");
+          const googleBtn = $("auth-google-btn");
+          if (signinArea) signinArea.style.display = currentUser ? "none" : "block";
+          if (signedIn) signedIn.style.display = currentUser ? "block" : "none";
+          if (emailEl && currentUser) emailEl.textContent = currentUser.email;
+          if (googleBtn) { googleBtn.disabled = false; googleBtn.textContent = googleBtn.textContent.includes("Redirecting") ? "SIGN IN WITH GOOGLE" : googleBtn.textContent; }
+        }
 
-// ── URL ?join= param — auto-fill join code from share link ───
-(function checkJoinParam() {
-  const params = new URLSearchParams(location.search);
-  const code   = params.get("join");
-  if (code) {
-    // Pre-fill code and navigate to join screen after init
-    setTimeout(() => {
-      $("play-code").value = code.toUpperCase();
-      show("screen-play");
-    }, 100);
-  }
-})();
+        // ── URL ?join= param — auto-fill join code from share link ───
+        (function checkJoinParam() {
+          const params = new URLSearchParams(location.search);
+          const code = params.get("join");
+          if (code) {
+            // Pre-fill code and navigate to join screen after init
+            setTimeout(() => {
+              $("play-code").value = code.toUpperCase();
+              show("screen-play");
+            }, 100);
+          }
+        })();
 
-// ── Color pickers ─────────────────────────────────────────────
-const SWATCH_COLORS = [
-  "#ff4a6b","#4a9eff","#4affa4","#ffc94a",
-  "#c44aff","#ff8c4a","#4affed","#ff4ae8",
-  "#a0ff4a","#ffffff",
-];
-let playPickedColor = SWATCH_COLORS[0];
-let hostPickedColor = SWATCH_COLORS[1];
+        // ── Color pickers ─────────────────────────────────────────────
+        const SWATCH_COLORS = [
+          "#ff4a6b", "#4a9eff", "#4affa4", "#ffc94a",
+          "#c44aff", "#ff8c4a", "#4affed", "#ff4ae8",
+          "#a0ff4a", "#ffffff",
+        ];
+        let playPickedColor = SWATCH_COLORS[0];
+        let hostPickedColor = SWATCH_COLORS[1];
 
-function initColorPicker(containerId, initial, onChange) {
-  const el = $(containerId);
-  el.innerHTML = SWATCH_COLORS.map(c => `
+        function initColorPicker(containerId, initial, onChange) {
+          const el = $(containerId);
+          el.innerHTML = SWATCH_COLORS.map(c => `
     <div class="color-swatch${c === initial ? ' selected' : ''}"
          data-color="${c}" style="background:${c}"></div>
   `).join("");
-  el.querySelectorAll(".color-swatch").forEach(sw => {
-    sw.addEventListener("click", () => {
-      el.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
-      sw.classList.add("selected");
-      onChange(sw.dataset.color);
-    });
-  });
-}
+          el.querySelectorAll(".color-swatch").forEach(sw => {
+            sw.addEventListener("click", () => {
+              el.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
+              sw.classList.add("selected");
+              onChange(sw.dataset.color);
+            });
+          });
+        }
 
-initColorPicker("play-color-picker", playPickedColor, c => { playPickedColor = c; });
-initColorPicker("host-color-picker", hostPickedColor, c => { hostPickedColor = c; });
+        initColorPicker("play-color-picker", playPickedColor, c => { playPickedColor = c; });
+        initColorPicker("host-color-picker", hostPickedColor, c => { hostPickedColor = c; });
 
-// ── Touch detection ──────────────────────────────────────────
-if (window.matchMedia("(pointer:coarse)").matches)
-  $("joystick-wrap").style.display = "block";
+        // ── Touch detection ──────────────────────────────────────────
+        if (window.matchMedia("(pointer:coarse)").matches)
+          $("joystick-wrap").style.display = "block";
 
-// ── Starfield ─────────────────────────────────────────────────
-(function() {
-  const cv = $("star-canvas"), ctx = cv.getContext("2d");
-  let stars = [];
-  const resize = () => {
-    cv.width = window.innerWidth; cv.height = window.innerHeight;
-    stars = Array.from({ length: 160 }, () => ({ x: Math.random()*cv.width, y: Math.random()*cv.height, r: Math.random()*1.2+0.2, v: Math.random()*0.18+0.05, o: Math.random() }));
-  };
-  resize(); window.addEventListener("resize", resize);
-  (function tick() {
-    if (!$("screen-menu").classList.contains("active")) { requestAnimationFrame(tick); return; }
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    for (const s of stars) { s.o += (Math.random()-.5)*.04; s.o = Math.max(.05, Math.min(.7,s.o)); ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fillStyle=`rgba(200,220,255,${s.o})`; ctx.fill(); s.y-=s.v; if(s.y<0){s.y=cv.height;s.x=Math.random()*cv.width;} }
-    requestAnimationFrame(tick);
-  })();
-})();
+        // ── Starfield ─────────────────────────────────────────────────
+        (function () {
+          const cv = $("star-canvas"), ctx = cv.getContext("2d");
+          let stars = [];
+          const resize = () => {
+            cv.width = window.innerWidth; cv.height = window.innerHeight;
+            stars = Array.from({ length: 160 }, () => ({ x: Math.random() * cv.width, y: Math.random() * cv.height, r: Math.random() * 1.2 + 0.2, v: Math.random() * 0.18 + 0.05, o: Math.random() }));
+          };
+          resize(); window.addEventListener("resize", resize);
+          (function tick() {
+            if (!$("screen-menu").classList.contains("active")) { requestAnimationFrame(tick); return; }
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            for (const s of stars) { s.o += (Math.random() - .5) * .04; s.o = Math.max(.05, Math.min(.7, s.o)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(200,220,255,${s.o})`; ctx.fill(); s.y -= s.v; if (s.y < 0) { s.y = cv.height; s.x = Math.random() * cv.width; } }
+            requestAnimationFrame(tick);
+          })();
+        })();
 
-// ── Role events ───────────────────────────────────────────────
-document.addEventListener("game:killReady", () => { $("hud-kill-status").textContent = "🔪 KILL READY"; $("hud-kill-status").style.color = "var(--danger)"; });
-document.addEventListener("game:killProgress", e => { $("hud-kill-status").textContent = `🔪 SQ ${e.detail.progress}/${e.detail.needed}`; $("hud-kill-status").style.color = "var(--muted)"; });
-document.addEventListener("game:shieldGranted", () => { $("hud-shield").textContent = "🛡 SHIELDED"; $("hud-shield").style.color = "var(--accent)"; $("hud-shield").style.borderColor = "var(--accent)"; });
+        // ── Role events ───────────────────────────────────────────────
+        document.addEventListener("game:killReady", () => { $("hud-kill-status").textContent = "🔪 KILL READY"; $("hud-kill-status").style.color = "var(--danger)"; });
+        document.addEventListener("game:killProgress", e => { $("hud-kill-status").textContent = `🔪 SQ ${e.detail.progress}/${e.detail.needed}`; $("hud-kill-status").style.color = "var(--muted)"; });
+        document.addEventListener("game:shieldGranted", () => { $("hud-shield").textContent = "🛡 SHIELDED"; $("hud-shield").style.color = "var(--accent)"; $("hud-shield").style.borderColor = "var(--accent)"; });
 
-// ═══════════════════════════════════════════════
-//  MAIN MENU
-// ═══════════════════════════════════════════════
-$("menu-btn-play").addEventListener("click", () => show("screen-play"));
-$("menu-btn-host").addEventListener("click", () => show("screen-host"));
-$("menu-btn-addq").addEventListener("click", () => {
-  show("screen-addq");
-  if (currentUser) { loadAddqCategories(); addqEnsureRow(); }
-});
-$("play-back").addEventListener("click",   () => show("screen-menu"));
-$("host-back").addEventListener("click",   () => show("screen-menu"));
-$("addq-back").addEventListener("click",   () => show("screen-menu"));
-$("auth-back").addEventListener("click",   () => show("screen-menu"));
-$("setpicker-back").addEventListener("click", () => show("screen-host"));
-$("addq-goto-auth").addEventListener("click", () => show("screen-auth"));
+        // ═══════════════════════════════════════════════
+        //  MAIN MENU
+        // ═══════════════════════════════════════════════
+        $("menu-btn-play").addEventListener("click", () => show("screen-play"));
+        $("menu-btn-host").addEventListener("click", () => show("screen-host"));
+        $("menu-btn-addq").addEventListener("click", () => {
+          show("screen-addq");
+          if (currentUser) { loadAddqCategories(); addqEnsureRow(); }
+        });
+        $("play-back").addEventListener("click", () => show("screen-menu"));
+        $("host-back").addEventListener("click", () => show("screen-menu"));
+        $("addq-back").addEventListener("click", () => show("screen-menu"));
+        $("auth-back").addEventListener("click", () => show("screen-menu"));
+        $("setpicker-back").addEventListener("click", () => show("screen-host"));
+        $("addq-goto-auth").addEventListener("click", () => show("screen-auth"));
 
-// ═══════════════════════════════════════════════
-//  AUTH SCREEN — Google OAuth
-// ═══════════════════════════════════════════════
-$("auth-google-btn").addEventListener("click", async () => {
-  $("auth-google-btn").disabled = true;
-  $("auth-error").style.display = "none";
-  try {
-    await signInWithGoogle();
-    // Page will redirect to Google then back; onAuthChange will fire on return.
-    // Show a loading message while redirect is happening.
-    $("auth-google-btn").textContent = "Redirecting to Google…";
-  } catch (err) {
-    $("auth-error").textContent = err.message;
-    $("auth-error").style.display = "block";
-    $("auth-google-btn").disabled = false;
-  }
-});
+        // ═══════════════════════════════════════════════
+        //  AUTH SCREEN — Google OAuth
+        // ═══════════════════════════════════════════════
+        $("auth-google-btn").addEventListener("click", async () => {
+          $("auth-google-btn").disabled = true;
+          $("auth-error").style.display = "none";
+          try {
+            await signInWithGoogle();
+            // Page will redirect to Google then back; onAuthChange will fire on return.
+            // Show a loading message while redirect is happening.
+            $("auth-google-btn").textContent = "Redirecting to Google…";
+          } catch (err) {
+            $("auth-error").textContent = err.message;
+            $("auth-error").style.display = "block";
+            $("auth-google-btn").disabled = false;
+          }
+        });
 
-$("auth-signout").addEventListener("click", async () => {
-  await signOut();
-  show("screen-menu");
-});
+        $("auth-signout").addEventListener("click", async () => {
+          await signOut();
+          show("screen-menu");
+        });
 
-// ═══════════════════════════════════════════════
-//  SET PICKER (full-page with search)
-// ═══════════════════════════════════════════════
-async function openSetPicker() {
-  show("screen-setpicker");
-  $("setpicker-search").value = "";
-  $("setpicker-list").innerHTML = `<div style="text-align:center;color:var(--muted);padding:2rem">Loading…</div>`;
-  try {
-    allSetCategories = await fetchCategories(); // all categories, no owner filter
-    renderSetPicker("");
-  } catch (err) {
-    $("setpicker-list").innerHTML = `<div style="color:var(--danger);padding:1rem">${esc(err.message)}</div>`;
-  }
-}
+        // ═══════════════════════════════════════════════
+        //  SET PICKER (full-page with search)
+        // ═══════════════════════════════════════════════
+        async function openSetPicker() {
+          show("screen-setpicker");
+          $("setpicker-search").value = "";
+          $("setpicker-list").innerHTML = `<div style="text-align:center;color:var(--muted);padding:2rem">Loading…</div>`;
+          try {
+            allSetCategories = await fetchCategories(); // all categories, no owner filter
+            renderSetPicker("");
+          } catch (err) {
+            $("setpicker-list").innerHTML = `<div style="color:var(--danger);padding:1rem">${esc(err.message)}</div>`;
+          }
+        }
 
-function renderSetPicker(query) {
-  const list = $("setpicker-list");
-  const none = $("setpicker-none");
-  const q    = query.toLowerCase().trim();
-  const filtered = q
-    ? allSetCategories.filter(c => c.name.toLowerCase().includes(q))
-    : allSetCategories;
+        function renderSetPicker(query) {
+          const list = $("setpicker-list");
+          const none = $("setpicker-none");
+          const q = query.toLowerCase().trim();
+          const filtered = q
+            ? allSetCategories.filter(c => c.name.toLowerCase().includes(q))
+            : allSetCategories;
 
-  if (!filtered.length) {
-    list.innerHTML = "";
-    none.style.display = "block";
-    return;
-  }
-  none.style.display = "none";
+          if (!filtered.length) {
+            list.innerHTML = "";
+            none.style.display = "block";
+            return;
+          }
+          none.style.display = "none";
 
-  list.innerHTML = filtered.map(c => `
+          list.innerHTML = filtered.map(c => `
     <div class="setpicker-card${selectedCategory === c.name ? " selected" : ""}"
          data-cat="${esc(c.name)}">
       <div style="flex:1;min-width:0">
@@ -636,56 +1514,56 @@ function renderSetPicker(query) {
     </div>
   `).join("");
 
-  list.querySelectorAll(".setpicker-card").forEach(card => {
-    card.addEventListener("click", e => {
-      // Preview button click — don't select the card
-      if (e.target.closest(".sp-preview-btn")) return;
-      list.querySelectorAll(".setpicker-card").forEach(c => c.classList.remove("selected"));
-      card.classList.add("selected");
-      selectedCategory = card.dataset.cat;
-    });
-  });
+          list.querySelectorAll(".setpicker-card").forEach(card => {
+            card.addEventListener("click", e => {
+              // Preview button click — don't select the card
+              if (e.target.closest(".sp-preview-btn")) return;
+              list.querySelectorAll(".setpicker-card").forEach(c => c.classList.remove("selected"));
+              card.classList.add("selected");
+              selectedCategory = card.dataset.cat;
+            });
+          });
 
-  list.querySelectorAll(".sp-preview-btn").forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      openPreviewModal(btn.dataset.preview);
-    });
-  });
-}
+          list.querySelectorAll(".sp-preview-btn").forEach(btn => {
+            btn.addEventListener("click", e => {
+              e.stopPropagation();
+              openPreviewModal(btn.dataset.preview);
+            });
+          });
+        }
 
-$("setpicker-search").addEventListener("input", e => renderSetPicker(e.target.value));
+        $("setpicker-search").addEventListener("input", e => renderSetPicker(e.target.value));
 
-async function openPreviewModal(categoryName) {
-  const wrap = mkOverlay();
-  const inner = wrap.querySelector(".mo-inner");
-  inner.innerHTML = `
+        async function openPreviewModal(categoryName) {
+          const wrap = mkOverlay();
+          const inner = wrap.querySelector(".mo-inner");
+          inner.innerHTML = `
     <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.3rem;font-size:.88rem">
       👁 ${esc(categoryName)}
     </h3>
     <p style="color:var(--muted);font-size:.7rem;margin-bottom:.8rem">Loading questions…</p>
   `;
-  document.body.appendChild(wrap);
+          document.body.appendChild(wrap);
 
-  try {
-    const questions = await fetchQuestionsForCategory(categoryName);
-    if (!questions.length) {
-      inner.innerHTML += `<p style="color:var(--muted);font-size:.8rem">No questions found.</p>`;
-    } else {
-      const rows = questions.map(q => `
+          try {
+            const questions = await fetchQuestionsForCategory(categoryName);
+            if (!questions.length) {
+              inner.innerHTML += `<p style="color:var(--muted);font-size:.8rem">No questions found.</p>`;
+            } else {
+              const rows = questions.map(q => `
         <div style="padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);
                     background:var(--bg);margin-bottom:.4rem">
           <div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.25rem">
             <span style="font-size:.58rem;padding:.1rem .35rem;border-radius:999px;
-                         border:1px solid ${q._table==='sq'?'rgba(74,158,255,.4)':'rgba(255,201,74,.4)'};
-                         color:${q._table==='sq'?'var(--blue)':'var(--warn)'}">${q._table.toUpperCase()}</span>
+                         border:1px solid ${q._table === 'sq' ? 'rgba(74,158,255,.4)' : 'rgba(255,201,74,.4)'};
+                         color:${q._table === 'sq' ? 'var(--blue)' : 'var(--warn)'}">${q._table.toUpperCase()}</span>
             <span style="font-size:.8rem;color:var(--text)">${esc(q.question)}</span>
           </div>
           <p style="font-size:.72rem;color:var(--accent);padding-left:.5rem">→ ${esc(q.answer)}</p>
         </div>
       `).join("");
-      const more = questions.length > 10 ? `<p style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:.4rem">… and ${questions.length - 10} more</p>` : "";
-      inner.innerHTML = `
+              const more = questions.length > 10 ? `<p style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:.4rem">… and ${questions.length - 10} more</p>` : "";
+              inner.innerHTML = `
         <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.5rem;font-size:.88rem">
           👁 ${esc(categoryName)}
         </h3>
@@ -697,715 +1575,719 @@ async function openPreviewModal(categoryName) {
             font-family:var(--font-hud);font-size:.8rem;cursor:pointer">CLOSE</button>
         </div>
       `;
-      inner.querySelector("#_prev-close").onclick = () => document.body.removeChild(wrap);
-      return; // skip the auto-close button below
-    }
-  } catch (err) {
-    inner.innerHTML += `<p style="color:var(--danger);font-size:.78rem">${esc(err.message)}</p>`;
-  }
+              inner.querySelector("#_prev-close").onclick = () => document.body.removeChild(wrap);
+              return; // skip the auto-close button below
+            }
+          } catch (err) {
+            inner.innerHTML += `<p style="color:var(--danger);font-size:.78rem">${esc(err.message)}</p>`;
+          }
 
-  const closeBtn = document.createElement("button");
-  closeBtn.textContent = "CLOSE";
-  closeBtn.style.cssText = "margin-top:.8rem;width:100%;padding:.6rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.8rem;cursor:pointer";
-  closeBtn.onclick = () => document.body.removeChild(wrap);
-  inner.appendChild(closeBtn);
-}
+          const closeBtn = document.createElement("button");
+          closeBtn.textContent = "CLOSE";
+          closeBtn.style.cssText = "margin-top:.8rem;width:100%;padding:.6rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.8rem;cursor:pointer";
+          closeBtn.onclick = () => document.body.removeChild(wrap);
+          inner.appendChild(closeBtn);
+        }
 
 
-$("setpicker-confirm").addEventListener("click", () => {
-  if (!selectedCategory) {
-    $("setpicker-list").querySelector(".setpicker-card")?.click(); // auto-pick first
-  }
-  if (!selectedCategory) { return; } // still nothing
-  // Update host chip
-  $("host-set-chip-value").textContent = selectedCategory;
-  $("host-set-chip").classList.add("chosen");
-  show("screen-host");
-});
+        $("setpicker-confirm").addEventListener("click", () => {
+          if (!selectedCategory) {
+            $("setpicker-list").querySelector(".setpicker-card")?.click(); // auto-pick first
+          }
+          if (!selectedCategory) { return; } // still nothing
+          // Update host chip
+          $("host-set-chip-value").textContent = selectedCategory;
+          $("host-set-chip").classList.add("chosen");
+          show("screen-host");
+        });
 
-// Host set chip opens picker
-$("host-set-chip").addEventListener("click", openSetPicker);
+        // Host set chip opens picker
+        $("host-set-chip").addEventListener("click", openSetPicker);
 
-// ═══════════════════════════════════════════════
-//  JOIN
-// ═══════════════════════════════════════════════
-$("btn-join-play").addEventListener("click", async () => {
-  const name = $("play-name").value.trim(), code = $("play-code").value.trim().toUpperCase();
-  if (!name) { $("play-name").focus(); return; }
-  if (!code) { $("play-code").focus(); return; }
-  await doJoin(name, code);
-});
+        // ═══════════════════════════════════════════════
+        //  JOIN
+        // ═══════════════════════════════════════════════
+        $("btn-join-play").addEventListener("click", async () => {
+          const name = $("play-name").value.trim(), code = $("play-code").value.trim().toUpperCase();
+          if (!name) { $("play-name").focus(); return; }
+          if (!code) { $("play-code").focus(); return; }
+          await doJoin(name, code);
+        });
 
-// ═══════════════════════════════════════════════
-//  HOST
-// ═══════════════════════════════════════════════
-$("btn-create-match").addEventListener("click", async () => {
-  const name = $("host-name").value.trim();
-  if (!name) { $("host-name").focus(); return; }
-  if (!selectedCategory) {
-    // flash the chip
-    $("host-set-chip").style.borderColor = "var(--danger)";
-    setTimeout(() => { $("host-set-chip").style.borderColor = ""; }, 1500);
-    flashHostError("Please choose a question set first.");
-    return;
-  }
-  isHost = true;
-  matchId = Math.random().toString(36).slice(2,7).toUpperCase();
-  localPlayer = { id: crypto.randomUUID(), name, color: hostPickedColor };
-  settings = {
-    useChat:          $("host-chat").value,
-    discussionTime:   +$("host-discuss").value || 120,
-    votingTime:       +$("host-vote").value    || 60,
-    meetingCalls:     +$("host-calls").value   || 1,
-    tasksPerCrew:     +$("host-tasks").value   || 3,
-    questionCategory: selectedCategory,
-  };
-  await createMatch(matchId, localPlayer.id, settings);
-  await joinMatch(matchId, localPlayer);
-  $("waiting-code").textContent = matchId;
-  if (selectedCategory) { $("host-qset-display").style.display="block"; $("host-qset-name").textContent=selectedCategory; }
-  $("btn-start").classList.remove("hidden");
-  show("screen-waiting");
-  setupWaitingListeners();
-});
+        // ═══════════════════════════════════════════════
+        //  HOST
+        // ═══════════════════════════════════════════════
+        $("btn-create-match").addEventListener("click", async () => {
+          const name = $("host-name").value.trim();
+          if (!name) { $("host-name").focus(); return; }
+          if (!selectedCategory) {
+            // flash the chip
+            $("host-set-chip").style.borderColor = "var(--danger)";
+            setTimeout(() => { $("host-set-chip").style.borderColor = ""; }, 1500);
+            flashHostError("Please choose a question set first.");
+            return;
+          }
+          isHost = true;
+          matchId = Math.random().toString(36).slice(2, 7).toUpperCase();
+          localPlayer = { id: crypto.randomUUID(), name, color: hostPickedColor };
+          settings = {
+            useChat: $("host-chat").value,
+            discussionTime: +$("host-discuss").value || 120,
+            votingTime: +$("host-vote").value || 60,
+            meetingCalls: +$("host-calls").value || 1,
+            tasksPerCrew: +$("host-tasks").value || 3,
+            impostors: +$("host-impostors").value || 1,
+            jesters: +$("host-jesters").value || 1,
+            questionCategory: selectedCategory,
+          };
+          await createMatch(matchId, localPlayer.id, settings);
+          await joinMatch(matchId, localPlayer);
+          $("waiting-code").textContent = matchId;
+          if (selectedCategory) { $("host-qset-display").style.display = "block"; $("host-qset-name").textContent = selectedCategory; }
+          $("btn-start").classList.remove("hidden");
+          show("screen-waiting");
+          setupWaitingListeners();
+        });
 
-async function doJoin(name, code) {
-  matchId = code.toUpperCase().trim(); // always uppercase, defensive
+        async function doJoin(name, code) {
+          matchId = code.toUpperCase().trim(); // always uppercase, defensive
 
-  // Deduplicate name: if someone in the lobby already has this name, append a number
-  const existingPlayers = await getMatchPlayers(matchId);
-  const takenNames = Object.values(existingPlayers).map(p => p.name?.toLowerCase());
-  let finalName = name;
-  if (takenNames.includes(name.toLowerCase())) {
-    let n = 2;
-    while (takenNames.includes(`${name.toLowerCase()}${n}`)) n++;
-    finalName = `${name}${n}`;
-  }
+          // Deduplicate name: if someone in the lobby already has this name, append a number
+          const existingPlayers = await getMatchPlayers(matchId);
+          const takenNames = Object.values(existingPlayers).map(p => p.name?.toLowerCase());
+          let finalName = name;
+          if (takenNames.includes(name.toLowerCase())) {
+            let n = 2;
+            while (takenNames.includes(`${name.toLowerCase()}${n}`)) n++;
+            finalName = `${name}${n}`;
+          }
 
-  localPlayer = { id: crypto.randomUUID(), name: finalName, color: playPickedColor };
-  await joinMatch(matchId, localPlayer);
-  $("waiting-code").textContent = matchId;
-  show("screen-waiting");
-  setupWaitingListeners();
+          localPlayer = { id: crypto.randomUUID(), name: finalName, color: playPickedColor };
+          await joinMatch(matchId, localPlayer);
+          $("waiting-code").textContent = matchId;
+          show("screen-waiting");
+          setupWaitingListeners();
 
-  onGameStateChange(matchId, async state => {
-    const { phase, winner } = state;
-    if (phase === "playing" && !world) {
-      settings = await getMatchSettings(matchId);
-      selectedCategory = settings.questionCategory ?? null;
-      let me = allPlayers[localPlayer.id];
-      if (!me || !me.role) me = await getPlayerData(matchId, localPlayer.id);
-      localPlayer.role = me?.role ?? "crew";
-      launchGame();
-    } else if (phase === "ended" && winner && !gameOver) {
-      gameOver = true;
-      endGame(winner);
-    }
-  });
-}
+          onGameStateChange(matchId, async state => {
+            const { phase, winner } = state;
+            if (phase === "playing" && !world) {
+              settings = await getMatchSettings(matchId);
+              selectedCategory = settings.questionCategory ?? null;
+              let me = allPlayers[localPlayer.id];
+              if (!me || !me.role) me = await getPlayerData(matchId, localPlayer.id);
+              localPlayer.role = me?.role ?? "crew";
+              launchGame();
+            } else if (phase === "ended" && winner && !gameOver) {
+              gameOver = true;
+              endGame(winner);
+            }
+          });
+        }
 
-function setupWaitingListeners() {
-  onPlayersChange(matchId, snap => {
-    allPlayers = snap ?? {};
-    $("player-list").innerHTML = Object.values(allPlayers).map(p => `<li style="color:${p.color}">${p.name}</li>`).join("");
-  });
+        function setupWaitingListeners() {
+          settings = getMatchSettings(matchId);
+          onPlayersChange(matchId, snap => {
+            allPlayers = snap ?? {};
+            $("player-list").innerHTML = Object.values(allPlayers).map(p => `<li style="color:${p.color}">${p.name}</li>`).join("");
+          });
 
-  // Wire copy-link now that matchId is set
-  $("btn-copy-link").onclick = async () => {
-    const url = `${location.origin}${location.pathname}?join=${matchId}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      $("btn-copy-link").textContent = "✓ Copied!";
-      setTimeout(() => { $("btn-copy-link").textContent = "📋 Copy join link"; }, 2000);
-    } catch {
-      prompt("Copy this link to share:", url);
-    }
-  };
-}
+          // Wire copy-link now that matchId is set
+          $("btn-copy-link").onclick = async () => {
+            const url = `${location.origin}${location.pathname}?join=${matchId}`;
+            try {
+              await navigator.clipboard.writeText(url);
+              $("btn-copy-link").textContent = "✓ Copied!";
+              setTimeout(() => { $("btn-copy-link").textContent = "📋 Copy join link"; }, 2000);
+            } catch {
+              prompt("Copy this link to share:", url);
+            }
+          };
+        }
 
-// ═══════════════════════════════════════════════
-//  START GAME
-// ═══════════════════════════════════════════════
-$("btn-start").addEventListener("click", async () => {
-  const ids = Object.keys(allPlayers);
-  if (ids.length < 3) { alert("Need at least 3 players"); return; }
-  const shuffled = [...ids].sort(() => Math.random() - 0.5);
-  const roleMap  = {};
-  shuffled.forEach((id, i) => roleMap[id] = i===0?"impostor":i===1?"jester":"crew");
-  await assignRoles(matchId, roleMap);
-  await setPhase(matchId, "playing");
-  localPlayer.role = roleMap[localPlayer.id];
-  launchGame();
-});
+        // ═══════════════════════════════════════════════
+        //  START GAME
+        // ═══════════════════════════════════════════════
+        $("btn-start").addEventListener("click", async () => {
+          const ids = Object.keys(allPlayers);
+          const minplayers = (settings.impostors * 2) + settings.jesters;
+          if (ids.length < minplayers) { alert(`Need at least ${minplayers} players`); return; }
+          const shuffled = [...ids].sort(() => Math.random() - 0.5);
+          const roleMap = {};
+          shuffled.forEach((id, i) => roleMap[id] = i <= settings.impostors ? "impostor" : i > settings.impostors & i <= GAME_CONFIG.jesters ? "jester" : "crew");
+          await assignRoles(matchId, roleMap);
+          await setPhase(matchId, "playing");
+          localPlayer.role = roleMap[localPlayer.id];
+          launchGame();
+        });
 
-// ═══════════════════════════════════════════════
-//  LAUNCH GAME
-// ═══════════════════════════════════════════════
-function launchGame() {
-  isAlive = true;
-  localCompletedRooms = new Set();
-  jesterSqCount = 0;
-  tasksNeeded = settings.tasksPerCrew || 3;
+        // ═══════════════════════════════════════════════
+        //  LAUNCH GAME
+        // ═══════════════════════════════════════════════
+        function launchGame() {
+          isAlive = true;
+          localCompletedRooms = new Set();
+          jesterSqCount = 0;
+          tasksNeeded = settings.tasksPerCrew || 3;
 
-  show("screen-game");
-  const canvas = $("game-canvas");
-  const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
-  setTimeout(resize, 50);
-  window.addEventListener("resize", resize);
+          show("screen-game");
+          const canvas = $("game-canvas");
+          const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+          setTimeout(resize, 50);
+          window.addEventListener("resize", resize);
 
-  world = new World(canvas, matchId, localPlayer);
+          world = new World(canvas, matchId, localPlayer);
 
-  // ── Room enter callback ──
-  world.onEnterRoom = room => {
-    $("hud-room").textContent = room?.label ?? "—";
-    if (room) {
-      const lbl = $("room-label");
-      lbl.textContent = room.label.toUpperCase();
-      lbl.style.borderColor = ""; lbl.style.color = "";
-      lbl.classList.add("visible");
-      setTimeout(() => lbl.classList.remove("visible"), 2000);
-    }
-    updateTaskButton(room);
-    $("btn-meeting").classList.toggle("hidden", !room?.meetingZone || !isAlive);
-  };
+          // ── Room enter callback ──
+          world.onEnterRoom = room => {
+            $("hud-room").textContent = room?.label ?? "—";
+            if (room) {
+              const lbl = $("room-label");
+              lbl.textContent = room.label.toUpperCase();
+              lbl.style.borderColor = ""; lbl.style.color = "";
+              lbl.classList.add("visible");
+              setTimeout(() => lbl.classList.remove("visible"), 2000);
+            }
+            updateTaskButton(room);
+            $("btn-meeting").classList.toggle("hidden", !room?.meetingZone || !isAlive);
+          };
 
-  // ── Near-corpse → report button ──
-  world.onNearCorpseChange = corpse => {
-    $("btn-report").classList.toggle("hidden", !corpse || !isAlive);
-  };
+          // ── Near-corpse → report button ──
+          world.onNearCorpseChange = corpse => {
+            $("btn-report").classList.toggle("hidden", !corpse || !isAlive);
+          };
 
-  setTimeout(() => world.start(), 60);
+          setTimeout(() => world.start(), 60);
 
-  // HUD
-  const role = localPlayer.role ?? "crew";
-  const pill = $("hud-role");
-  pill.textContent = role.toUpperCase();
-  pill.className   = `hud-pill hud-role-${role}`;
+          // HUD
+          const role = localPlayer.role ?? "crew";
+          const pill = $("hud-role");
+          pill.textContent = role.toUpperCase();
+          pill.className = `hud-pill hud-role-${role}`;
 
-  if (role === "impostor") {
-    $("btn-kill").classList.remove("hidden");
-    $("hud-kill-status").textContent = "🔪 NEED SQ";
-  }
-  if (role === "jester") {
-    $("btn-swap").classList.remove("hidden");
-    updateSwapButton();
-  }
-  if (role === "crew") updateTasksHUD();
+          if (role === "impostor") {
+            $("btn-kill").classList.remove("hidden");
+            $("hud-kill-status").textContent = "🔪 NEED SQ";
+          }
+          if (role === "jester") {
+            $("btn-swap").classList.remove("hidden");
+            updateSwapButton();
+          }
+          if (role === "crew") updateTasksHUD();
 
-  onGameStateChange(matchId, state => {
-    const { phase, winner } = state;
-    if (phase === "meeting") openMeeting();
-    else if (phase === "playing") closeMeeting();
-    else if (phase === "ended" && winner && !gameOver) { gameOver = true; endGame(winner); return; }
-    checkWinConditions(allPlayers);
-  });
+          onGameStateChange(matchId, state => {
+            const { phase, winner } = state;
+            if (phase === "meeting") openMeeting();
+            else if (phase === "playing") closeMeeting();
+            else if (phase === "ended" && winner && !gameOver) { gameOver = true; endGame(winner); return; }
+            checkWinConditions(allPlayers);
+          });
 
-  onPlayersChange(matchId, snap => {
-    allPlayers = snap ?? {};
-    const me = allPlayers[localPlayer.id];
+          onPlayersChange(matchId, snap => {
+            allPlayers = snap ?? {};
+            const me = allPlayers[localPlayer.id];
 
-    // ── Detect local player death ──
-    if (me && !me.alive && isAlive) setGhostState();
+            // ── Detect local player death ──
+            if (me && !me.alive && isAlive) setGhostState();
 
-    if (me && role === "impostor") {
-      killReady = me.killReady ?? false;
-      $("hud-kill-status").textContent = killReady ? "🔪 KILL READY" : "🔪 NEED SQ";
-      $("hud-kill-status").style.color = killReady ? "var(--danger)" : "var(--muted)";
-    }
-    if (me?.shield) {
-      $("hud-shield").textContent = "🛡 SHIELDED"; $("hud-shield").style.color = "var(--accent)"; $("hud-shield").style.borderColor = "var(--accent)";
-    } else if (me) {
-      $("hud-shield").textContent = "NO SHIELD"; $("hud-shield").style.color = "var(--muted)"; $("hud-shield").style.borderColor = "var(--muted)";
-    }
+            if (me && role === "impostor") {
+              killReady = me.killReady ?? false;
+              $("hud-kill-status").textContent = killReady ? "🔪 KILL READY" : "🔪 NEED SQ";
+              $("hud-kill-status").style.color = killReady ? "var(--danger)" : "var(--muted)";
+            }
+            if (me?.shield) {
+              $("hud-shield").textContent = "🛡 SHIELDED"; $("hud-shield").style.color = "var(--accent)"; $("hud-shield").style.borderColor = "var(--accent)";
+            } else if (me) {
+              $("hud-shield").textContent = "NO SHIELD"; $("hud-shield").style.color = "var(--muted)"; $("hud-shield").style.borderColor = "var(--muted)";
+            }
 
-    checkWinConditions(allPlayers);
-  });
+            checkWinConditions(allPlayers);
+          });
 
-  onMeetingChange(matchId, mtg => {
-    window._latestMeeting = mtg;
-    if (!mtg) return;
+          onMeetingChange(matchId, mtg => {
+            window._latestMeeting = mtg;
+            if (!mtg) return;
 
-    // Auto-skip: votes are in the meeting node, so check here on every vote update
-    if (meetingPhase === "voting" && !tallyingVotes) {
-      const voteCount  = Object.keys(mtg.votes ?? {}).length;
-      const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
-      if (aliveCount > 0 && voteCount >= aliveCount) {
-        tallyingVotes = true;
-        clearInterval(meetingTimerInterval);
-        flashHud("All votes in — tallying!", "info");
-        setTimeout(tallyVotes, 800);
-      }
-    }
+            // Auto-skip: votes are in the meeting node, so check here on every vote update
+            if (meetingPhase === "voting" && !tallyingVotes) {
+              const voteCount = Object.keys(mtg.votes ?? {}).length;
+              const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
+              if (aliveCount > 0 && voteCount >= aliveCount) {
+                tallyingVotes = true;
+                clearInterval(meetingTimerInterval);
+                flashHud("All votes in — tallying!", "info");
+                setTimeout(tallyVotes, 800);
+              }
+            }
 
-    if (settings.useChat === "chat") syncChat(mtg);
-  });
-}
+            if (settings.useChat === "chat") syncChat(mtg);
+          });
+        }
 
-// ── Ghost state ───────────────────────────────────────────────
-function setGhostState() {
-  isAlive = false;
-  const pill = $("hud-role");
-  pill.textContent = "DEAD — GHOST";
-  pill.className   = "hud-pill hud-role-dead";
-  $("hud-tasks").textContent = "";
+        // ── Ghost state ───────────────────────────────────────────────
+        function setGhostState() {
+          isAlive = false;
+          const pill = $("hud-role");
+          pill.textContent = "DEAD — GHOST";
+          pill.className = "hud-pill hud-role-dead";
+          $("hud-tasks").textContent = "";
 
-  // Hide all action buttons
-  ["btn-task","btn-kill","btn-swap","btn-report","btn-meeting"].forEach(id => $(id).classList.add("hidden"));
-  flashHud("👻 You are dead. Observe as a ghost.", "warn");
-}
+          // Hide all action buttons
+          ["btn-task", "btn-kill", "btn-swap", "btn-report", "btn-meeting"].forEach(id => $(id).classList.add("hidden"));
+          flashHud("👻 You are dead. Observe as a ghost.", "warn");
+        }
 
-// ── Task button label ─────────────────────────────────────────
-function updateTaskButton(room) {
-  if (!isAlive) { $("btn-task").classList.add("hidden"); return; }
-  if (!room?.taskZone) { $("btn-task").classList.add("hidden"); return; }
+        // ── Task button label ─────────────────────────────────────────
+        function updateTaskButton(room) {
+          if (!isAlive) { $("btn-task").classList.add("hidden"); return; }
+          if (!room?.taskZone) { $("btn-task").classList.add("hidden"); return; }
 
-  const btn  = $("btn-task");
-  const role = localPlayer.role;
-  btn.classList.remove("hidden");
-  btn.style.cursor  = "";
-  btn.style.opacity = "";
-  btn.classList.remove("ghost");
+          const btn = $("btn-task");
+          const role = localPlayer.role;
+          btn.classList.remove("hidden");
+          btn.style.cursor = "";
+          btn.style.opacity = "";
+          btn.classList.remove("ghost");
 
-  if (role === "crew") {
-    if (localCompletedRooms.has(room.id)) {
-      btn.textContent = "✓ DONE";
-      btn.style.opacity = "0.4";
-      btn.style.cursor  = "default";
-      btn.classList.add("ghost");
-    } else {
-      btn.textContent = "⬡ TASK";
-    }
-  } else if (role === "impostor") {
-    btn.textContent = "⬡ PREP KILL";
-  } else if (role === "jester") {
-    btn.textContent = "⬡ CHARGE SWAP";
-  }
-}
+          if (role === "crew") {
+            if (localCompletedRooms.has(room.id)) {
+              btn.textContent = "✓ DONE";
+              btn.style.opacity = "0.4";
+              btn.style.cursor = "default";
+              btn.classList.add("ghost");
+            } else {
+              btn.textContent = "⬡ TASK";
+            }
+          } else if (role === "impostor") {
+            btn.textContent = "⬡ PREP KILL";
+          } else if (role === "jester") {
+            btn.textContent = "⬡ CHARGE SWAP";
+          }
+        }
 
-function updateTasksHUD() {
-  if (localPlayer.role !== "crew") return;
-  const done = localCompletedRooms.size;
-  $("hud-tasks").textContent = `📋 ${done}/${tasksNeeded}`;
-}
+        function updateTasksHUD() {
+          if (localPlayer.role !== "crew") return;
+          const done = localCompletedRooms.size;
+          $("hud-tasks").textContent = `📋 ${done}/${tasksNeeded}`;
+        }
 
-// ── Swap button label ─────────────────────────────────────────
-function updateSwapButton() {
-  const needed = GAME_CONFIG.jesterSwapCostSq;
-  const btn    = $("btn-swap");
-  if (jesterSqCount >= needed) {
-    btn.textContent = "⇄ SWAP ✓";
-    btn.style.background = "var(--warn)";
-    btn.style.color      = "#07080f";
-  } else {
-    btn.textContent = `⇄ SWAP (${jesterSqCount}/${needed})`;
-    btn.style.background = "";
-    btn.style.color      = "";
-  }
-}
+        // ── Swap button label ─────────────────────────────────────────
+        function updateSwapButton() {
+          const needed = GAME_CONFIG.jesterSwapCostSq;
+          const btn = $("btn-swap");
+          if (jesterSqCount >= needed) {
+            btn.textContent = "⇄ SWAP ✓";
+            btn.style.background = "var(--warn)";
+            btn.style.color = "#07080f";
+          } else {
+            btn.textContent = `⇄ SWAP (${jesterSqCount}/${needed})`;
+            btn.style.background = "";
+            btn.style.color = "";
+          }
+        }
 
-// ── Kill ──────────────────────────────────────────────────────
-$("btn-kill").addEventListener("click", async () => {
-  if (localPlayer.role !== "impostor" || !isAlive) return;
-  if (!killReady) { flashHud("Complete an SQ first to preload a kill!"); return; }
-  const target = world?.findNearest(50);
-  if (!target) { flashHud("No one in range!"); return; }
-  if (target.shield) {
-    const blocked = Math.random() < target.shield.chance;
-    if (blocked) {
-      flashHud("Kill blocked by a shield!", "warn");
-      killReady = false;
-      await Impostor.resetKill(matchId, localPlayer.id);
-      $("hud-kill-status").textContent = "🔪 NEED SQ";
-      $("hud-kill-status").style.color  = "var(--muted)";
-      return;
-    }
-  }
-  await applyKill(matchId, target.id);
-  killReady = false;
-  await setKillReady(matchId, localPlayer.id, false);
-  const f = $("kill-flash"); f.classList.add("flash"); setTimeout(() => f.classList.remove("flash"), 300);
-  $("hud-kill-status").textContent = "🔪 NEED SQ";
-  $("hud-kill-status").style.color  = "var(--muted)";
-});
+        // ── Kill ──────────────────────────────────────────────────────
+        $("btn-kill").addEventListener("click", async () => {
+          if (localPlayer.role !== "impostor" || !isAlive) return;
+          if (!killReady) { flashHud("Complete an SQ first to preload a kill!"); return; }
+          const target = world?.findNearest(50);
+          if (!target) { flashHud("No one in range!"); return; }
+          if (target.shield) {
+            const blocked = Math.random() < target.shield.chance;
+            if (blocked) {
+              flashHud("Kill blocked by a shield!", "warn");
+              killReady = false;
+              await Impostor.resetKill(matchId, localPlayer.id);
+              $("hud-kill-status").textContent = "🔪 NEED SQ";
+              $("hud-kill-status").style.color = "var(--muted)";
+              return;
+            }
+          }
+          await applyKill(matchId, target.id);
+          killReady = false;
+          await setKillReady(matchId, localPlayer.id, false);
+          const f = $("kill-flash"); f.classList.add("flash"); setTimeout(() => f.classList.remove("flash"), 300);
+          $("hud-kill-status").textContent = "🔪 NEED SQ";
+          $("hud-kill-status").style.color = "var(--muted)";
+        });
 
-// ── Report (near corpse only) ─────────────────────────────────
-$("btn-report").addEventListener("click", async () => {
-  if (!localPlayer || !isAlive) return;
-  const corpse = world?.findNearestCorpse(50);
-  if (!corpse) { flashHud("No body nearby to report!"); return; }
-  await callMeeting(matchId, localPlayer.id, "corpse");
-  await setPhase(matchId, "meeting");
-});
+        // ── Report (near corpse only) ─────────────────────────────────
+        $("btn-report").addEventListener("click", async () => {
+          if (!localPlayer || !isAlive) return;
+          const corpse = world?.findNearestCorpse(50);
+          if (!corpse) { flashHud("No body nearby to report!"); return; }
+          await callMeeting(matchId, localPlayer.id, "corpse");
+          await setPhase(matchId, "meeting");
+        });
 
-// ── Meeting zone button ───────────────────────────────────────
-$("btn-meeting").addEventListener("click", async () => {
-  if (!isAlive) return;
-  const me = allPlayers[localPlayer.id];
-  if ((me?.meetingCallsLeft ?? 1) <= 0) { flashHud("No meeting calls left!"); return; }
-  await callMeeting(matchId, localPlayer.id, "zone");
-  await setPhase(matchId, "meeting");
-});
+        // ── Meeting zone button ───────────────────────────────────────
+        $("btn-meeting").addEventListener("click", async () => {
+          if (!isAlive) return;
+          const me = allPlayers[localPlayer.id];
+          if ((me?.meetingCallsLeft ?? 1) <= 0) { flashHud("No meeting calls left!"); return; }
+          await callMeeting(matchId, localPlayer.id, "zone");
+          await setPhase(matchId, "meeting");
+        });
 
-// ── Task button ───────────────────────────────────────────────
-$("btn-task").addEventListener("click", () => {
-  if (!isAlive) return;
-  const room = world?.getLocalRoom();
-  if (!room?.taskZone) return;
-  const role = localPlayer.role;
-  if (role === "crew") {
-    if (localCompletedRooms.has(room.id)) return; // already done
-    openCrewTask(room);
-  } else if (role === "impostor") {
-    openImpostorTask(room);
-  } else if (role === "jester") {
-    openRoleQuestionModal("jester");
-  }
-});
-$("btn-close-task").addEventListener("click", () => {
-  $("task-modal").classList.remove("open");
-  world?.setPaused(false);
-});
+        // ── Task button ───────────────────────────────────────────────
+        $("btn-task").addEventListener("click", () => {
+          if (!isAlive) return;
+          const room = world?.getLocalRoom();
+          if (!room?.taskZone) return;
+          const role = localPlayer.role;
+          if (role === "crew") {
+            if (localCompletedRooms.has(room.id)) return; // already done
+            openCrewTask(room);
+          } else if (role === "impostor") {
+            openImpostorTask(room);
+          } else if (role === "jester") {
+            openRoleQuestionModal("jester");
+          }
+        });
+        $("btn-close-task").addEventListener("click", () => {
+          $("task-modal").classList.remove("open");
+          world?.setPaused(false);
+        });
 
-// ── Crew task flow ────────────────────────────────────────────
-function openCrewTask(room) {
-  world?.setPaused(true);
-  $("task-modal").classList.add("open");
-  $("task-modal-title").textContent = "⬡ TASK STATION";
-  $("task-content").innerHTML = "";
+        // ── Crew task flow ────────────────────────────────────────────
+        function openCrewTask(room) {
+          world?.setPaused(true);
+          $("task-modal").classList.add("open");
+          $("task-modal-title").textContent = "⬡ TASK STATION";
+          $("task-content").innerHTML = "";
 
-  const cat  = selectedCategory;
-  const type = room.id === "electrical" ? "connector"
-             : room.id === "weapons"    ? "ninja"
-             : "swipe";
+          const cat = selectedCategory;
+          const type = room.id === "electrical" ? "connector"
+            : room.id === "weapons" ? "ninja"
+              : "swipe";
 
-  const onDone = async (_score, _total, pass) => {
-    $("task-modal").classList.remove("open");
-    world?.setPaused(false);
-    if (pass) {
-      localCompletedRooms.add(room.id);
-      await completeRoomTask(matchId, localPlayer.id, room.id);
-      await Crew.onTaskComplete(matchId, localPlayer.id);
-      updateTasksHUD();
-      updateTaskButton(world?.getLocalRoom());
-      checkWinConditions(allPlayers);
-    }
-  };
+          const onDone = async (_score, _total, pass) => {
+            $("task-modal").classList.remove("open");
+            world?.setPaused(false);
+            if (pass) {
+              localCompletedRooms.add(room.id);
+              await completeRoomTask(matchId, localPlayer.id, room.id);
+              await Crew.onTaskComplete(matchId, localPlayer.id);
+              updateTasksHUD();
+              updateTaskButton(world?.getLocalRoom());
+              checkWinConditions(allPlayers);
+            }
+          };
 
-  if (type === "swipe") {
-    const t = new SwipeTask("task-content", cat);
-    t.onComplete = (s,n) => onDone(s,n, s >= Math.ceil(n*0.6));
-    t.init();
-  } else if (type === "connector") {
-    const t = new ConnectorTask("task-content", cat);
-    t.onComplete = (s,n) => onDone(s,n, s >= 1);
-    t.init();
-  } else {
-    const cvs = document.createElement("canvas");
-    cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
-    $("task-content").appendChild(cvs);
-    const t = new FruitNinjaTask("ninja-canvas", cat);
-    t.onComplete = (s,n) => { onDone(s,n, s >= Math.ceil(n*0.5)); t.destroy(); };
-    t.init();
-  }
-}
+          if (type === "swipe") {
+            const t = new SwipeTask("task-content", cat);
+            t.onComplete = (s, n) => onDone(s, n, s >= Math.ceil(n * 0.6));
+            t.init();
+          } else if (type === "connector") {
+            const t = new ConnectorTask("task-content", cat);
+            t.onComplete = (s, n) => onDone(s, n, s >= 1);
+            t.init();
+          } else {
+            const cvs = document.createElement("canvas");
+            cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
+            $("task-content").appendChild(cvs);
+            const t = new FruitNinjaTask("ninja-canvas", cat);
+            t.onComplete = (s, n) => { onDone(s, n, s >= Math.ceil(n * 0.5)); t.destroy(); };
+            t.init();
+          }
+        }
 
-// ── Impostor task — random minigame, awards kill charge on pass ──
-function openImpostorTask(room) {
-  world?.setPaused(true);
-  $("task-modal").classList.add("open");
-  $("task-modal-title").textContent = "⬡ PREP KILL";
-  $("task-content").innerHTML = "";
+        // ── Impostor task — random minigame, awards kill charge on pass ──
+        function openImpostorTask(room) {
+          world?.setPaused(true);
+          $("task-modal").classList.add("open");
+          $("task-modal-title").textContent = "⬡ PREP KILL";
+          $("task-content").innerHTML = "";
 
-  const cat   = selectedCategory;
-  // Pick a random task type regardless of which room we're in
-  const types = ["swipe", "connector", "ninja"];
-  const type  = types[Math.floor(Math.random() * types.length)];
+          const cat = selectedCategory;
+          // Pick a random task type regardless of which room we're in
+          const types = ["swipe", "connector", "ninja"];
+          const type = types[Math.floor(Math.random() * types.length)];
 
-  const onDone = async (_score, _total, pass) => {
-    $("task-modal").classList.remove("open");
-    world?.setPaused(false);
-    if (pass) {
-      await Impostor.onSqCorrect(matchId, localPlayer.id);
-    } else {
-      flashHud("Task failed — no kill charge gained.");
-    }
-  };
+          const onDone = async (_score, _total, pass) => {
+            $("task-modal").classList.remove("open");
+            world?.setPaused(false);
+            if (pass) {
+              await Impostor.onSqCorrect(matchId, localPlayer.id);
+            } else {
+              flashHud("Task failed — no kill charge gained.");
+            }
+          };
 
-  if (type === "swipe") {
-    const t = new SwipeTask("task-content", cat);
-    t.onComplete = (s,n) => onDone(s,n, s >= Math.ceil(n*0.6));
-    t.init();
-  } else if (type === "connector") {
-    const t = new ConnectorTask("task-content", cat);
-    t.onComplete = (s,n) => onDone(s,n, s >= 1);
-    t.init();
-  } else {
-    const cvs = document.createElement("canvas");
-    cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
-    $("task-content").appendChild(cvs);
-    const t = new FruitNinjaTask("ninja-canvas", cat);
-    t.onComplete = (s,n) => { onDone(s,n, s >= Math.ceil(n*0.5)); t.destroy(); };
-    t.init();
-  }
-}
+          if (type === "swipe") {
+            const t = new SwipeTask("task-content", cat);
+            t.onComplete = (s, n) => onDone(s, n, s >= Math.ceil(n * 0.6));
+            t.init();
+          } else if (type === "connector") {
+            const t = new ConnectorTask("task-content", cat);
+            t.onComplete = (s, n) => onDone(s, n, s >= 1);
+            t.init();
+          } else {
+            const cvs = document.createElement("canvas");
+            cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
+            $("task-content").appendChild(cvs);
+            const t = new FruitNinjaTask("ninja-canvas", cat);
+            t.onComplete = (s, n) => { onDone(s, n, s >= Math.ceil(n * 0.5)); t.destroy(); };
+            t.init();
+          }
+        }
 
-// ── Jester question modal — answer SQ to charge swap ────────────
-async function openRoleQuestionModal(role) {
-  // Only jester uses this now; impostor uses openImpostorTask()
-  const subtitle = "SQ charges your swap. You need " + GAME_CONFIG.jesterSwapCostSq + " SQs to swap.";
+        // ── Jester question modal — answer SQ to charge swap ────────────
+        async function openRoleQuestionModal(role) {
+          // Only jester uses this now; impostor uses openImpostorTask()
+          const subtitle = "SQ charges your swap. You need " + GAME_CONFIG.jesterSwapCostSq + " SQs to swap.";
 
-  world?.setPaused(true);
-  const type = await showQuestionTypeModal("⬡ CHARGE SWAP — Answer a question", subtitle);
-  if (!type) { world?.setPaused(false); return; }
+          world?.setPaused(true);
+          const type = await showQuestionTypeModal("⬡ CHARGE SWAP — Answer a question", subtitle);
+          if (!type) { world?.setPaused(false); return; }
 
-  const cat = selectedCategory;
-  const qs  = type === "sq" ? await fetchSQ(1, cat) : await fetchLQ(1, cat);
-  if (!qs.length) { world?.setPaused(false); flashHud("No questions available for this category."); return; }
+          const cat = selectedCategory;
+          const qs = type === "sq" ? await fetchSQ(1, cat) : await fetchLQ(1, cat);
+          if (!qs.length) { world?.setPaused(false); flashHud("No questions available for this category."); return; }
 
-  const correct = await showQuestionModal(qs[0]);
-  world?.setPaused(false);
-  if (!correct) { flashHud("Wrong answer — no charge gained."); return; }
+          const correct = await showQuestionModal(qs[0]);
+          world?.setPaused(false);
+          if (!correct) { flashHud("Wrong answer — no charge gained."); return; }
 
-  jesterSqCount = Math.min(jesterSqCount + 1, GAME_CONFIG.jesterSwapCostSq);
-  updateSwapButton();
-  const needed = GAME_CONFIG.jesterSwapCostSq;
-  if (jesterSqCount >= needed) flashHud("⇄ Swap fully charged! Press SWAP to teleport.", "warn");
-  else flashHud(`⇄ Swap charge: ${jesterSqCount}/${needed}`);
-}
+          jesterSqCount = Math.min(jesterSqCount + 1, GAME_CONFIG.jesterSwapCostSq);
+          updateSwapButton();
+          const needed = GAME_CONFIG.jesterSwapCostSq;
+          if (jesterSqCount >= needed) flashHud("⇄ Swap fully charged! Press SWAP to teleport.", "warn");
+          else flashHud(`⇄ Swap charge: ${jesterSqCount}/${needed}`);
+        }
 
-// ── Swap (jester) ────────────────────────────────────────────
-$("btn-swap").addEventListener("click", async () => {
-  if (localPlayer.role !== "jester" || !isAlive) return;
-  const needed = GAME_CONFIG.jesterSwapCostSq;
-  if (jesterSqCount < needed) {
-    flashHud(`Need ${needed - jesterSqCount} more SQ charge${needed - jesterSqCount !== 1 ? "s" : ""}!`);
-    return;
-  }
-  const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
-  if (!imp) { flashHud("Impostor not found or already dead!"); return; }
+        // ── Swap (jester) ────────────────────────────────────────────
+        $("btn-swap").addEventListener("click", async () => {
+          if (localPlayer.role !== "jester" || !isAlive) return;
+          const needed = GAME_CONFIG.jesterSwapCostSq;
+          if (jesterSqCount < needed) {
+            flashHud(`Need ${needed - jesterSqCount} more SQ charge${needed - jesterSqCount !== 1 ? "s" : ""}!`);
+            return;
+          }
+          const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
+          if (!imp) { flashHud("Impostor not found or already dead!"); return; }
 
-  world?.setPaused(true);
-  const confirmed = await showSwapConfirmModal(imp);
-  world?.setPaused(false);
-  if (!confirmed) return;
+          world?.setPaused(true);
+          const confirmed = await showSwapConfirmModal(imp);
+          world?.setPaused(false);
+          if (!confirmed) return;
 
-  const impX = imp.x ?? 600, impY = imp.y ?? 130;
-  await applyJesterSwap(matchId, localPlayer.id, imp.id);
-  world.teleport(impX, impY);
-  await movePlayer(matchId, localPlayer.id, Math.round(impX), Math.round(impY));
+          const impX = imp.x ?? 600, impY = imp.y ?? 130;
+          await applyJesterSwap(matchId, localPlayer.id, imp.id);
+          world.teleport(impX, impY);
+          await movePlayer(matchId, localPlayer.id, Math.round(impX), Math.round(impY));
 
-  jesterSqCount = 0;
-  updateSwapButton();
-  flashHud("⇄ Swapped with the impostor!", "warn");
-});
+          jesterSqCount = 0;
+          updateSwapButton();
+          flashHud("⇄ Swapped with the impostor!", "warn");
+        });
 
-// ═══════════════════════════════════════════════
-//  MEETING
-// ═══════════════════════════════════════════════
-function openMeeting() {
-  world?.setPaused(true);
-  hasVoted      = false;
-  meetingPhase  = "discussion";
-  tallyingVotes = false;
+        // ═══════════════════════════════════════════════
+        //  MEETING
+        // ═══════════════════════════════════════════════
+        function openMeeting() {
+          world?.setPaused(true);
+          hasVoted = false;
+          meetingPhase = "discussion";
+          tallyingVotes = false;
 
-  $("meeting-overlay").classList.add("active");
-  $("vote-result").style.display  = "none";
-  $("vote-result").textContent    = "";
-  $("vote-phase-banner").textContent = "🔒 DISCUSSION — voting opens when timer ends";
-  $("vote-phase-banner").classList.remove("voting");
-  $("timer-fill").style.background = "var(--accent)";
+          $("meeting-overlay").classList.add("active");
+          $("vote-result").style.display = "none";
+          $("vote-result").textContent = "";
+          $("vote-phase-banner").textContent = "🔒 DISCUSSION — voting opens when timer ends";
+          $("vote-phase-banner").classList.remove("voting");
+          $("timer-fill").style.background = "var(--accent)";
 
-  const useChat = settings.useChat === "chat";
-  $("chat-wrap").style.display = useChat ? "flex" : "none";
+          const useChat = settings.useChat === "chat";
+          $("chat-wrap").style.display = useChat ? "flex" : "none";
 
-  if (!isAlive) {
-    // Ghost observer: see the meeting but can't vote
-    $("vote-phase-banner").textContent = "👻 GHOST MODE — observing only";
-    $("vote-list").innerHTML = `<p style="color:var(--muted);font-size:.82rem;padding:.5rem 0;text-align:center">You are a ghost. Only living players can vote.</p>`;
-    startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => {
-      startMeetingTimer(settings.votingTime ?? 60, "VOTING", () => {
-        if (!tallyingVotes) { tallyingVotes = true; tallyVotes(); }
-      });
-    });
-    return;
-  }
+          if (!isAlive) {
+            // Ghost observer: see the meeting but can't vote
+            $("vote-phase-banner").textContent = "👻 GHOST MODE — observing only";
+            $("vote-list").innerHTML = `<p style="color:var(--muted);font-size:.82rem;padding:.5rem 0;text-align:center">You are a ghost. Only living players can vote.</p>`;
+            startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => {
+              startMeetingTimer(settings.votingTime ?? 60, "VOTING", () => {
+                if (!tallyingVotes) { tallyingVotes = true; tallyVotes(); }
+              });
+            });
+            return;
+          }
 
-  buildVoteList(); // all buttons start disabled (discussion phase)
-  startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => startVotingPhase());
-}
+          buildVoteList(); // all buttons start disabled (discussion phase)
+          startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => startVotingPhase());
+        }
 
-function buildVoteList() {
-  const alive = Object.entries(allPlayers).filter(([,p]) => p.alive);
-  $("vote-list").innerHTML = alive.map(([id, p]) => `
+        function buildVoteList() {
+          const alive = Object.entries(allPlayers).filter(([, p]) => p.alive);
+          $("vote-list").innerHTML = alive.map(([id, p]) => `
     <button class="vote-btn" data-id="${id}" disabled>
       <span class="vote-dot" style="background:${p.color}"></span>
       ${esc(p.name)}${id === localPlayer.id ? " (you)" : ""}
     </button>
   `).join("") + `<button class="vote-btn" data-id="skip" disabled style="color:var(--muted)">⊘ Skip vote</button>`;
 
-  $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if (hasVoted || btn.disabled || meetingPhase !== "voting") return;
-      hasVoted = true;
-      $("vote-list").querySelectorAll(".vote-btn").forEach(b => { b.disabled = true; b.style.opacity = "0.4"; });
-      btn.style.opacity = "1"; btn.style.borderColor = "var(--accent)";
-      await castVote(matchId, localPlayer.id, btn.dataset.id);
-    });
-  });
-}
+          $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              if (hasVoted || btn.disabled || meetingPhase !== "voting") return;
+              hasVoted = true;
+              $("vote-list").querySelectorAll(".vote-btn").forEach(b => { b.disabled = true; b.style.opacity = "0.4"; });
+              btn.style.opacity = "1"; btn.style.borderColor = "var(--accent)";
+              await castVote(matchId, localPlayer.id, btn.dataset.id);
+            });
+          });
+        }
 
-function startVotingPhase() {
-  meetingPhase = "voting";
-  $("vote-phase-banner").textContent = "🗳 VOTING OPEN — tap a player to eject";
-  $("vote-phase-banner").classList.add("voting");
-  $("timer-fill").style.background = "var(--danger)";
-  // Enable vote buttons for everyone except self
-  $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
-    if (btn.dataset.id !== localPlayer.id) btn.disabled = false;
-  });
-  startMeetingTimer(settings.votingTime ?? 60, "VOTING", () => {
-    if (!tallyingVotes) { tallyingVotes = true; tallyVotes(); }
-  });
-}
+        function startVotingPhase() {
+          meetingPhase = "voting";
+          $("vote-phase-banner").textContent = "🗳 VOTING OPEN — tap a player to eject";
+          $("vote-phase-banner").classList.add("voting");
+          $("timer-fill").style.background = "var(--danger)";
+          // Enable vote buttons for everyone except self
+          $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
+            if (btn.dataset.id !== localPlayer.id) btn.disabled = false;
+          });
+          startMeetingTimer(settings.votingTime ?? 60, "VOTING", () => {
+            if (!tallyingVotes) { tallyingVotes = true; tallyVotes(); }
+          });
+        }
 
-async function tallyVotes() {
-  await new Promise(r => setTimeout(r, 1200));
-  const votes  = window._latestMeeting?.votes ?? {};
-  const tally  = {};
-  for (const v of Object.values(votes)) tally[v] = (tally[v] ?? 0) + 1;
-  const sorted   = Object.entries(tally).sort((a,b) => b[1]-a[1]);
-  const topId    = sorted[0]?.[0];
-  const topVotes = sorted[0]?.[1] ?? 0;
-  const tied     = sorted.length > 1 && sorted[1][1] === topVotes;
-  const result   = $("vote-result");
-  result.style.display = "block";
+        async function tallyVotes() {
+          await new Promise(r => setTimeout(r, 1200));
+          const votes = window._latestMeeting?.votes ?? {};
+          const tally = {};
+          for (const v of Object.values(votes)) tally[v] = (tally[v] ?? 0) + 1;
+          const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+          const topId = sorted[0]?.[0];
+          const topVotes = sorted[0]?.[1] ?? 0;
+          const tied = sorted.length > 1 && sorted[1][1] === topVotes;
+          const result = $("vote-result");
+          result.style.display = "block";
 
-  let ejectedRole = null;
+          let ejectedRole = null;
 
-  if (!topId || topId === "skip" || tied) {
-    result.textContent = tied ? "🤝 Tied vote — no one ejected." : "⊘ No votes cast.";
-    result.style.color = "var(--muted)";
-  } else {
-    const ejected = allPlayers[topId];
-    ejectedRole = ejected?.role ?? null;
-    result.innerHTML = `<strong style="color:var(--danger)">${esc(ejected?.name ?? "?")}</strong> ejected (${topVotes} vote${topVotes>1?"s":""}).<br><span style="color:var(--muted);font-size:.8rem">They were… <strong>${ejectedRole ?? "?"}</strong></span>`;
-    await applyKill(matchId, topId);
+          if (!topId || topId === "skip" || tied) {
+            result.textContent = tied ? "🤝 Tied vote — no one ejected." : "⊘ No votes cast.";
+            result.style.color = "var(--muted)";
+          } else {
+            const ejected = allPlayers[topId];
+            ejectedRole = ejected?.role ?? null;
+            result.innerHTML = `<strong style="color:var(--danger)">${esc(ejected?.name ?? "?")}</strong> ejected (${topVotes} vote${topVotes > 1 ? "s" : ""}).<br><span style="color:var(--muted);font-size:.8rem">They were… <strong>${ejectedRole ?? "?"}</strong></span>`;
+            await applyKill(matchId, topId);
 
-    if (ejectedRole !== "jester") {
-      checkWinConditions({ ...allPlayers, [topId]: { ...allPlayers[topId], alive: false } });
-    }
-  }
+            if (ejectedRole !== "jester") {
+              checkWinConditions({ ...allPlayers, [topId]: { ...allPlayers[topId], alive: false } });
+            }
+          }
 
-  // Jester win: broadcast via Firebase (endGame handles setGameResult for all clients)
-  if (ejectedRole === "jester") {
-    setTimeout(() => { gameOver = true; endGame("jester"); }, 2000);
-    return; // don't resume game
-  }
+          // Jester win: broadcast via Firebase (endGame handles setGameResult for all clients)
+          if (ejectedRole === "jester") {
+            setTimeout(() => { gameOver = true; endGame("jester"); }, 2000);
+            return; // don't resume game
+          }
 
-  // Normal path: if game isn't over, resume playing
-  setTimeout(async () => {
-    if (!gameOver) await setPhase(matchId, "playing");
-  }, 4000);
-}
+          // Normal path: if game isn't over, resume playing
+          setTimeout(async () => {
+            if (!gameOver) await setPhase(matchId, "playing");
+          }, 4000);
+        }
 
-function closeMeeting() {
-  $("meeting-overlay").classList.remove("active");
-  clearInterval(meetingTimerInterval);
-  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
-  world?.setPaused(false);
-  world?.clearCorpses();
-}
+        function closeMeeting() {
+          $("meeting-overlay").classList.remove("active");
+          clearInterval(meetingTimerInterval);
+          if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+          world?.setPaused(false);
+          world?.clearCorpses();
+        }
 
-function startMeetingTimer(secs, label, onDone) {
-  clearInterval(meetingTimerInterval);
-  let remaining = secs;
-  $("timer-label").textContent = `${label} — ${remaining}s`;
-  $("timer-fill").style.width  = "100%";
-  meetingTimerInterval = setInterval(() => {
-    remaining--;
-    $("timer-fill").style.width = `${(remaining/secs)*100}%`;
-    $("timer-label").textContent = `${label} — ${remaining}s`;
-    if (remaining <= 0) { clearInterval(meetingTimerInterval); onDone(); }
-  }, 1000);
-}
+        function startMeetingTimer(secs, label, onDone) {
+          clearInterval(meetingTimerInterval);
+          let remaining = secs;
+          $("timer-label").textContent = `${label} — ${remaining}s`;
+          $("timer-fill").style.width = "100%";
+          meetingTimerInterval = setInterval(() => {
+            remaining--;
+            $("timer-fill").style.width = `${(remaining / secs) * 100}%`;
+            $("timer-label").textContent = `${label} — ${remaining}s`;
+            if (remaining <= 0) { clearInterval(meetingTimerInterval); onDone(); }
+          }, 1000);
+        }
 
-// ── Chat ─────────────────────────────────────────────────────
-$("btn-chat-send").addEventListener("click", sendChat);
-$("chat-input").addEventListener("keydown", e => { if (e.key==="Enter") sendChat(); });
-async function sendChat() {
-  const msg = $("chat-input").value.trim();
-  if (!msg || !matchId) return;
-  $("chat-input").value = "";
-  await sendChatMessage(matchId, localPlayer.id, localPlayer.name, localPlayer.color, msg);
-}
-function syncChat(_mtg) {
-  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
-  chatUnsubscribe = onChatMessage(matchId, msgs => {
-    const box = $("chat-box"); if (!box) return;
-    box.innerHTML = msgs.map(m => `<div style="margin-bottom:.2rem"><strong style="color:${m.color}">${esc(m.playerName)}:</strong> ${esc(m.text)}</div>`).join("");
-    box.scrollTop = box.scrollHeight;
-  });
-}
+        // ── Chat ─────────────────────────────────────────────────────
+        $("btn-chat-send").addEventListener("click", sendChat);
+        $("chat-input").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
+        async function sendChat() {
+          const msg = $("chat-input").value.trim();
+          if (!msg || !matchId) return;
+          $("chat-input").value = "";
+          await sendChatMessage(matchId, localPlayer.id, localPlayer.name, localPlayer.color, msg);
+        }
+        function syncChat(_mtg) {
+          if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+          chatUnsubscribe = onChatMessage(matchId, msgs => {
+            const box = $("chat-box"); if (!box) return;
+            box.innerHTML = msgs.map(m => `<div style="margin-bottom:.2rem"><strong style="color:${m.color}">${esc(m.playerName)}:</strong> ${esc(m.text)}</div>`).join("");
+            box.scrollTop = box.scrollHeight;
+          });
+        }
 
-// ═══════════════════════════════════════════════
-//  WIN CONDITIONS
-// ═══════════════════════════════════════════════
-let gameOver = false;
-function checkWinConditions(players) {
-  if (gameOver) return;
-  const list  = Object.values(players);
-  const alive = list.filter(p => p.alive);
-  const imps  = alive.filter(p => p.role === "impostor");
-  const crew  = alive.filter(p => p.role === "crew");
+        // ═══════════════════════════════════════════════
+        //  WIN CONDITIONS
+        // ═══════════════════════════════════════════════
+        let gameOver = false;
+        function checkWinConditions(players) {
+          if (gameOver) return;
+          const list = Object.values(players);
+          const alive = list.filter(p => p.alive);
+          const imps = alive.filter(p => p.role === "impostor");
+          const crew = alive.filter(p => p.role === "crew");
 
-  // Task win: all crew have completed enough tasks (impostor still alive)
-  const allCrew = list.filter(p => p.role === "crew");
-  if (allCrew.length > 0 && imps.length > 0) {
-    const allDone = allCrew.every(p => Object.keys(p.completedRooms ?? {}).length >= tasksNeeded);
-    if (allDone) { gameOver = true; endGame("crew"); return; }
-  }
+          // Task win: all crew have completed enough tasks (impostor still alive)
+          const allCrew = list.filter(p => p.role === "crew");
+          if (allCrew.length > 0 && imps.length > 0) {
+            const allDone = allCrew.every(p => Object.keys(p.completedRooms ?? {}).length >= tasksNeeded);
+            if (allDone) { gameOver = true; endGame("crew"); return; }
+          }
 
-  // Impostor eliminated → crew wins (jester does NOT win here — only via vote)
-  if (imps.length === 0) { gameOver = true; endGame("crew"); return; }
-  if (imps.length >= crew.length) { gameOver = true; endGame("impostor"); }
-}
+          // Impostor eliminated → crew wins (jester does NOT win here — only via vote)
+          if (imps.length === 0) { gameOver = true; endGame("crew"); return; }
+          if (imps.length >= crew.length) { gameOver = true; endGame("impostor"); }
+        }
 
-function endGame(winner) {
-  if (!gameOver) { gameOver = true; }
-  world?.stop();
-  clearInterval(meetingTimerInterval);
-  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+        function endGame(winner) {
+          if (!gameOver) { gameOver = true; }
+          world?.stop();
+          clearInterval(meetingTimerInterval);
+          if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
 
-  // Close any overlays that might be sitting on top of the end screen
-  $("meeting-overlay").classList.remove("active");
-  $("task-modal").classList.remove("open");
-  world?.setPaused(false);
+          // Close any overlays that might be sitting on top of the end screen
+          $("meeting-overlay").classList.remove("active");
+          $("task-modal").classList.remove("open");
+          world?.setPaused(false);
 
-  // Broadcast result to all clients via Firebase
-  if (matchId) setGameResult(matchId, winner).catch(() => {});
+          // Broadcast result to all clients via Firebase
+          if (matchId) setGameResult(matchId, winner).catch(() => { });
 
-  const data = {
-    crew:     ["CREW WINS",     "All tasks complete — or the impostor was ejected."],
-    impostor: ["IMPOSTOR WINS", "Sabotage complete. No survivors."],
-    jester:   ["JESTER WINS",   "Voted out on purpose. Clever."],
-  };
-  $("end-title").textContent = data[winner][0];
-  $("end-title").style.color = {crew:"var(--accent)",impostor:"var(--danger)",jester:"var(--warn)"}[winner];
-  $("end-body").textContent  = data[winner][1];
+          const data = {
+            crew: ["CREW WINS", "All tasks complete — or the impostor was ejected."],
+            impostor: ["IMPOSTOR WINS", "Sabotage complete. No survivors."],
+            jester: ["JESTER WINS", "Voted out on purpose. Clever."],
+          };
+          $("end-title").textContent = data[winner][0];
+          $("end-title").style.color = { crew: "var(--accent)", impostor: "var(--danger)", jester: "var(--warn)" }[winner];
+          $("end-body").textContent = data[winner][1];
 
-  // Build roles reveal — show who was impostor and jester
-  const playerList = Object.values(allPlayers);
-  const impostor = playerList.find(p => p.role === "impostor");
-  const jester   = playerList.find(p => p.role === "jester");
-  const revealRows = [];
-  if (impostor) revealRows.push(`
+          // Build roles reveal — show who was impostor and jester
+          const playerList = Object.values(allPlayers);
+          const impostor = playerList.find(p => p.role === "impostor");
+          const jester = playerList.find(p => p.role === "jester");
+          const revealRows = [];
+          if (impostor) revealRows.push(`
     <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:9px;
                 background:rgba(255,74,107,0.08);border:1px solid rgba(255,74,107,0.25);margin-bottom:.4rem">
       <span style="width:11px;height:11px;border-radius:50%;background:${impostor.color ?? '#f44'};flex-shrink:0;display:inline-block"></span>
       <span style="color:var(--text);font-size:.82rem"><strong>${esc(impostor.name)}</strong></span>
       <span style="margin-left:auto;font-size:.7rem;color:var(--danger);font-weight:700;letter-spacing:.06em">IMPOSTOR</span>
     </div>`);
-  if (jester) revealRows.push(`
+          if (jester) revealRows.push(`
     <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:9px;
                 background:rgba(255,201,74,0.08);border:1px solid rgba(255,201,74,0.25);margin-bottom:.4rem">
       <span style="width:11px;height:11px;border-radius:50%;background:${jester.color ?? '#fc4'};flex-shrink:0;display:inline-block"></span>
@@ -1413,24 +2295,24 @@ function endGame(winner) {
       <span style="margin-left:auto;font-size:.7rem;color:var(--warn);font-weight:700;letter-spacing:.06em">JESTER</span>
     </div>`);
 
-  const reveal = $("end-reveal");
-  if (reveal) reveal.innerHTML = revealRows.join("") || `<p style="color:var(--muted);font-size:.78rem">No role data available.</p>`;
+          const reveal = $("end-reveal");
+          if (reveal) reveal.innerHTML = revealRows.join("") || `<p style="color:var(--muted);font-size:.78rem">No role data available.</p>`;
 
-  show("screen-end");
+          show("screen-end");
 
-  // Delete the match from Firebase after 60 seconds
-  if (matchId) setTimeout(() => deleteMatch(matchId).catch(() => {}), 60_000);
-}
+          // Delete the match from Firebase after 60 seconds
+          if (matchId) setTimeout(() => deleteMatch(matchId).catch(() => { }), 60_000);
+        }
 
-// ═══════════════════════════════════════════════
-//  MODAL HELPERS
-// ═══════════════════════════════════════════════
+        // ═══════════════════════════════════════════════
+        //  MODAL HELPERS
+        // ═══════════════════════════════════════════════
 
-/** Show a styled two-option modal for picking SQ or LQ. Returns "sq"|"lq"|null */
-function showQuestionTypeModal(title, subtitle) {
-  return new Promise(resolve => {
-    const wrap = mkOverlay();
-    wrap.querySelector(".mo-inner").innerHTML = `
+        /** Show a styled two-option modal for picking SQ or LQ. Returns "sq"|"lq"|null */
+        function showQuestionTypeModal(title, subtitle) {
+          return new Promise(resolve => {
+            const wrap = mkOverlay();
+            wrap.querySelector(".mo-inner").innerHTML = `
       <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.4rem;font-size:.9rem">${title}</h3>
       <p style="color:var(--muted);font-size:.78rem;margin-bottom:1.1rem;line-height:1.4">${subtitle}</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
@@ -1443,18 +2325,18 @@ function showQuestionTypeModal(title, subtitle) {
       </div>
       <button id="_qt-x" style="width:100%;padding:.55rem;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-hud);font-size:.78rem;cursor:pointer">CANCEL</button>
     `;
-    document.body.appendChild(wrap);
-    wrap.querySelector("#_qt-sq").onclick = () => { document.body.removeChild(wrap); resolve("sq"); };
-    wrap.querySelector("#_qt-lq").onclick = () => { document.body.removeChild(wrap); resolve("lq"); };
-    wrap.querySelector("#_qt-x").onclick  = () => { document.body.removeChild(wrap); resolve(null); };
-  });
-}
+            document.body.appendChild(wrap);
+            wrap.querySelector("#_qt-sq").onclick = () => { document.body.removeChild(wrap); resolve("sq"); };
+            wrap.querySelector("#_qt-lq").onclick = () => { document.body.removeChild(wrap); resolve("lq"); };
+            wrap.querySelector("#_qt-x").onclick = () => { document.body.removeChild(wrap); resolve(null); };
+          });
+        }
 
-/** Show a question and text input. Returns true if answered correctly. */
-function showQuestionModal(question) {
-  return new Promise(resolve => {
-    const wrap = mkOverlay();
-    wrap.querySelector(".mo-inner").innerHTML = `
+        /** Show a question and text input. Returns true if answered correctly. */
+        function showQuestionModal(question) {
+          return new Promise(resolve => {
+            const wrap = mkOverlay();
+            wrap.querySelector(".mo-inner").innerHTML = `
       <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.7rem;font-size:.85rem">❓ QUESTION</h3>
       <p style="font-size:.9rem;line-height:1.55;margin-bottom:1rem;color:var(--text)">${esc(question.question)}</p>
       <input id="_qm-a" type="text" placeholder="Your answer…" style="width:100%;padding:.65rem 1rem;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:var(--r);font-family:var(--font-hud);font-size:.9rem;margin-bottom:.6rem;outline:none;display:block"/>
@@ -1463,25 +2345,25 @@ function showQuestionModal(question) {
         <button id="_qm-skip" style="padding:.65rem 1rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.82rem;cursor:pointer">SKIP</button>
       </div>
     `;
-    document.body.appendChild(wrap);
-    const input = wrap.querySelector("#_qm-a");
-    const check = () => {
-      const correct = input.value.trim().toLowerCase() === question.answer.trim().toLowerCase();
-      document.body.removeChild(wrap);
-      resolve(correct);
-    };
-    wrap.querySelector("#_qm-ok").onclick   = check;
-    wrap.querySelector("#_qm-skip").onclick = () => { document.body.removeChild(wrap); resolve(false); };
-    input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
-    setTimeout(() => input.focus(), 50);
-  });
-}
+            document.body.appendChild(wrap);
+            const input = wrap.querySelector("#_qm-a");
+            const check = () => {
+              const correct = input.value.trim().toLowerCase() === question.answer.trim().toLowerCase();
+              document.body.removeChild(wrap);
+              resolve(correct);
+            };
+            wrap.querySelector("#_qm-ok").onclick = check;
+            wrap.querySelector("#_qm-skip").onclick = () => { document.body.removeChild(wrap); resolve(false); };
+            input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+            setTimeout(() => input.focus(), 50);
+          });
+        }
 
-/** Custom swap confirmation dialog for jester. */
-function showSwapConfirmModal(imp) {
-  return new Promise(resolve => {
-    const wrap = mkOverlay("#ffc94a");
-    wrap.querySelector(".mo-inner").innerHTML = `
+        /** Custom swap confirmation dialog for jester. */
+        function showSwapConfirmModal(imp) {
+          return new Promise(resolve => {
+            const wrap = mkOverlay("#ffc94a");
+            wrap.querySelector(".mo-inner").innerHTML = `
       <h3 style="font-family:var(--font-title);color:var(--warn);margin-bottom:.75rem;font-size:.95rem">⇄ EXECUTE SWAP</h3>
       <p style="color:var(--text);font-size:.85rem;margin-bottom:1.2rem;line-height:1.5">
         You will teleport to <strong style="color:var(--warn)">${esc(imp.name)}</strong>'s current position, and they will appear where you stand.<br>
@@ -1492,98 +2374,98 @@ function showSwapConfirmModal(imp) {
         <button id="_sw-no"  style="flex:1;padding:.7rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.82rem;cursor:pointer">CANCEL</button>
       </div>
     `;
-    document.body.appendChild(wrap);
-    wrap.querySelector("#_sw-yes").onclick = () => { document.body.removeChild(wrap); resolve(true); };
-    wrap.querySelector("#_sw-no").onclick  = () => { document.body.removeChild(wrap); resolve(false); };
-  });
-}
+            document.body.appendChild(wrap);
+            wrap.querySelector("#_sw-yes").onclick = () => { document.body.removeChild(wrap); resolve(true); };
+            wrap.querySelector("#_sw-no").onclick = () => { document.body.removeChild(wrap); resolve(false); };
+          });
+        }
 
-/** Build a reusable modal overlay wrapper. */
-function mkOverlay(borderColor = null) {
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;z-index:400;font-family:var(--font-hud)";
-  const inner = document.createElement("div");
-  inner.className = "mo-inner";
-  inner.style.cssText = `background:var(--surface);border:1px solid ${borderColor ?? "var(--border)"};border-radius:16px;padding:1.5rem;width:min(420px,92vw)`;
-  wrap.appendChild(inner);
-  return wrap;
-}
+        /** Build a reusable modal overlay wrapper. */
+        function mkOverlay(borderColor = null) {
+          const wrap = document.createElement("div");
+          wrap.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;z-index:400;font-family:var(--font-hud)";
+          const inner = document.createElement("div");
+          inner.className = "mo-inner";
+          inner.style.cssText = `background:var(--surface);border:1px solid ${borderColor ?? "var(--border)"};border-radius:16px;padding:1.5rem;width:min(420px,92vw)`;
+          wrap.appendChild(inner);
+          return wrap;
+        }
 
-// ── HUD flash ─────────────────────────────────────────────────
-function flashHud(msg, type = "info") {
-  const lbl = $("room-label");
-  lbl.textContent = msg;
-  lbl.style.borderColor = type === "warn" ? "var(--warn)" : "var(--muted)";
-  lbl.style.color       = type === "warn" ? "var(--warn)" : "var(--muted)";
-  lbl.classList.add("visible");
-  setTimeout(() => { lbl.classList.remove("visible"); lbl.style.borderColor=""; lbl.style.color=""; }, 2500);
-}
+        // ── HUD flash ─────────────────────────────────────────────────
+        function flashHud(msg, type = "info") {
+          const lbl = $("room-label");
+          lbl.textContent = msg;
+          lbl.style.borderColor = type === "warn" ? "var(--warn)" : "var(--muted)";
+          lbl.style.color = type === "warn" ? "var(--warn)" : "var(--muted)";
+          lbl.classList.add("visible");
+          setTimeout(() => { lbl.classList.remove("visible"); lbl.style.borderColor = ""; lbl.style.color = ""; }, 2500);
+        }
 
-function esc(str) {
-  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
+        function esc(str) {
+          return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
 
-function flashHostError(msg) {
-  // Reuse room-label style flash in the panel context
-  const el = document.createElement("p");
-  el.style.cssText = "color:var(--danger);font-size:.74rem;text-align:center;margin-top:.5rem";
-  el.textContent = msg;
-  const btn = $("btn-create-match");
-  btn.parentNode.insertBefore(el, btn.nextSibling);
-  setTimeout(() => el.remove(), 2500);
-}
+        function flashHostError(msg) {
+          // Reuse room-label style flash in the panel context
+          const el = document.createElement("p");
+          el.style.cssText = "color:var(--danger);font-size:.74rem;text-align:center;margin-top:.5rem";
+          el.textContent = msg;
+          const btn = $("btn-create-match");
+          btn.parentNode.insertBefore(el, btn.nextSibling);
+          setTimeout(() => el.remove(), 2500);
+        }
 
-// ═══════════════════════════════════════════════
-//  ADD QUESTIONS
-// ═══════════════════════════════════════════════
-let addqRowCount = 0;
+        // ═══════════════════════════════════════════════
+        //  ADD QUESTIONS
+        // ═══════════════════════════════════════════════
+        let addqRowCount = 0;
 
-async function loadAddqCategories() {
-  if (!currentUser) return;
-  try {
-    // Only show categories this user owns
-    const cats = await fetchCategories(currentUser.id);
-    const sel  = $("addq-cat-select");
-    if (!sel) return;
-    sel.innerHTML = `<option value="">— select existing set —</option>` +
-      cats.map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${c.sqCount} SQ · ${c.lqCount} LQ)</option>`).join("");
-  } catch(_) {}
-}
-$("addq-cat-select").addEventListener("change", () => {
-  const v = $("addq-cat-select").value;
-  if (v) {
-    $("addq-cat-input").value = v;
-    loadExistingQuestions(v);
-  } else {
-    $("addq-existing-section").style.display = "none";
-  }
-});
+        async function loadAddqCategories() {
+          if (!currentUser) return;
+          try {
+            // Only show categories this user owns
+            const cats = await fetchCategories(currentUser.id);
+            const sel = $("addq-cat-select");
+            if (!sel) return;
+            sel.innerHTML = `<option value="">— select existing set —</option>` +
+              cats.map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${c.sqCount} SQ · ${c.lqCount} LQ)</option>`).join("");
+          } catch (_) { }
+        }
+        $("addq-cat-select").addEventListener("change", () => {
+          const v = $("addq-cat-select").value;
+          if (v) {
+            $("addq-cat-input").value = v;
+            loadExistingQuestions(v);
+          } else {
+            $("addq-existing-section").style.display = "none";
+          }
+        });
 
-async function loadExistingQuestions(category) {
-  if (!currentUser) return;
-  const section = $("addq-existing-section");
-  section.style.display = "block";
-  $("addq-existing-list").innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">Loading…</p>`;
-  try {
-    const questions = await fetchQuestionsForCategory(category, currentUser.id);
-    renderExistingQuestions(questions);
-  } catch (err) {
-    $("addq-existing-list").innerHTML = `<p style="color:var(--danger);font-size:.78rem">${esc(err.message)}</p>`;
-  }
-}
+        async function loadExistingQuestions(category) {
+          if (!currentUser) return;
+          const section = $("addq-existing-section");
+          section.style.display = "block";
+          $("addq-existing-list").innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">Loading…</p>`;
+          try {
+            const questions = await fetchQuestionsForCategory(category, currentUser.id);
+            renderExistingQuestions(questions);
+          } catch (err) {
+            $("addq-existing-list").innerHTML = `<p style="color:var(--danger);font-size:.78rem">${esc(err.message)}</p>`;
+          }
+        }
 
-function renderExistingQuestions(questions) {
-  const list = $("addq-existing-list");
-  if (!questions.length) {
-    list.innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">No questions in this set yet (or none owned by you).</p>`;
-    return;
-  }
-  list.innerHTML = questions.map(q => `
+        function renderExistingQuestions(questions) {
+          const list = $("addq-existing-list");
+          if (!questions.length) {
+            list.innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">No questions in this set yet (or none owned by you).</p>`;
+            return;
+          }
+          list.innerHTML = questions.map(q => `
     <div class="existing-q-row" data-id="${q.id}" data-table="${q._table}">
       <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem">
         <span style="font-size:.58rem;padding:.1rem .35rem;border-radius:999px;flex-shrink:0;
-                     border:1px solid ${q._table==='sq'?'rgba(74,158,255,.4)':'rgba(255,201,74,.4)'};
-                     color:${q._table==='sq'?'var(--blue)':'var(--warn)'}">${q._table.toUpperCase()}</span>
+                     border:1px solid ${q._table === 'sq' ? 'rgba(74,158,255,.4)' : 'rgba(255,201,74,.4)'};
+                     color:${q._table === 'sq' ? 'var(--blue)' : 'var(--warn)'}">${q._table.toUpperCase()}</span>
         <button class="eq-del" title="Delete question"
                 style="margin-left:auto;background:none;border:none;color:var(--muted);
                        cursor:pointer;font-size:.9rem;padding:.1rem .3rem;flex-shrink:0">✕</button>
@@ -1601,44 +2483,44 @@ function renderExistingQuestions(questions) {
     </div>
   `).join("");
 
-  list.querySelectorAll(".existing-q-row").forEach(row => {
-    const id    = Number(row.dataset.id);
-    const table = row.dataset.table;
+          list.querySelectorAll(".existing-q-row").forEach(row => {
+            const id = Number(row.dataset.id);
+            const table = row.dataset.table;
 
-    row.querySelector(".eq-del").addEventListener("click", async () => {
-      if (!confirm("Delete this question? This cannot be undone.")) return;
-      try {
-        await deleteQuestion(table, id);
-        row.remove();
-        if (!list.querySelectorAll(".existing-q-row").length)
-          list.innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">All questions in this set have been deleted.</p>`;
-      } catch (err) {
-        alert(`Delete failed: ${err.message}`);
-      }
-    });
+            row.querySelector(".eq-del").addEventListener("click", async () => {
+              if (!confirm("Delete this question? This cannot be undone.")) return;
+              try {
+                await deleteQuestion(table, id);
+                row.remove();
+                if (!list.querySelectorAll(".existing-q-row").length)
+                  list.innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">All questions in this set have been deleted.</p>`;
+              } catch (err) {
+                alert(`Delete failed: ${err.message}`);
+              }
+            });
 
-    row.querySelector(".eq-save").addEventListener("click", async () => {
-      const newQ = row.querySelector(".eq-q").value.trim();
-      const newA = row.querySelector(".eq-a").value.trim();
-      const status = row.querySelector(".eq-status");
-      if (!newQ || !newA) { status.textContent = "Question and answer cannot be empty."; status.style.color = "var(--danger)"; status.style.display = "block"; return; }
-      try {
-        await updateQuestion(table, id, { question: newQ, answer: newA });
-        status.textContent = "✓ Saved!"; status.style.color = "var(--accent)"; status.style.display = "block";
-        setTimeout(() => { status.style.display = "none"; }, 2500);
-      } catch (err) {
-        status.textContent = `Save failed: ${err.message}`; status.style.color = "var(--danger)"; status.style.display = "block";
-      }
-    });
-  });
-}
-function addqEnsureRow() { if (!$("addq-rows").children.length) addqAddRow(); }
-$("addq-add-row").addEventListener("click", addqAddRow);
-function addqAddRow() {
-  addqRowCount++;
-  const n = addqRowCount, div = document.createElement("div");
-  div.className = "q-row"; div.dataset.row = n;
-  div.innerHTML = `
+            row.querySelector(".eq-save").addEventListener("click", async () => {
+              const newQ = row.querySelector(".eq-q").value.trim();
+              const newA = row.querySelector(".eq-a").value.trim();
+              const status = row.querySelector(".eq-status");
+              if (!newQ || !newA) { status.textContent = "Question and answer cannot be empty."; status.style.color = "var(--danger)"; status.style.display = "block"; return; }
+              try {
+                await updateQuestion(table, id, { question: newQ, answer: newA });
+                status.textContent = "✓ Saved!"; status.style.color = "var(--accent)"; status.style.display = "block";
+                setTimeout(() => { status.style.display = "none"; }, 2500);
+              } catch (err) {
+                status.textContent = `Save failed: ${err.message}`; status.style.color = "var(--danger)"; status.style.display = "block";
+              }
+            });
+          });
+        }
+        function addqEnsureRow() { if (!$("addq-rows").children.length) addqAddRow(); }
+        $("addq-add-row").addEventListener("click", addqAddRow);
+        function addqAddRow() {
+          addqRowCount++;
+          const n = addqRowCount, div = document.createElement("div");
+          div.className = "q-row"; div.dataset.row = n;
+          div.innerHTML = `
     <div class="q-row-num">QUESTION ${n}</div>
     <button class="q-row-del" data-del="${n}">✕</button>
     <div style="display:flex;gap:.35rem;margin-bottom:.6rem">
@@ -1648,53 +2530,54 @@ function addqAddRow() {
     <div class="field" style="margin-bottom:.5rem"><label>Question</label><textarea class="addq-q" placeholder="e.g. What is the powerhouse of the cell?" rows="2"></textarea></div>
     <div class="field" style="margin-bottom:0"><label>Correct Answer</label><input class="addq-a" type="text" placeholder="e.g. Mitochondria"/></div>
   `;
-  $("addq-rows").appendChild(div);
-  div.querySelector("[data-del]").addEventListener("click", () => div.remove());
+          $("addq-rows").appendChild(div);
+          div.querySelector("[data-del]").addEventListener("click", () => div.remove());
 
-  // Per-row type toggle
-  div.querySelectorAll(".row-type-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      div.querySelectorAll(".row-type-btn").forEach(b => {
-        const isSq = b.dataset.type === "sq";
-        b.classList.toggle("active", b === btn);
-        b.style.borderColor = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--border)";
-        b.style.background  = b === btn ? (isSq ? "rgba(74,158,255,0.10)" : "rgba(255,201,74,0.10)") : "var(--bg)";
-        b.style.color       = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--muted2)";
-      });
-      div.dataset.qtype = btn.dataset.type;
-    });
-  });
-  div.dataset.qtype = "sq"; // default
-}
-$("addq-submit").addEventListener("click", async () => {
-  if (!currentUser) { showAddqStatus("You must be signed in to upload questions.", "error"); return; }
-  const cat = $("addq-cat-input").value.trim();
-  if (!cat) { $("addq-cat-input").focus(); showAddqStatus("Please enter a category name.", "error"); return; }
-  const rows = []; let anyBlank = false;
-  $("addq-rows").querySelectorAll(".q-row").forEach(row => {
-    const q = row.querySelector(".addq-q").value.trim(), a = row.querySelector(".addq-a").value.trim();
-    if (!q || !a) { anyBlank = true; return; }
-    rows.push({ question: q, answer: a, category: cat, type: row.dataset.qtype || "sq" });
-  });
-  if (anyBlank) { showAddqStatus("Some questions are missing text.", "error"); return; }
-  if (!rows.length) { showAddqStatus("Add at least one question.", "error"); return; }
-  $("addq-submit").disabled = true; $("addq-submit").textContent = "Uploading…";
-  try {
-    await addQuestions(rows, currentUser.id);
-    showAddqStatus(`✓ ${rows.length} question${rows.length>1?"s":""} added to "${cat}"!`, "ok");
-    $("addq-rows").innerHTML = ""; addqRowCount = 0; addqAddRow();
-    loadAddqCategories();
-  } catch(err) {
-    showAddqStatus(`Upload failed: ${err.message}`, "error");
-  } finally {
-    $("addq-submit").disabled = false; $("addq-submit").textContent = "UPLOAD TO DATABASE →";
-  }
-});
-function showAddqStatus(msg, type) {
-  const el = $("addq-status");
-  el.textContent = msg; el.style.color = type==="error"?"var(--danger)":"var(--accent)"; el.style.display="block";
-  setTimeout(() => { el.style.display="none"; }, 5000);
-}
-</script>
+          // Per-row type toggle
+          div.querySelectorAll(".row-type-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              div.querySelectorAll(".row-type-btn").forEach(b => {
+                const isSq = b.dataset.type === "sq";
+                b.classList.toggle("active", b === btn);
+                b.style.borderColor = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--border)";
+                b.style.background = b === btn ? (isSq ? "rgba(74,158,255,0.10)" : "rgba(255,201,74,0.10)") : "var(--bg)";
+                b.style.color = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--muted2)";
+              });
+              div.dataset.qtype = btn.dataset.type;
+            });
+          });
+          div.dataset.qtype = "sq"; // default
+        }
+        $("addq-submit").addEventListener("click", async () => {
+          if (!currentUser) { showAddqStatus("You must be signed in to upload questions.", "error"); return; }
+          const cat = $("addq-cat-input").value.trim();
+          if (!cat) { $("addq-cat-input").focus(); showAddqStatus("Please enter a category name.", "error"); return; }
+          const rows = []; let anyBlank = false;
+          $("addq-rows").querySelectorAll(".q-row").forEach(row => {
+            const q = row.querySelector(".addq-q").value.trim(), a = row.querySelector(".addq-a").value.trim();
+            if (!q || !a) { anyBlank = true; return; }
+            rows.push({ question: q, answer: a, category: cat, type: row.dataset.qtype || "sq" });
+          });
+          if (anyBlank) { showAddqStatus("Some questions are missing text.", "error"); return; }
+          if (!rows.length) { showAddqStatus("Add at least one question.", "error"); return; }
+          $("addq-submit").disabled = true; $("addq-submit").textContent = "Uploading…";
+          try {
+            await addQuestions(rows, currentUser.id);
+            showAddqStatus(`✓ ${rows.length} question${rows.length > 1 ? "s" : ""} added to "${cat}"!`, "ok");
+            $("addq-rows").innerHTML = ""; addqRowCount = 0; addqAddRow();
+            loadAddqCategories();
+          } catch (err) {
+            showAddqStatus(`Upload failed: ${err.message}`, "error");
+          } finally {
+            $("addq-submit").disabled = false; $("addq-submit").textContent = "UPLOAD TO DATABASE →";
+          }
+        });
+        function showAddqStatus(msg, type) {
+          const el = $("addq-status");
+          el.textContent = msg; el.style.color = type === "error" ? "var(--danger)" : "var(--accent)"; el.style.display = "block";
+          setTimeout(() => { el.style.display = "none"; }, 5000);
+        }
+      </script>
 </body>
+
 </html>
