@@ -1618,37 +1618,55 @@
         //  HOST
         // ═══════════════════════════════════════════════
         $("btn-create-match").addEventListener("click", async () => {
-          const name = $("host-name").value.trim();
-          if (!name) { $("host-name").focus(); return; }
-          if (!selectedCategory) {
-            // flash the chip
-            $("host-set-chip").style.borderColor = "var(--danger)";
-            setTimeout(() => { $("host-set-chip").style.borderColor = ""; }, 1500);
-            flashHostError("Please choose a question set first.");
-            return;
-          }
-          isHost = true;
-          matchId = Math.random().toString(36).slice(2, 7).toUpperCase();
-          localPlayer = { id: crypto.randomUUID(), name, color: hostPickedColor };
-          settings = {
-            useChat: $("host-chat").value,
-            discussionTime: +$("host-discuss").value || 120,
-            votingTime: +$("host-vote").value || 60,
-            meetingCalls: +$("host-calls").value || 1,
-            tasksPerCrew: +$("host-tasks").value || 3,
-            impostors: +$("host-impostors").value || 1,
-            jesters: +$("host-jesters").value || 1,
-            questionCategory: selectedCategory,
-          };
-          await createMatch(matchId, localPlayer.id, settings);
-          await joinMatch(matchId, localPlayer);
-          $("waiting-code").textContent = matchId;
-          if (selectedCategory) { $("host-qset-display").style.display = "block"; $("host-qset-name").textContent = selectedCategory; }
-          $("btn-start").classList.remove("hidden");
-          show("screen-waiting");
-          setupWaitingListeners();
-        });
+          try {
+            const name = $("host-name").value.trim();
+            if (!name) { $("host-name").focus(); return; }
 
+            if (!selectedCategory) {
+              $("host-set-chip").style.borderColor = "var(--danger)";
+              setTimeout(() => { $("host-set-chip").style.borderColor = ""; }, 1500);
+              flashHostError("Please choose a question set first.");
+              return;
+            }
+
+            console.log("Creating match with:", { name, selectedCategory }); // DEBUG
+
+            isHost = true;
+            matchId = Math.random().toString(36).slice(2, 7).toUpperCase();
+            localPlayer = { id: crypto.randomUUID(), name, color: hostPickedColor };
+            settings = {
+              useChat: $("host-chat").value,
+              discussionTime: +$("host-discuss").value || 120,
+              votingTime: +$("host-vote").value || 60,
+              meetingCalls: +$("host-calls").value || 1,
+              tasksPerCrew: +$("host-tasks").value || 3,
+              impostors: +$("host-impostors").value || 1,
+              jesters: +$("host-jesters").value || 1,
+              questionCategory: selectedCategory,
+            };
+
+            console.log("Match settings:", settings); // DEBUG
+
+            await createMatch(matchId, localPlayer.id, settings);
+            console.log("Match created"); // DEBUG
+
+            await joinMatch(matchId, localPlayer);
+            console.log("Player joined"); // DEBUG
+
+            $("waiting-code").textContent = matchId;
+            if (selectedCategory) {
+              $("host-qset-display").style.display = "block";
+              $("host-qset-name").textContent = selectedCategory;
+            }
+            $("btn-start").classList.remove("hidden");
+            show("screen-waiting");
+            setupWaitingListeners();
+
+          } catch (error) {
+            console.error("Host match creation error:", error); // DEBUG
+            alert("Failed to create match: " + error.message);
+          }
+        });
         async function doJoin(name, code) {
           matchId = code.toUpperCase().trim(); // always uppercase, defensive
 
