@@ -1703,25 +1703,40 @@
         }
 
         async function setupWaitingListeners() {
-          settings = await getMatchSettings(matchId);
-          onPlayersChange(matchId, snap => {
-            allPlayers = snap ?? {};
-            $("player-list").innerHTML = Object.values(allPlayers).map(p => `<li style="color:${p.color}">${p.name}</li>`).join("");
-          });
+          try {
+            console.log("Setting up waiting listeners...");
 
-          // Wire copy-link now that matchId is set
-          $("btn-copy-link").onclick = async () => {
-            const url = `${location.origin}${location.pathname}?join=${matchId}`;
-            try {
-              await navigator.clipboard.writeText(url);
-              $("btn-copy-link").textContent = "✓ Copied!";
-              setTimeout(() => { $("btn-copy-link").textContent = "📋 Copy join link"; }, 2000);
-            } catch {
-              prompt("Copy this link to share:", url);
-            }
-          };
+            settings = await getMatchSettings(matchId);
+            console.log("Got match settings:", settings);
+
+            onPlayersChange(matchId, snap => {
+              console.log("Players changed:", snap);
+              allPlayers = snap ?? {};
+              $("player-list").innerHTML = Object.values(allPlayers)
+                .map(p => `<li style="color:${p.color}">${p.name}</li>`)
+                .join("");
+            });
+
+            // Wire copy-link now that matchId is set
+            $("btn-copy-link").onclick = async () => {
+              const url = `${location.origin}${location.pathname}?join=${matchId}`;
+              try {
+                await navigator.clipboard.writeText(url);
+                $("btn-copy-link").textContent = "✓ Copied!";
+                setTimeout(() => {
+                  $("btn-copy-link").textContent = "📋 Copy join link";
+                }, 2000);
+              } catch {
+                prompt("Copy this link to share:", url);
+              }
+            };
+
+            console.log("✅ Waiting listeners setup complete");
+          } catch (error) {
+            console.error("❌ Error in setupWaitingListeners:", error);
+            throw error;
+          }
         }
-
         // ═══════════════════════════════════════════════
         //  START GAME
         // ═══════════════════════════════════════════════
