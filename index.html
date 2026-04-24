@@ -1077,7 +1077,89 @@
       <button class="btn" id="btn-join-play">CONNECT →</button>
     </div>
   </div>
+  <div id="screen-waiting" class="screen">
+    <div class="panel">
+      <h1>STANDING BY</h1>
+      <p class="sub">MATCH CODE: <strong id="waiting-code" style="color:var(--accent);letter-spacing:.15em"></strong>
+      </p>
+      <p style="font-size:.7rem;color:var(--muted);margin-bottom:.5rem">Share this code with players</p>
+      <button class="btn ghost sm" id="btn-copy-link" style="margin-bottom:.8rem">📋 Copy join link</button>
+      <div class="divider"></div>
+      <p style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">
+        Players in lobby</p>
+      <ul id="player-list"></ul>
+      <div id="host-qset-display"
+        style="display:none;font-size:.72rem;color:var(--muted);padding:.4rem .7rem;border-radius:6px;border:1px solid var(--border);margin-bottom:.6rem">
+        📚 Set: <strong id="host-qset-name" style="color:var(--accent)">—</strong></div>
+      <button class="btn hidden" id="btn-start">START GAME</button>
+    </div>
+  </div>
 
+  <!-- GAME -->
+  <div id="screen-game" class="screen">
+    <div id="hud">
+      <span id="hud-role" class="hud-pill hud-role-crew">CREW</span>
+      <span id="hud-shield" class="hud-pill" style="color:var(--muted);border-color:var(--muted)">NO SHIELD</span>
+      <span class="hud-spacer"></span>
+      <span id="hud-tasks" style="font-size:.68rem;color:var(--muted2)"></span>
+      <span id="hud-kill-status" style="font-size:.7rem;color:var(--muted);margin-left:.4rem"></span>
+      <span id="hud-room" style="font-size:.7rem;color:var(--muted);margin-left:.5rem">—</span>
+    </div>
+    <div id="room-label"></div>
+    <canvas id="game-canvas"></canvas>
+    <div id="joystick-wrap">
+      <div id="joystick">
+        <div id="joystick-knob"></div>
+      </div>
+    </div>
+    <div id="action-bar">
+      <button class="btn ghost hidden" id="btn-task">⬡ TASK</button>
+      <button class="btn danger hidden" id="btn-kill">✕ KILL</button>
+      <button class="btn hidden" id="btn-swap">⇄ SWAP</button>
+      <button class="btn ghost hidden" id="btn-report">⚑ REPORT</button>
+      <button class="btn ghost hidden" id="btn-meeting">◈ MEETING</button>
+    </div>
+  </div>
+
+  <!-- END -->
+  <div id="screen-end" class="screen">
+    <div class="panel" style="text-align:center">
+      <h1 id="end-title">GAME OVER</h1>
+      <p id="end-body" style="color:var(--muted);margin:.6rem 0 1rem;font-size:.85rem"></p>
+      <div id="end-reveal" style="text-align:left;margin-bottom:1rem"></div>
+      <button class="btn" onclick="location.reload()">BACK TO LOBBY</button>
+    </div>
+  </div>
+
+  <!-- TASK MODAL -->
+  <div id="task-modal">
+    <div class="task-box">
+      <h3 id="task-modal-title">⬡ TASK STATION</h3>
+      <div id="task-content"></div>
+      <div class="divider"></div>
+      <button class="btn ghost" id="btn-close-task">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- MEETING OVERLAY -->
+  <div id="meeting-overlay">
+    <h2 id="meeting-title">🚨 EMERGENCY MEETING</h2>
+    <p id="meeting-reason" style="color:var(--muted);font-size:.78rem;margin-bottom:.25rem"></p>
+    <div id="timer-bar">
+      <div id="timer-fill" style="width:100%"></div>
+    </div>
+    <p id="timer-label">DISCUSSION</p>
+    <div id="vote-phase-banner">🔒 DISCUSSION — voting opens when timer ends</div>
+    <div id="chat-wrap">
+      <div id="chat-box"></div>
+      <div style="display:flex;gap:.4rem">
+        <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" style="flex:1" />
+        <button class="btn" id="btn-chat-send" style="width:auto;padding:.4rem .8rem;font-size:.75rem">SEND</button>
+      </div>
+    </div>
+    <div id="vote-list"></div>
+    <div id="vote-result"></div>
+  </div>
   <!-- HOST -->
   <div id="screen-host" class="screen">
     <div class="panel panel-scroll">
@@ -1180,92 +1262,7 @@
         </div>
       </div>
 
-      <!-- WAITING -->
-      <div id="screen-waiting" class="screen">
-        <div class="panel">
-          <h1>STANDING BY</h1>
-          <p class="sub">MATCH CODE: <strong id="waiting-code"
-              style="color:var(--accent);letter-spacing:.15em"></strong>
-          </p>
-          <p style="font-size:.7rem;color:var(--muted);margin-bottom:.5rem">Share this code with players</p>
-          <button class="btn ghost sm" id="btn-copy-link" style="margin-bottom:.8rem">📋 Copy join link</button>
-          <div class="divider"></div>
-          <p
-            style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">
-            Players in lobby</p>
-          <ul id="player-list"></ul>
-          <div id="host-qset-display"
-            style="display:none;font-size:.72rem;color:var(--muted);padding:.4rem .7rem;border-radius:6px;border:1px solid var(--border);margin-bottom:.6rem">
-            📚 Set: <strong id="host-qset-name" style="color:var(--accent)">—</strong></div>
-          <button class="btn hidden" id="btn-start">START GAME</button>
-        </div>
-      </div>
 
-      <!-- GAME -->
-      <div id="screen-game" class="screen">
-        <div id="hud">
-          <span id="hud-role" class="hud-pill hud-role-crew">CREW</span>
-          <span id="hud-shield" class="hud-pill" style="color:var(--muted);border-color:var(--muted)">NO SHIELD</span>
-          <span class="hud-spacer"></span>
-          <span id="hud-tasks" style="font-size:.68rem;color:var(--muted2)"></span>
-          <span id="hud-kill-status" style="font-size:.7rem;color:var(--muted);margin-left:.4rem"></span>
-          <span id="hud-room" style="font-size:.7rem;color:var(--muted);margin-left:.5rem">—</span>
-        </div>
-        <div id="room-label"></div>
-        <canvas id="game-canvas"></canvas>
-        <div id="joystick-wrap">
-          <div id="joystick">
-            <div id="joystick-knob"></div>
-          </div>
-        </div>
-        <div id="action-bar">
-          <button class="btn ghost hidden" id="btn-task">⬡ TASK</button>
-          <button class="btn danger hidden" id="btn-kill">✕ KILL</button>
-          <button class="btn hidden" id="btn-swap">⇄ SWAP</button>
-          <button class="btn ghost hidden" id="btn-report">⚑ REPORT</button>
-          <button class="btn ghost hidden" id="btn-meeting">◈ MEETING</button>
-        </div>
-      </div>
-
-      <!-- END -->
-      <div id="screen-end" class="screen">
-        <div class="panel" style="text-align:center">
-          <h1 id="end-title">GAME OVER</h1>
-          <p id="end-body" style="color:var(--muted);margin:.6rem 0 1rem;font-size:.85rem"></p>
-          <div id="end-reveal" style="text-align:left;margin-bottom:1rem"></div>
-          <button class="btn" onclick="location.reload()">BACK TO LOBBY</button>
-        </div>
-      </div>
-
-      <!-- TASK MODAL -->
-      <div id="task-modal">
-        <div class="task-box">
-          <h3 id="task-modal-title">⬡ TASK STATION</h3>
-          <div id="task-content"></div>
-          <div class="divider"></div>
-          <button class="btn ghost" id="btn-close-task">CLOSE</button>
-        </div>
-      </div>
-
-      <!-- MEETING OVERLAY -->
-      <div id="meeting-overlay">
-        <h2 id="meeting-title">🚨 EMERGENCY MEETING</h2>
-        <p id="meeting-reason" style="color:var(--muted);font-size:.78rem;margin-bottom:.25rem"></p>
-        <div id="timer-bar">
-          <div id="timer-fill" style="width:100%"></div>
-        </div>
-        <p id="timer-label">DISCUSSION</p>
-        <div id="vote-phase-banner">🔒 DISCUSSION — voting opens when timer ends</div>
-        <div id="chat-wrap">
-          <div id="chat-box"></div>
-          <div style="display:flex;gap:.4rem">
-            <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" style="flex:1" />
-            <button class="btn" id="btn-chat-send" style="width:auto;padding:.4rem .8rem;font-size:.75rem">SEND</button>
-          </div>
-        </div>
-        <div id="vote-list"></div>
-        <div id="vote-result"></div>
-      </div>
 
 
       <script type="module">
