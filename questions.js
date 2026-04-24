@@ -1,12 +1,12 @@
 // ============================================================
 //  QUESTIONS.JS — Supabase question fetching + writing layer
 //
-//  NOTE: For ownership enforcement to work server-side, add these
-//  RLS policies in your Supabase dashboard:
-//    short_questions: INSERT → auth.uid() = created_by
-//    long_questions:  INSERT → auth.uid() = created_by
-//    Both tables: SELECT → true (public read)
-//    UPDATE/DELETE → auth.uid() = created_by
+//  RLS policies needed in Supabase dashboard:
+//    short_questions & long_questions:
+//      SELECT  → true  (public read)
+//      INSERT  → auth.uid() = created_by
+//      UPDATE  → auth.uid() = created_by
+//      DELETE  → auth.uid() = created_by
 // ============================================================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_TABLES } from "./config.js";
@@ -24,16 +24,19 @@ function shuffle(arr) {
 
 // ── Auth ──────────────────────────────────────────────────────
 
-export async function signUp(email, password) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+/**
+ * Sign in with Google via Supabase OAuth popup.
+ * Supabase redirects back to the same page; the session is
+ * automatically picked up by onAuthChange.
+ */
+export async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.href.split("?")[0], // strip ?join= params
+    },
+  });
   if (error) throw error;
-  return data.user;
-}
-
-export async function signIn(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  return data.user;
 }
 
 export async function signOut() {
@@ -62,9 +65,7 @@ export function onAuthChange(cb) {
 
 /**
  * Fetch all distinct categories across both question tables.
- * @param {string|null} ownedBy  — when provided, only return categories where
- *                                  created_by = ownedBy (for the addq screen).
- *                                  When null, return all categories (for host set picker).
+ * @param {string|null} ownedBy  — when set, only return categories owned by this uid.
  * Returns array of { name, sqCount, lqCount, createdBy }.
  */
 export async function fetchCategories(ownedBy = null) {
@@ -98,12 +99,7 @@ export async function fetchCategories(ownedBy = null) {
 
   return Object.entries(counts)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, { sq, lq, createdBy }]) => ({
-      name,
-      sqCount: sq,
-      lqCount: lq,
-      createdBy,
-    }));
+    .map(([name, { sq, lq, createdBy }]) => ({ name, sqCount: sq, lqCount: lq, createdBy }));
 }
 
 // ── Question fetching ─────────────────────────────────────────
@@ -146,40 +142,79 @@ export async function fetchQuestionsForTask(type, count, category = null) {
   return shuffle([...sq, ...lq]);
 }
 
+/**
+ * Fetch ALL questions for a category, from both tables.
+ * Each row includes a synthetic `_table` field: "sq" or "lq".
+ * Optionally filtered to a specific owner uid.
+ */
+export async function fetchQuestionsForCategory(category, ownedBy = null) {
+  let sqQ = supabase
+    .from(SUPABASE_TABLES.shortQuestions)
+    .select("id, question, answer, category, created_by")
+    .eq("category", category)
+    .order("id");
+  let lqQ = supabase
+    .from(SUPABASE_TABLES.longQuestions)
+    .select("id, question, answer, category, created_by")
+    .eq("category", category)
+    .order("id");
+  if (ownedBy) {
+    sqQ = sqQ.eq("created_by", ownedBy);
+    lqQ = lqQ.eq("created_by", ownedBy);
+  }
+  const [sqRes, lqRes] = await Promise.all([sqQ, lqQ]);
+  const sqRows = (sqRes.data ?? []).map(r => ({ ...r, _table: "sq" }));
+  const lqRows = (lqRes.data ?? []).map(r => ({ ...r, _table: "lq" }));
+  return [...sqRows, ...lqRows];
+}
+
 // ── Question writing ──────────────────────────────────────────
 
 /**
  * Insert questions.
  * Each row: { question, answer, category, type: "sq"|"lq" }
- * @param {Object[]} rows
- * @param {string|null} userId  — the Supabase auth UID of the uploader.
- *                               Stored as created_by for ownership checks.
  */
 export async function addQuestions(rows, userId = null) {
   if (!rows?.length) return;
-
   const sqRows = rows
     .filter(r => r.type === "sq")
     .map(({ question, answer, category }) => ({
-      question,
-      answer,
-      category,
+      question, answer, category,
       ...(userId ? { created_by: userId } : {}),
     }));
-
   const lqRows = rows
     .filter(r => r.type === "lq")
     .map(({ question, answer, category }) => ({
-      question,
-      answer,
-      category,
+      question, answer, category,
       ...(userId ? { created_by: userId } : {}),
     }));
-
   const ops = [];
   if (sqRows.length) ops.push(supabase.from(SUPABASE_TABLES.shortQuestions).insert(sqRows));
   if (lqRows.length) ops.push(supabase.from(SUPABASE_TABLES.longQuestions).insert(lqRows));
   const results = await Promise.all(ops);
   const errors  = results.map(r => r.error).filter(Boolean);
   if (errors.length) throw new Error(errors.map(e => e.message).join("; "));
+}
+
+/**
+ * Update a single question's text and/or answer.
+ * @param {"sq"|"lq"} table
+ * @param {number} id
+ * @param {{ question?: string, answer?: string }} fields
+ */
+export async function updateQuestion(table, id, fields) {
+  const tbl = table === "sq" ? SUPABASE_TABLES.shortQuestions : SUPABASE_TABLES.longQuestions;
+  const { error } = await supabase.from(tbl).update(fields).eq("id", id);
+  if (error) throw error;
+}
+
+/**
+ * Delete a single question by id and table.
+ * @param {"sq"|"lq"} table
+ * @param {number} id
+ */
+export async function deleteQuestion(table, id) {
+  const tbl = table === "sq" ? SUPABASE_TABLES.shortQuestions : SUPABASE_TABLES.longQuestions;
+  const { error } = await supabase.from(tbl).delete().eq("id", id);
+  if (error) throw error;
 }
