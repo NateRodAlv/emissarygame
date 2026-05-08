@@ -55,6 +55,8 @@ export class SwipeTask {
 
     const pct = Math.round((this.currentIndex / this.questions.length) * 100);
 
+    // FIX: Neutral colors — blue (left) and amber (right) instead of red/green
+    // to avoid players guessing correct answer from color alone
     this.container.innerHTML = `
       <div style="margin-bottom:.6rem">
         <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
@@ -78,12 +80,12 @@ export class SwipeTask {
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.35rem">
-        <div style="background:rgba(255,74,107,0.08);border:1px solid rgba(255,74,107,0.3);
-                    border-radius:8px;padding:.5rem .7rem;font-size:.72rem;color:var(--danger);text-align:center">
+        <div style="background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.3);
+                    border-radius:8px;padding:.5rem .7rem;font-size:.72rem;color:var(--blue);text-align:center">
           ← ${_trunc(leftLabel, 22)}
         </div>
-        <div style="background:rgba(74,255,164,0.08);border:1px solid rgba(74,255,164,0.3);
-                    border-radius:8px;padding:.5rem .7rem;font-size:.72rem;color:var(--accent);text-align:center">
+        <div style="background:rgba(255,201,74,0.08);border:1px solid rgba(255,201,74,0.3);
+                    border-radius:8px;padding:.5rem .7rem;font-size:.72rem;color:var(--warn);text-align:center">
           ${_trunc(rightLabel, 22)} →
         </div>
       </div>
@@ -104,7 +106,8 @@ export class SwipeTask {
       if (!dragging || this._animating) return;
       const dx  = x - startX, rot = dx * 0.07;
       card.style.transform   = `translateX(${dx}px) rotate(${rot}deg)`;
-      card.style.borderColor = dx < -25 ? "var(--danger)" : dx > 25 ? "var(--accent)" : "var(--border)";
+      // FIX: Neutral tilt colors — blue for left, amber for right
+      card.style.borderColor = dx < -25 ? "var(--blue)" : dx > 25 ? "var(--warn)" : "var(--border)";
     };
     const end = x => {
       if (!dragging) return; dragging = false;

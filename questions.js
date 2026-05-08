@@ -210,11 +210,26 @@ export async function updateQuestion(table, id, fields) {
 
 /**
  * Delete a single question by id and table.
+ * FIX: Verifies the current user is the original creator before deleting.
  * @param {"sq"|"lq"} table
  * @param {number} id
  */
 export async function deleteQuestion(table, id) {
   const tbl = table === "sq" ? SUPABASE_TABLES.shortQuestions : SUPABASE_TABLES.longQuestions;
+
+  // Verify ownership: fetch the question's created_by and compare to the current user
+  const { data: existing, error: fetchErr } = await supabase
+    .from(tbl)
+    .select("created_by")
+    .eq("id", id)
+    .single();
+  if (fetchErr) throw fetchErr;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!existing || existing.created_by !== user?.id) {
+    throw new Error("Permission denied: you are not the creator of this question.");
+  }
+
   const { error } = await supabase.from(tbl).delete().eq("id", id);
   if (error) throw error;
 }

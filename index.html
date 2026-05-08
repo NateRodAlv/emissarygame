@@ -798,7 +798,8 @@
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 1.5rem;
-      width: min(460px, 95vw)
+      width: min(460px, 95vw);
+      transition: border-color .15s
     }
 
     .task-box h3 {
@@ -1044,7 +1045,7 @@
     </div>
   </div>
 
-  <!-- SET PICKER (full-page, opened from host screen) -->
+  <!-- SET PICKER -->
   <div id="screen-setpicker" class="screen">
     <div class="setpicker-header">
       <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.7rem">
@@ -1077,6 +1078,8 @@
       <button class="btn" id="btn-join-play">CONNECT →</button>
     </div>
   </div>
+
+  <!-- WAITING -->
   <div id="screen-waiting" class="screen">
     <div class="panel">
       <h1>STANDING BY</h1>
@@ -1160,7 +1163,10 @@
     <div id="vote-list"></div>
     <div id="vote-result"></div>
   </div>
+
   <!-- HOST -->
+  <!-- FIX: screen-host and screen-addq are now properly separate top-level screens,
+       not nested inside each other. The impostors/jesters fields are also un-nested. -->
   <div id="screen-host" class="screen">
     <div class="panel panel-scroll">
       <span class="back-link" id="host-back">◀ BACK</span>
@@ -1198,1419 +1204,1450 @@
           min="1" max="9" />
         <div class="hint">When all crewmates finish this many tasks the crew wins, even if the impostor is alive.</div>
       </div>
-      <div class="field"><label>Amount of Impostors</label><input id="host-impostors" type="number" value="3" min="1"
-          max="3" />
-        <div class="field"><label>Amount of Jester roled players</label><input id="host-jesters" type="number" value="3"
-            min="1" max="3" />
-          <div class="field"><label>Discussion mode</label><select id="host-chat">
-              <option value="class">🏫 Discuss aloud in class (no in-game chat)</option>
-              <option value="chat">💬 In-game text chat</option>
-            </select></div>
+      <div class="field"><label>Amount of Impostors</label><input id="host-impostors" type="number" value="1" min="1"
+          max="3" /></div>
+      <div class="field"><label>Amount of Jester roled players</label><input id="host-jesters" type="number" value="1"
+          min="0" max="3" /></div>
+      <div class="field"><label>Discussion mode</label><select id="host-chat">
+          <option value="class">🏫 Discuss aloud in class (no in-game chat)</option>
+          <option value="chat">💬 In-game text chat</option>
+        </select></div>
+      <div class="divider"></div>
+      <button class="btn" id="btn-create-match">CREATE MATCH →</button>
+    </div>
+  </div>
+
+  <!-- ADD QUESTIONS -->
+  <div id="screen-addq" class="screen">
+    <div class="panel panel-scroll">
+      <span class="back-link" id="addq-back">◀ BACK</span>
+      <h1>ADD QUESTIONS</h1>
+      <p class="sub">Upload questions to Supabase</p>
+      <div id="addq-auth-required" style="text-align:center;padding:1.5rem 0">
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">You must be signed in to upload questions.
+        </p>
+        <button class="btn sm" id="addq-goto-auth">SIGN IN →</button>
+      </div>
+      <div id="addq-content" style="display:none">
+        <p id="addq-signed-as" style="font-size:.7rem;color:var(--muted2);margin-bottom:.8rem"></p>
+        <div class="field"><label>Category / Question Set Name</label><input id="addq-cat-input" type="text"
+            placeholder="e.g. Biology Ch.3" maxlength="64" autocomplete="off" />
+          <div class="hint">Hosts select this name when creating a match. Use the same name to add more questions to an
+            existing set.</div>
+        </div>
+        <div style="margin-bottom:.6rem">
+          <p
+            style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">
+            Or pick from your existing sets</p><select id="addq-cat-select" style="margin-bottom:0">
+            <option value="">— select existing —</option>
+          </select>
+        </div>
+        <div class="divider"></div>
+        <div id="addq-existing-section" style="display:none">
+          <p class="section-label">✏️ Existing Questions in This Set</p>
+          <p style="font-size:.67rem;color:var(--muted);margin-bottom:.6rem;line-height:1.4">
+            Edit or delete questions you previously uploaded. Only your own questions are shown.
+          </p>
+          <div id="addq-existing-list"></div>
           <div class="divider"></div>
-          <button class="btn" id="btn-create-match">CREATE MATCH →</button>
         </div>
-      </div>
-
-      <!-- ADD QUESTIONS -->
-      <div id="screen-addq" class="screen">
-        <div class="panel panel-scroll">
-          <span class="back-link" id="addq-back">◀ BACK</span>
-          <h1>ADD QUESTIONS</h1>
-          <p class="sub">Upload questions to Supabase</p>
-          <div id="addq-auth-required" style="text-align:center;padding:1.5rem 0">
-            <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">You must be signed in to upload questions.
-            </p>
-            <button class="btn sm" id="addq-goto-auth">SIGN IN →</button>
-          </div>
-          <div id="addq-content" style="display:none">
-            <p id="addq-signed-as" style="font-size:.7rem;color:var(--muted2);margin-bottom:.8rem"></p>
-            <div class="field"><label>Category / Question Set Name</label><input id="addq-cat-input" type="text"
-                placeholder="e.g. Biology Ch.3" maxlength="64" autocomplete="off" />
-              <div class="hint">Hosts select this name when creating a match. Use the same name to add more questions to
-                an
-                existing set.</div>
-            </div>
-            <div style="margin-bottom:.6rem">
-              <p
-                style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">
-                Or pick from your existing sets</p><select id="addq-cat-select" style="margin-bottom:0">
-                <option value="">— select existing —</option>
-              </select>
-            </div>
-            <div class="divider"></div>
-            <div id="addq-existing-section" style="display:none">
-              <p class="section-label">✏️ Existing Questions in This Set</p>
-              <p style="font-size:.67rem;color:var(--muted);margin-bottom:.6rem;line-height:1.4">
-                Edit or delete questions you previously uploaded. Only your own questions are shown.
-              </p>
-              <div id="addq-existing-list"></div>
-              <div class="divider"></div>
-            </div>
-            <p class="section-label">➕ Add New Questions</p>
-            <p style="font-size:.67rem;color:var(--muted);margin-bottom:.7rem;line-height:1.45">Each question has its
-              own
-              type. <strong style="color:var(--blue)">Short (SQ)</strong> = quick recall used in Swipe &amp; Fruit Ninja
-              tasks. <strong style="color:var(--warn)">Long (LQ)</strong> = deeper analysis used in Connector tasks
-              &amp;
-              meetings.</p>
-            <div id="addq-rows"></div>
-            <button class="btn ghost" id="addq-add-row" style="margin-bottom:.8rem">+ ADD ANOTHER QUESTION</button>
-            <div class="divider"></div>
-            <button class="btn" id="addq-submit">UPLOAD TO DATABASE →</button>
-            <div id="addq-status" style="margin-top:.6rem;font-size:.78rem;text-align:center;display:none"></div>
-          </div>
-        </div>
-      </div>
-
-
-
-
-      <script type="module">
-        import { GAME_CONFIG } from "./config.js";
-        import {
-          createMatch, joinMatch,
-          onPlayersChange, onPhaseChange,
-          onGameStateChange,
-          assignRoles, setPhase, setGameResult,
-          callMeeting, castVote,
-          applyKill, applyJesterSwap,
-          onMeetingChange, setKillReady,
-          completeRoomTask, movePlayer,
-          getMatchSettings, getPlayerData,
-          getMatchPlayers, deleteMatch,
-          cleanupStaleMatches,
-          sendChatMessage, onChatMessage
-        } from "./realtime.js";
-        import { Impostor, Crew } from "./roles.js";
-        import { World } from "./world.js";
-        import {
-          SwipeTask, ConnectorTask,
-          FruitNinjaTask
-        } from "./tasks.js";
-        import {
-          fetchCategories, addQuestions,
-          fetchSQ, fetchLQ,
-          fetchQuestionsForCategory,
-          updateQuestion, deleteQuestion,
-          signInWithGoogle, signOut,
-          getCurrentUser, onAuthChange
-        } from "./questions.js";
-
-        // Clean up stale matches from previous sessions (runs silently in background)
-        cleanupStaleMatches().catch(() => { });
-
-        const $ = id => document.getElementById(id);
-        const show = id => {
-          document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-          $(id).classList.add("active");
-        };
-
-        // ── State ────────────────────────────────────────────────────
-        let matchId, localPlayer, world;
-        let allPlayers = {}, settings = {}, isHost = false;
-        let meetingTimerInterval = null;
-        let meetingPhase = "discussion";
-        let tallyingVotes = false;
-        let hasVoted = false;
-        let killReady = false;
-        let chatUnsubscribe = null;
-        let selectedCategory = null;
-        let currentUser = null;        // Supabase auth user
-        let allSetCategories = [];     // full list for set picker
-
-        // Ghost / task tracking
-        let isAlive = true;
-        let localCompletedRooms = new Set();
-        let tasksNeeded = 3;
-        let jesterSqCount = 0;
-
-        // ── Auth state listener ───────────────────────────────────────
-        onAuthChange(user => {
-          currentUser = user;
-          updateAuthUI();
-        });
-        // Also seed from current session immediately
-        getCurrentUser().then(u => { currentUser = u; updateAuthUI(); });
-
-        function updateAuthUI() {
-          // Addq screen gate
-          const authRequired = $("addq-auth-required");
-          if (authRequired) {
-            authRequired.style.display = currentUser ? "none" : "block";
-            $("addq-content").style.display = currentUser ? "block" : "none";
-            if (currentUser) {
-              const signedAs = $("addq-signed-as");
-              if (signedAs) signedAs.textContent = `Signed in as ${currentUser.email}`;
-              loadAddqCategories();
-              addqEnsureRow();
-            }
-          }
-          // Auth screen: toggle between sign-in button and signed-in state
-          const signinArea = $("auth-signin-area");
-          const signedIn = $("auth-signed-in");
-          const emailEl = $("auth-user-email");
-          const googleBtn = $("auth-google-btn");
-          if (signinArea) signinArea.style.display = currentUser ? "none" : "block";
-          if (signedIn) signedIn.style.display = currentUser ? "block" : "none";
-          if (emailEl && currentUser) emailEl.textContent = currentUser.email;
-          if (googleBtn) { googleBtn.disabled = false; googleBtn.textContent = googleBtn.textContent.includes("Redirecting") ? "SIGN IN WITH GOOGLE" : googleBtn.textContent; }
-        }
-
-        // ── URL ?join= param — auto-fill join code from share link ───
-        (function checkJoinParam() {
-          const params = new URLSearchParams(location.search);
-          const code = params.get("join");
-          if (code) {
-            // Pre-fill code and navigate to join screen after init
-            setTimeout(() => {
-              $("play-code").value = code.toUpperCase();
-              show("screen-play");
-            }, 100);
-          }
-        })();
-
-        // ── Color pickers ─────────────────────────────────────────────
-        const SWATCH_COLORS = [
-          "#ff4a6b", "#4a9eff", "#4affa4", "#ffc94a",
-          "#c44aff", "#ff8c4a", "#4affed", "#ff4ae8",
-          "#a0ff4a", "#ffffff",
-        ];
-        let playPickedColor = SWATCH_COLORS[0];
-        let hostPickedColor = SWATCH_COLORS[1];
-
-        function initColorPicker(containerId, initial, onChange) {
-          const el = $(containerId);
-          el.innerHTML = SWATCH_COLORS.map(c => `
-    <div class="color-swatch${c === initial ? ' selected' : ''}"
-         data-color="${c}" style="background:${c}"></div>
-  `).join("");
-          el.querySelectorAll(".color-swatch").forEach(sw => {
-            sw.addEventListener("click", () => {
-              el.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
-              sw.classList.add("selected");
-              onChange(sw.dataset.color);
-            });
-          });
-        }
-
-        initColorPicker("play-color-picker", playPickedColor, c => { playPickedColor = c; });
-        initColorPicker("host-color-picker", hostPickedColor, c => { hostPickedColor = c; });
-
-        // ── Touch detection ──────────────────────────────────────────
-        if (window.matchMedia("(pointer:coarse)").matches)
-          $("joystick-wrap").style.display = "block";
-
-        // ── Starfield ─────────────────────────────────────────────────
-        (function () {
-          const cv = $("star-canvas"), ctx = cv.getContext("2d");
-          let stars = [];
-          const resize = () => {
-            cv.width = window.innerWidth; cv.height = window.innerHeight;
-            stars = Array.from({ length: 160 }, () => ({ x: Math.random() * cv.width, y: Math.random() * cv.height, r: Math.random() * 1.2 + 0.2, v: Math.random() * 0.18 + 0.05, o: Math.random() }));
-          };
-          resize(); window.addEventListener("resize", resize);
-          (function tick() {
-            if (!$("screen-menu").classList.contains("active")) { requestAnimationFrame(tick); return; }
-            ctx.clearRect(0, 0, cv.width, cv.height);
-            for (const s of stars) { s.o += (Math.random() - .5) * .04; s.o = Math.max(.05, Math.min(.7, s.o)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(200,220,255,${s.o})`; ctx.fill(); s.y -= s.v; if (s.y < 0) { s.y = cv.height; s.x = Math.random() * cv.width; } }
-            requestAnimationFrame(tick);
-          })();
-        })();
-
-        // ── Role events ───────────────────────────────────────────────
-        document.addEventListener("game:killReady", () => { $("hud-kill-status").textContent = "🔪 KILL READY"; $("hud-kill-status").style.color = "var(--danger)"; });
-        document.addEventListener("game:killProgress", e => { $("hud-kill-status").textContent = `🔪 SQ ${e.detail.progress}/${e.detail.needed}`; $("hud-kill-status").style.color = "var(--muted)"; });
-        document.addEventListener("game:shieldGranted", () => { $("hud-shield").textContent = "🛡 SHIELDED"; $("hud-shield").style.color = "var(--accent)"; $("hud-shield").style.borderColor = "var(--accent)"; });
-
-        // ═══════════════════════════════════════════════
-        //  MAIN MENU
-        // ═══════════════════════════════════════════════
-        $("menu-btn-play").addEventListener("click", () => show("screen-play"));
-        $("menu-btn-host").addEventListener("click", () => show("screen-host"));
-        $("menu-btn-addq").addEventListener("click", () => {
-          show("screen-addq");
-          if (currentUser) { loadAddqCategories(); addqEnsureRow(); }
-        });
-        $("play-back").addEventListener("click", () => show("screen-menu"));
-        $("host-back").addEventListener("click", () => show("screen-menu"));
-        $("addq-back").addEventListener("click", () => show("screen-menu"));
-        $("auth-back").addEventListener("click", () => show("screen-menu"));
-        $("setpicker-back").addEventListener("click", () => show("screen-host"));
-        $("addq-goto-auth").addEventListener("click", () => show("screen-auth"));
-
-        // ═══════════════════════════════════════════════
-        //  AUTH SCREEN — Google OAuth
-        // ═══════════════════════════════════════════════
-        $("auth-google-btn").addEventListener("click", async () => {
-          $("auth-google-btn").disabled = true;
-          $("auth-error").style.display = "none";
-          try {
-            await signInWithGoogle();
-            // Page will redirect to Google then back; onAuthChange will fire on return.
-            // Show a loading message while redirect is happening.
-            $("auth-google-btn").textContent = "Redirecting to Google…";
-          } catch (err) {
-            $("auth-error").textContent = err.message;
-            $("auth-error").style.display = "block";
-            $("auth-google-btn").disabled = false;
-          }
-        });
-
-        $("auth-signout").addEventListener("click", async () => {
-          await signOut();
-          show("screen-menu");
-        });
-
-        // ═══════════════════════════════════════════════
-        //  SET PICKER (full-page with search)
-        // ═══════════════════════════════════════════════
-        async function openSetPicker() {
-          show("screen-setpicker");
-          $("setpicker-search").value = "";
-          $("setpicker-list").innerHTML = `<div style="text-align:center;color:var(--muted);padding:2rem">Loading…</div>`;
-          try {
-            allSetCategories = await fetchCategories(); // all categories, no owner filter
-            renderSetPicker("");
-          } catch (err) {
-            $("setpicker-list").innerHTML = `<div style="color:var(--danger);padding:1rem">${esc(err.message)}</div>`;
-          }
-        }
-
-        function renderSetPicker(query) {
-          const list = $("setpicker-list");
-          const none = $("setpicker-none");
-          const q = query.toLowerCase().trim();
-          const filtered = q
-            ? allSetCategories.filter(c => c.name.toLowerCase().includes(q))
-            : allSetCategories;
-
-          if (!filtered.length) {
-            list.innerHTML = "";
-            none.style.display = "block";
-            return;
-          }
-          none.style.display = "none";
-
-          list.innerHTML = filtered.map(c => `
-    <div class="setpicker-card${selectedCategory === c.name ? " selected" : ""}"
-         data-cat="${esc(c.name)}">
-      <div style="flex:1;min-width:0">
-        <div class="sp-name">${esc(c.name)}</div>
-        <div class="sp-meta">${c.sqCount} short · ${c.lqCount} long</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
-        <div class="qset-badges">
-          ${c.sqCount ? `<span class="qset-badge sq">SQ×${c.sqCount}</span>` : ""}
-          ${c.lqCount ? `<span class="qset-badge lq">LQ×${c.lqCount}</span>` : ""}
-        </div>
-        <button class="btn ghost sm sp-preview-btn" data-preview="${esc(c.name)}"
-                style="padding:.28rem .6rem;font-size:.62rem;border-radius:6px;white-space:nowrap">
-          👁 Preview
-        </button>
+        <p class="section-label">➕ Add New Questions</p>
+        <p style="font-size:.67rem;color:var(--muted);margin-bottom:.7rem;line-height:1.45">Each question has its own
+          type. <strong style="color:var(--blue)">Short (SQ)</strong> = quick recall used in Swipe &amp; Fruit Ninja
+          tasks. <strong style="color:var(--warn)">Long (LQ)</strong> = deeper analysis used in Connector tasks &amp;
+          meetings.</p>
+        <div id="addq-rows"></div>
+        <button class="btn ghost" id="addq-add-row" style="margin-bottom:.8rem">+ ADD ANOTHER QUESTION</button>
+        <div class="divider"></div>
+        <button class="btn" id="addq-submit">UPLOAD TO DATABASE →</button>
+        <div id="addq-status" style="margin-top:.6rem;font-size:.78rem;text-align:center;display:none"></div>
       </div>
     </div>
-  `).join("");
+  </div>
 
-          list.querySelectorAll(".setpicker-card").forEach(card => {
-            card.addEventListener("click", e => {
-              // Preview button click — don't select the card
-              if (e.target.closest(".sp-preview-btn")) return;
-              list.querySelectorAll(".setpicker-card").forEach(c => c.classList.remove("selected"));
-              card.classList.add("selected");
-              selectedCategory = card.dataset.cat;
-            });
-          });
+  <script type="module">
+    import { GAME_CONFIG } from "./config.js";
+    import {
+      createMatch, joinMatch,
+      onPlayersChange, onPhaseChange,
+      onGameStateChange,
+      assignRoles, setPhase, setGameResult,
+      callMeeting, castVote,
+      applyKill, applyJesterSwap,
+      onMeetingChange, setKillReady,
+      completeRoomTask, movePlayer,
+      getMatchSettings, getPlayerData,
+      getMatchPlayers, deleteMatch,
+      cleanupStaleMatches,
+      sendChatMessage, onChatMessage
+    } from "./realtime.js";
+    import { Impostor, Crew } from "./roles.js";
+    import { World } from "./world.js";
+    import {
+      SwipeTask, ConnectorTask,
+      FruitNinjaTask
+    } from "./tasks.js";
+    import {
+      fetchCategories, addQuestions,
+      fetchSQ, fetchLQ,
+      fetchQuestionsForCategory,
+      updateQuestion, deleteQuestion,
+      signInWithGoogle, signOut,
+      getCurrentUser, onAuthChange
+    } from "./questions.js";
 
-          list.querySelectorAll(".sp-preview-btn").forEach(btn => {
-            btn.addEventListener("click", e => {
-              e.stopPropagation();
-              openPreviewModal(btn.dataset.preview);
-            });
-          });
+    // Clean up stale matches from previous sessions (runs silently in background)
+    cleanupStaleMatches().catch(() => { });
+
+    const $ = id => document.getElementById(id);
+    const show = id => {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      $(id).classList.add("active");
+    };
+
+    // ── State ────────────────────────────────────────────────────
+    let matchId, localPlayer, world;
+    let allPlayers = {}, settings = {}, isHost = false;
+    let meetingTimerInterval = null;
+    let meetingPhase = "discussion";
+    let tallyingVotes = false;
+    let hasVoted = false;
+    let killReady = false;
+    let chatUnsubscribe = null;
+    let selectedCategory = null;
+    let currentUser = null;
+    let allSetCategories = [];
+
+    // Ghost / task tracking
+    let isAlive = true;
+    let localCompletedRooms = new Set();
+    let tasksNeeded = 3;
+    let jesterSqCount = 0;
+
+    // ── Auth state listener ───────────────────────────────────────
+    onAuthChange(user => {
+      currentUser = user;
+      updateAuthUI();
+    });
+    getCurrentUser().then(u => { currentUser = u; updateAuthUI(); });
+
+    function updateAuthUI() {
+      const authRequired = $("addq-auth-required");
+      if (authRequired) {
+        authRequired.style.display = currentUser ? "none" : "block";
+        $("addq-content").style.display = currentUser ? "block" : "none";
+        if (currentUser) {
+          const signedAs = $("addq-signed-as");
+          if (signedAs) signedAs.textContent = `Signed in as ${currentUser.email}`;
+          loadAddqCategories();
+          addqEnsureRow();
         }
+      }
+      const signinArea = $("auth-signin-area");
+      const signedIn = $("auth-signed-in");
+      const emailEl = $("auth-user-email");
+      const googleBtn = $("auth-google-btn");
+      if (signinArea) signinArea.style.display = currentUser ? "none" : "block";
+      if (signedIn) signedIn.style.display = currentUser ? "block" : "none";
+      if (emailEl && currentUser) emailEl.textContent = currentUser.email;
+      if (googleBtn) { googleBtn.disabled = false; googleBtn.textContent = googleBtn.textContent.includes("Redirecting") ? "SIGN IN WITH GOOGLE" : googleBtn.textContent; }
+    }
 
-        $("setpicker-search").addEventListener("input", e => renderSetPicker(e.target.value));
+    // ── URL ?join= param ─────────────────────────────────────────
+    (function checkJoinParam() {
+      const params = new URLSearchParams(location.search);
+      const code = params.get("join");
+      if (code) {
+        setTimeout(() => {
+          $("play-code").value = code.toUpperCase();
+          show("screen-play");
+        }, 100);
+      }
+    })();
 
-        async function openPreviewModal(categoryName) {
-          const wrap = mkOverlay();
-          const inner = wrap.querySelector(".mo-inner");
-          inner.innerHTML = `
-    <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.3rem;font-size:.88rem">
-      👁 ${esc(categoryName)}
-    </h3>
-    <p style="color:var(--muted);font-size:.7rem;margin-bottom:.8rem">Loading questions…</p>
-  `;
-          document.body.appendChild(wrap);
+    // ── Color pickers ─────────────────────────────────────────────
+    const SWATCH_COLORS = [
+      "#ff4a6b", "#4a9eff", "#4affa4", "#ffc94a",
+      "#c44aff", "#ff8c4a", "#4affed", "#ff4ae8",
+      "#a0ff4a", "#ffffff",
+    ];
+    let playPickedColor = SWATCH_COLORS[0];
+    let hostPickedColor = SWATCH_COLORS[1];
 
-          try {
-            const questions = await fetchQuestionsForCategory(categoryName);
-            if (!questions.length) {
-              inner.innerHTML += `<p style="color:var(--muted);font-size:.8rem">No questions found.</p>`;
-            } else {
-              const rows = questions.map(q => `
-        <div style="padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);
-                    background:var(--bg);margin-bottom:.4rem">
-          <div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.25rem">
-            <span style="font-size:.58rem;padding:.1rem .35rem;border-radius:999px;
-                         border:1px solid ${q._table === 'sq' ? 'rgba(74,158,255,.4)' : 'rgba(255,201,74,.4)'};
-                         color:${q._table === 'sq' ? 'var(--blue)' : 'var(--warn)'}">${q._table.toUpperCase()}</span>
-            <span style="font-size:.8rem;color:var(--text)">${esc(q.question)}</span>
+    function initColorPicker(containerId, initial, onChange) {
+      const el = $(containerId);
+      el.innerHTML = SWATCH_COLORS.map(c => `
+        <div class="color-swatch${c === initial ? ' selected' : ''}"
+             data-color="${c}" style="background:${c}"></div>
+      `).join("");
+      el.querySelectorAll(".color-swatch").forEach(sw => {
+        sw.addEventListener("click", () => {
+          el.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
+          sw.classList.add("selected");
+          onChange(sw.dataset.color);
+        });
+      });
+    }
+
+    initColorPicker("play-color-picker", playPickedColor, c => { playPickedColor = c; });
+    initColorPicker("host-color-picker", hostPickedColor, c => { hostPickedColor = c; });
+
+    // ── Touch detection ──────────────────────────────────────────
+    if (window.matchMedia("(pointer:coarse)").matches)
+      $("joystick-wrap").style.display = "block";
+
+    // ── Starfield ─────────────────────────────────────────────────
+    (function () {
+      const cv = $("star-canvas"), ctx = cv.getContext("2d");
+      let stars = [];
+      const resize = () => {
+        cv.width = window.innerWidth; cv.height = window.innerHeight;
+        stars = Array.from({ length: 160 }, () => ({ x: Math.random() * cv.width, y: Math.random() * cv.height, r: Math.random() * 1.2 + 0.2, v: Math.random() * 0.18 + 0.05, o: Math.random() }));
+      };
+      resize(); window.addEventListener("resize", resize);
+      (function tick() {
+        if (!$("screen-menu").classList.contains("active")) { requestAnimationFrame(tick); return; }
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        for (const s of stars) { s.o += (Math.random() - .5) * .04; s.o = Math.max(.05, Math.min(.7, s.o)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(200,220,255,${s.o})`; ctx.fill(); s.y -= s.v; if (s.y < 0) { s.y = cv.height; s.x = Math.random() * cv.width; } }
+        requestAnimationFrame(tick);
+      })();
+    })();
+
+    // ── Role events ───────────────────────────────────────────────
+    document.addEventListener("game:killReady", () => { $("hud-kill-status").textContent = "🔪 KILL READY"; $("hud-kill-status").style.color = "var(--danger)"; });
+    document.addEventListener("game:killProgress", e => { $("hud-kill-status").textContent = `🔪 SQ ${e.detail.progress}/${e.detail.needed}`; $("hud-kill-status").style.color = "var(--muted)"; });
+    document.addEventListener("game:shieldGranted", () => { $("hud-shield").textContent = "🛡 SHIELDED"; $("hud-shield").style.color = "var(--accent)"; $("hud-shield").style.borderColor = "var(--accent)"; });
+
+    // ═══════════════════════════════════════════════
+    //  MAIN MENU
+    // ═══════════════════════════════════════════════
+    $("menu-btn-play").addEventListener("click", () => show("screen-play"));
+    $("menu-btn-host").addEventListener("click", () => show("screen-host"));
+    $("menu-btn-addq").addEventListener("click", () => {
+      show("screen-addq");
+      if (currentUser) { loadAddqCategories(); addqEnsureRow(); }
+    });
+    $("play-back").addEventListener("click", () => show("screen-menu"));
+    $("host-back").addEventListener("click", () => show("screen-menu"));
+    $("addq-back").addEventListener("click", () => show("screen-menu"));
+    $("auth-back").addEventListener("click", () => show("screen-menu"));
+    $("setpicker-back").addEventListener("click", () => show("screen-host"));
+    $("addq-goto-auth").addEventListener("click", () => show("screen-auth"));
+
+    // ═══════════════════════════════════════════════
+    //  AUTH SCREEN — Google OAuth
+    // ═══════════════════════════════════════════════
+    $("auth-google-btn").addEventListener("click", async () => {
+      $("auth-google-btn").disabled = true;
+      $("auth-error").style.display = "none";
+      try {
+        await signInWithGoogle();
+        $("auth-google-btn").textContent = "Redirecting to Google…";
+      } catch (err) {
+        $("auth-error").textContent = err.message;
+        $("auth-error").style.display = "block";
+        $("auth-google-btn").disabled = false;
+      }
+    });
+
+    $("auth-signout").addEventListener("click", async () => {
+      await signOut();
+      show("screen-menu");
+    });
+
+    // ═══════════════════════════════════════════════
+    //  SET PICKER
+    // ═══════════════════════════════════════════════
+    async function openSetPicker() {
+      show("screen-setpicker");
+      $("setpicker-search").value = "";
+      $("setpicker-list").innerHTML = `<div style="text-align:center;color:var(--muted);padding:2rem">Loading…</div>`;
+      try {
+        allSetCategories = await fetchCategories();
+        renderSetPicker("");
+      } catch (err) {
+        $("setpicker-list").innerHTML = `<div style="color:var(--danger);padding:1rem">${esc(err.message)}</div>`;
+      }
+    }
+
+    function renderSetPicker(query) {
+      const list = $("setpicker-list");
+      const none = $("setpicker-none");
+      const q = query.toLowerCase().trim();
+      const filtered = q
+        ? allSetCategories.filter(c => c.name.toLowerCase().includes(q))
+        : allSetCategories;
+
+      if (!filtered.length) {
+        list.innerHTML = "";
+        none.style.display = "block";
+        return;
+      }
+      none.style.display = "none";
+
+      list.innerHTML = filtered.map(c => `
+        <div class="setpicker-card${selectedCategory === c.name ? " selected" : ""}"
+             data-cat="${esc(c.name)}">
+          <div style="flex:1;min-width:0">
+            <div class="sp-name">${esc(c.name)}</div>
+            <div class="sp-meta">${c.sqCount} short · ${c.lqCount} long</div>
           </div>
-          <p style="font-size:.72rem;color:var(--accent);padding-left:.5rem">→ ${esc(q.answer)}</p>
+          <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
+            <div class="qset-badges">
+              ${c.sqCount ? `<span class="qset-badge sq">SQ×${c.sqCount}</span>` : ""}
+              ${c.lqCount ? `<span class="qset-badge lq">LQ×${c.lqCount}</span>` : ""}
+            </div>
+            <button class="btn ghost sm sp-preview-btn" data-preview="${esc(c.name)}"
+                    style="padding:.28rem .6rem;font-size:.62rem;border-radius:6px;white-space:nowrap">
+              👁 Preview
+            </button>
+          </div>
         </div>
       `).join("");
-              const more = questions.length > 10 ? `<p style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:.4rem">… and ${questions.length - 10} more</p>` : "";
-              inner.innerHTML = `
-        <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.5rem;font-size:.88rem">
+
+      list.querySelectorAll(".setpicker-card").forEach(card => {
+        card.addEventListener("click", e => {
+          if (e.target.closest(".sp-preview-btn")) return;
+          list.querySelectorAll(".setpicker-card").forEach(c => c.classList.remove("selected"));
+          card.classList.add("selected");
+          selectedCategory = card.dataset.cat;
+        });
+      });
+
+      list.querySelectorAll(".sp-preview-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.stopPropagation();
+          openPreviewModal(btn.dataset.preview);
+        });
+      });
+    }
+
+    $("setpicker-search").addEventListener("input", e => renderSetPicker(e.target.value));
+
+    async function openPreviewModal(categoryName) {
+      const wrap = mkOverlay();
+      const inner = wrap.querySelector(".mo-inner");
+      inner.innerHTML = `
+        <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.3rem;font-size:.88rem">
           👁 ${esc(categoryName)}
         </h3>
-        <p style="font-size:.68rem;color:var(--muted2);margin-bottom:.6rem">${questions.length} total questions)</p>
-        <div style="max-height:55vh;overflow-y:auto">${rows}</div>
-        <div style="margin-top:.8rem">
-          <button id="_prev-close" style="width:100%;padding:.6rem;background:transparent;
-            border:1px solid var(--border);border-radius:var(--r);color:var(--muted);
-            font-family:var(--font-hud);font-size:.8rem;cursor:pointer">CLOSE</button>
-        </div>
+        <p style="color:var(--muted);font-size:.7rem;margin-bottom:.8rem">Loading questions…</p>
       `;
-              inner.querySelector("#_prev-close").onclick = () => document.body.removeChild(wrap);
-              return; // skip the auto-close button below
-            }
-          } catch (err) {
-            inner.innerHTML += `<p style="color:var(--danger);font-size:.78rem">${esc(err.message)}</p>`;
-          }
+      document.body.appendChild(wrap);
 
-          const closeBtn = document.createElement("button");
-          closeBtn.textContent = "CLOSE";
-          closeBtn.style.cssText = "margin-top:.8rem;width:100%;padding:.6rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.8rem;cursor:pointer";
-          closeBtn.onclick = () => document.body.removeChild(wrap);
-          inner.appendChild(closeBtn);
+      try {
+        const questions = await fetchQuestionsForCategory(categoryName);
+        if (!questions.length) {
+          inner.innerHTML += `<p style="color:var(--muted);font-size:.8rem">No questions found.</p>`;
+        } else {
+          const rows = questions.map(q => `
+            <div style="padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);
+                        background:var(--bg);margin-bottom:.4rem">
+              <div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.25rem">
+                <span style="font-size:.58rem;padding:.1rem .35rem;border-radius:999px;
+                             border:1px solid ${q._table === 'sq' ? 'rgba(74,158,255,.4)' : 'rgba(255,201,74,.4)'};
+                             color:${q._table === 'sq' ? 'var(--blue)' : 'var(--warn)'}">${q._table.toUpperCase()}</span>
+                <span style="font-size:.8rem;color:var(--text)">${esc(q.question)}</span>
+              </div>
+              <p style="font-size:.72rem;color:var(--accent);padding-left:.5rem">→ ${esc(q.answer)}</p>
+            </div>
+          `).join("");
+          const more = questions.length > 10 ? `<p style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:.4rem">… and ${questions.length - 10} more</p>` : "";
+          inner.innerHTML = `
+            <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.5rem;font-size:.88rem">
+              👁 ${esc(categoryName)}
+            </h3>
+            <p style="font-size:.68rem;color:var(--muted2);margin-bottom:.6rem">${questions.length} total questions)</p>
+            <div style="max-height:55vh;overflow-y:auto">${rows}</div>
+            <div style="margin-top:.8rem">
+              <button id="_prev-close" style="width:100%;padding:.6rem;background:transparent;
+                border:1px solid var(--border);border-radius:var(--r);color:var(--muted);
+                font-family:var(--font-hud);font-size:.8rem;cursor:pointer">CLOSE</button>
+            </div>
+          `;
+          inner.querySelector("#_prev-close").onclick = () => document.body.removeChild(wrap);
+          return;
+        }
+      } catch (err) {
+        inner.innerHTML += `<p style="color:var(--danger);font-size:.78rem">${esc(err.message)}</p>`;
+      }
+
+      const closeBtn = document.createElement("button");
+      closeBtn.textContent = "CLOSE";
+      closeBtn.style.cssText = "margin-top:.8rem;width:100%;padding:.6rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.8rem;cursor:pointer";
+      closeBtn.onclick = () => document.body.removeChild(wrap);
+      inner.appendChild(closeBtn);
+    }
+
+    $("setpicker-confirm").addEventListener("click", () => {
+      if (!selectedCategory) {
+        $("setpicker-list").querySelector(".setpicker-card")?.click();
+      }
+      if (!selectedCategory) { return; }
+      $("host-set-chip-value").textContent = selectedCategory;
+      $("host-set-chip").classList.add("chosen");
+      show("screen-host");
+    });
+
+    $("host-set-chip").addEventListener("click", openSetPicker);
+
+    // ═══════════════════════════════════════════════
+    //  JOIN
+    // ═══════════════════════════════════════════════
+    $("btn-join-play").addEventListener("click", async () => {
+      const name = $("play-name").value.trim(), code = $("play-code").value.trim().toUpperCase();
+      if (!name) { $("play-name").focus(); return; }
+      if (!code) { $("play-code").focus(); return; }
+      await doJoin(name, code);
+    });
+
+    // ═══════════════════════════════════════════════
+    //  HOST
+    // ═══════════════════════════════════════════════
+    $("btn-create-match").addEventListener("click", async () => {
+      try {
+        const name = $("host-name").value.trim();
+        if (!name) { $("host-name").focus(); return; }
+
+        if (!selectedCategory) {
+          $("host-set-chip").style.borderColor = "var(--danger)";
+          setTimeout(() => { $("host-set-chip").style.borderColor = ""; }, 1500);
+          flashHostError("Please choose a question set first.");
+          return;
         }
 
+        isHost = true;
+        matchId = Math.random().toString(36).slice(2, 7).toUpperCase();
+        localPlayer = { id: crypto.randomUUID(), name, color: hostPickedColor };
+        settings = {
+          useChat: $("host-chat").value,
+          discussionTime: +$("host-discuss").value || 120,
+          votingTime: +$("host-vote").value || 60,
+          meetingCalls: +$("host-calls").value || 1,
+          tasksPerCrew: +$("host-tasks").value || 3,
+          impostors: +$("host-impostors").value || 1,
+          jesters: +$("host-jesters").value || 1,
+          questionCategory: selectedCategory,
+        };
 
-        $("setpicker-confirm").addEventListener("click", () => {
-          if (!selectedCategory) {
-            $("setpicker-list").querySelector(".setpicker-card")?.click(); // auto-pick first
-          }
-          if (!selectedCategory) { return; } // still nothing
-          // Update host chip
-          $("host-set-chip-value").textContent = selectedCategory;
-          $("host-set-chip").classList.add("chosen");
-          show("screen-host");
-        });
+        await createMatch(matchId, localPlayer.id, settings);
+        await joinMatch(matchId, localPlayer);
 
-        // Host set chip opens picker
-        $("host-set-chip").addEventListener("click", openSetPicker);
-
-        // ═══════════════════════════════════════════════
-        //  JOIN
-        // ═══════════════════════════════════════════════
-        $("btn-join-play").addEventListener("click", async () => {
-          const name = $("play-name").value.trim(), code = $("play-code").value.trim().toUpperCase();
-          if (!name) { $("play-name").focus(); return; }
-          if (!code) { $("play-code").focus(); return; }
-          await doJoin(name, code);
-        });
-
-        // ═══════════════════════════════════════════════
-        //  HOST
-        // ═══════════════════════════════════════════════
-        $("btn-create-match").addEventListener("click", async () => {
-          try {
-            const name = $("host-name").value.trim();
-            if (!name) { $("host-name").focus(); return; }
-
-            if (!selectedCategory) {
-              $("host-set-chip").style.borderColor = "var(--danger)";
-              setTimeout(() => { $("host-set-chip").style.borderColor = ""; }, 1500);
-              flashHostError("Please choose a question set first.");
-              return;
-            }
-
-            console.log("Creating match with:", { name, selectedCategory }); // DEBUG
-
-            isHost = true;
-            matchId = Math.random().toString(36).slice(2, 7).toUpperCase();
-            localPlayer = { id: crypto.randomUUID(), name, color: hostPickedColor };
-            settings = {
-              useChat: $("host-chat").value,
-              discussionTime: +$("host-discuss").value || 120,
-              votingTime: +$("host-vote").value || 60,
-              meetingCalls: +$("host-calls").value || 1,
-              tasksPerCrew: +$("host-tasks").value || 3,
-              impostors: +$("host-impostors").value || 1,
-              jesters: +$("host-jesters").value || 1,
-              questionCategory: selectedCategory,
-            };
-
-            console.log("Match settings:", settings); // DEBUG
-
-            await createMatch(matchId, localPlayer.id, settings);
-            console.log("Match created"); // DEBUG
-
-            await joinMatch(matchId, localPlayer);
-            console.log("Player joined"); // DEBUG
-
-            $("waiting-code").textContent = matchId;
-            if (selectedCategory) {
-              $("host-qset-display").style.display = "block";
-              $("host-qset-name").textContent = selectedCategory;
-            }
-            $("btn-start").classList.remove("hidden");
-            show("screen-waiting");
-            setupWaitingListeners();
-
-          } catch (error) {
-            console.error("Host match creation error:", error); // DEBUG
-            alert("Failed to create match: " + error.message);
-          }
-        });
-        async function doJoin(name, code) {
-          matchId = code.toUpperCase().trim(); // always uppercase, defensive
-
-          // Deduplicate name: if someone in the lobby already has this name, append a number
-          const existingPlayers = await getMatchPlayers(matchId);
-          const takenNames = Object.values(existingPlayers).map(p => p.name?.toLowerCase());
-          let finalName = name;
-          if (takenNames.includes(name.toLowerCase())) {
-            let n = 2;
-            while (takenNames.includes(`${name.toLowerCase()}${n}`)) n++;
-            finalName = `${name}${n}`;
-          }
-
-          localPlayer = { id: crypto.randomUUID(), name: finalName, color: playPickedColor };
-          await joinMatch(matchId, localPlayer);
-          $("waiting-code").textContent = matchId;
-          show("screen-waiting");
-          setupWaitingListeners();
-
-          onGameStateChange(matchId, async state => {
-            const { phase, winner } = state;
-            if (phase === "playing" && !world) {
-              settings = await getMatchSettings(matchId);
-              selectedCategory = settings.questionCategory ?? null;
-              let me = allPlayers[localPlayer.id];
-              if (!me || !me.role) me = await getPlayerData(matchId, localPlayer.id);
-              localPlayer.role = me?.role ?? "crew";
-              launchGame();
-            } else if (phase === "ended" && winner && !gameOver) {
-              gameOver = true;
-              endGame(winner);
-            }
-          });
+        $("waiting-code").textContent = matchId;
+        if (selectedCategory) {
+          $("host-qset-display").style.display = "block";
+          $("host-qset-name").textContent = selectedCategory;
         }
+        $("btn-start").classList.remove("hidden");
+        show("screen-waiting");
+        setupWaitingListeners();
 
-        async function setupWaitingListeners() {
-          try {
-            console.log("Setting up waiting listeners...");
+      } catch (error) {
+        console.error("Host match creation error:", error);
+        alert("Failed to create match: " + error.message);
+      }
+    });
 
-            settings = await getMatchSettings(matchId);
-            console.log("Got match settings:", settings);
+    async function doJoin(name, code) {
+      matchId = code.toUpperCase().trim();
 
-            onPlayersChange(matchId, snap => {
-              console.log("Players changed:", snap);
-              allPlayers = snap ?? {};
-              $("player-list").innerHTML = Object.values(allPlayers)
-                .map(p => `<li style="color:${p.color}">${p.name}</li>`)
-                .join("");
-            });
+      const existingPlayers = await getMatchPlayers(matchId);
+      const takenNames = Object.values(existingPlayers).map(p => p.name?.toLowerCase());
+      let finalName = name;
+      if (takenNames.includes(name.toLowerCase())) {
+        let n = 2;
+        while (takenNames.includes(`${name.toLowerCase()}${n}`)) n++;
+        finalName = `${name}${n}`;
+      }
 
-            // Wire copy-link now that matchId is set
-            $("btn-copy-link").onclick = async () => {
-              const url = `${location.origin}${location.pathname}?join=${matchId}`;
-              try {
-                await navigator.clipboard.writeText(url);
-                $("btn-copy-link").textContent = "✓ Copied!";
-                setTimeout(() => {
-                  $("btn-copy-link").textContent = "📋 Copy join link";
-                }, 2000);
-              } catch {
-                prompt("Copy this link to share:", url);
-              }
-            };
+      localPlayer = { id: crypto.randomUUID(), name: finalName, color: playPickedColor };
+      await joinMatch(matchId, localPlayer);
+      $("waiting-code").textContent = matchId;
+      show("screen-waiting");
+      setupWaitingListeners();
 
-            console.log("✅ Waiting listeners setup complete");
-          } catch (error) {
-            console.error("❌ Error in setupWaitingListeners:", error);
-            throw error;
-          }
-        }
-        // ═══════════════════════════════════════════════
-        //  START GAME
-        // ═══════════════════════════════════════════════
-        $("btn-start").addEventListener("click", async () => {
-          const ids = Object.keys(allPlayers);
-          const minplayers = (settings.impostors * 2) + settings.jesters;
-          if (ids.length < minplayers) { alert(`Need at least ${minplayers} players`); return; }
-          const shuffled = [...ids].sort(() => Math.random() - 0.5);
-          const roleMap = {};
-          shuffled.forEach((id, i) => roleMap[id] = i <= settings.impostors ? "impostor" : i > settings.impostors & i <= GAME_CONFIG.jesters ? "jester" : "crew");
-          await assignRoles(matchId, roleMap);
-          await setPhase(matchId, "playing");
-          localPlayer.role = roleMap[localPlayer.id];
+      onGameStateChange(matchId, async state => {
+        const { phase, winner } = state;
+        if (phase === "playing" && !world) {
+          settings = await getMatchSettings(matchId);
+          selectedCategory = settings.questionCategory ?? null;
+          let me = allPlayers[localPlayer.id];
+          if (!me || !me.role) me = await getPlayerData(matchId, localPlayer.id);
+          localPlayer.role = me?.role ?? "crew";
           launchGame();
+        } else if (phase === "ended" && winner && !gameOver) {
+          gameOver = true;
+          endGame(winner);
+        }
+      });
+    }
+
+    async function setupWaitingListeners() {
+      try {
+        settings = await getMatchSettings(matchId);
+
+        onPlayersChange(matchId, snap => {
+          allPlayers = snap ?? {};
+          $("player-list").innerHTML = Object.values(allPlayers)
+            .map(p => `<li style="color:${p.color}">${p.name}</li>`)
+            .join("");
         });
 
-        // ═══════════════════════════════════════════════
-        //  LAUNCH GAME
-        // ═══════════════════════════════════════════════
-        function launchGame() {
-          isAlive = true;
-          localCompletedRooms = new Set();
-          jesterSqCount = 0;
-          tasksNeeded = settings.tasksPerCrew || 3;
-
-          show("screen-game");
-          const canvas = $("game-canvas");
-          const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
-          setTimeout(resize, 50);
-          window.addEventListener("resize", resize);
-
-          world = new World(canvas, matchId, localPlayer);
-
-          // ── Room enter callback ──
-          world.onEnterRoom = room => {
-            $("hud-room").textContent = room?.label ?? "—";
-            if (room) {
-              const lbl = $("room-label");
-              lbl.textContent = room.label.toUpperCase();
-              lbl.style.borderColor = ""; lbl.style.color = "";
-              lbl.classList.add("visible");
-              setTimeout(() => lbl.classList.remove("visible"), 2000);
-            }
-            updateTaskButton(room);
-            $("btn-meeting").classList.toggle("hidden", !room?.meetingZone || !isAlive);
-          };
-
-          // ── Near-corpse → report button ──
-          world.onNearCorpseChange = corpse => {
-            $("btn-report").classList.toggle("hidden", !corpse || !isAlive);
-          };
-
-          setTimeout(() => world.start(), 60);
-
-          // HUD
-          const role = localPlayer.role ?? "crew";
-          const pill = $("hud-role");
-          pill.textContent = role.toUpperCase();
-          pill.className = `hud-pill hud-role-${role}`;
-
-          if (role === "impostor") {
-            $("btn-kill").classList.remove("hidden");
-            $("hud-kill-status").textContent = "🔪 NEED SQ";
+        $("btn-copy-link").onclick = async () => {
+          const url = `${location.origin}${location.pathname}?join=${matchId}`;
+          try {
+            await navigator.clipboard.writeText(url);
+            $("btn-copy-link").textContent = "✓ Copied!";
+            setTimeout(() => { $("btn-copy-link").textContent = "📋 Copy join link"; }, 2000);
+          } catch {
+            prompt("Copy this link to share:", url);
           }
-          if (role === "jester") {
-            $("btn-swap").classList.remove("hidden");
-            updateSwapButton();
-          }
-          if (role === "crew") updateTasksHUD();
+        };
+      } catch (error) {
+        console.error("Error in setupWaitingListeners:", error);
+        throw error;
+      }
+    }
 
-          onGameStateChange(matchId, state => {
-            const { phase, winner } = state;
-            if (phase === "meeting") openMeeting();
-            else if (phase === "playing") closeMeeting();
-            else if (phase === "ended" && winner && !gameOver) { gameOver = true; endGame(winner); return; }
-            checkWinConditions(allPlayers);
-          });
+    // ═══════════════════════════════════════════════
+    //  START GAME
+    // ═══════════════════════════════════════════════
+    $("btn-start").addEventListener("click", async () => {
+      const ids = Object.keys(allPlayers);
 
-          onPlayersChange(matchId, snap => {
-            allPlayers = snap ?? {};
-            const me = allPlayers[localPlayer.id];
+      // FIX: read impostor/jester counts properly from settings
+      const impostorCount = settings.impostors ?? GAME_CONFIG.impostors;
+      const jesterCount   = settings.jesters   ?? GAME_CONFIG.jesters;
 
-            // ── Detect local player death ──
-            if (me && !me.alive && isAlive) setGhostState();
+      // FIX: capacity check — need at least 1 crew member on top of impostors + jesters
+      const minplayers = impostorCount + jesterCount + 1;
+      if (ids.length < minplayers) {
+        alert("Not enough people, change your settings.");
+        return;
+      }
 
-            if (me && role === "impostor") {
-              killReady = me.killReady ?? false;
-              $("hud-kill-status").textContent = killReady ? "🔪 KILL READY" : "🔪 NEED SQ";
-              $("hud-kill-status").style.color = killReady ? "var(--danger)" : "var(--muted)";
-            }
-            if (me?.shield) {
-              $("hud-shield").textContent = "🛡 SHIELDED"; $("hud-shield").style.color = "var(--accent)"; $("hud-shield").style.borderColor = "var(--accent)";
-            } else if (me) {
-              $("hud-shield").textContent = "NO SHIELD"; $("hud-shield").style.color = "var(--muted)"; $("hud-shield").style.borderColor = "var(--muted)";
-            }
+      const shuffled = [...ids].sort(() => Math.random() - 0.5);
+      const roleMap = {};
 
-            checkWinConditions(allPlayers);
-          });
+      // FIX: correct index-based role assignment (was using <= and bitwise & causing
+      // wrong boundaries and always assigning 2 impostors)
+      shuffled.forEach((id, i) => {
+        if (i < impostorCount)                       roleMap[id] = "impostor";
+        else if (i < impostorCount + jesterCount)    roleMap[id] = "jester";
+        else                                         roleMap[id] = "crew";
+      });
 
-          onMeetingChange(matchId, mtg => {
-            window._latestMeeting = mtg;
-            if (!mtg) return;
+      await assignRoles(matchId, roleMap);
+      await setPhase(matchId, "playing");
+      localPlayer.role = roleMap[localPlayer.id];
+      launchGame();
+    });
 
-            // Auto-skip: votes are in the meeting node, so check here on every vote update
-            if (meetingPhase === "voting" && !tallyingVotes) {
-              const voteCount = Object.keys(mtg.votes ?? {}).length;
-              const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
-              if (aliveCount > 0 && voteCount >= aliveCount) {
-                tallyingVotes = true;
-                clearInterval(meetingTimerInterval);
-                flashHud("All votes in — tallying!", "info");
-                setTimeout(tallyVotes, 800);
-              }
-            }
+    // ═══════════════════════════════════════════════
+    //  LAUNCH GAME
+    // ═══════════════════════════════════════════════
+    function launchGame() {
+      isAlive = true;
+      localCompletedRooms = new Set();
+      jesterSqCount = 0;
+      tasksNeeded = settings.tasksPerCrew || 3;
 
-            if (settings.useChat === "chat") syncChat(mtg);
-          });
+      show("screen-game");
+      const canvas = $("game-canvas");
+      const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+      setTimeout(resize, 50);
+      window.addEventListener("resize", resize);
+
+      world = new World(canvas, matchId, localPlayer);
+
+      world.onEnterRoom = room => {
+        $("hud-room").textContent = room?.label ?? "—";
+        if (room) {
+          const lbl = $("room-label");
+          lbl.textContent = room.label.toUpperCase();
+          lbl.style.borderColor = ""; lbl.style.color = "";
+          lbl.classList.add("visible");
+          setTimeout(() => lbl.classList.remove("visible"), 2000);
+        }
+        updateTaskButton(room);
+        $("btn-meeting").classList.toggle("hidden", !room?.meetingZone || !isAlive);
+      };
+
+      world.onNearCorpseChange = corpse => {
+        $("btn-report").classList.toggle("hidden", !corpse || !isAlive);
+      };
+
+      setTimeout(() => world.start(), 60);
+
+      // HUD
+      const role = localPlayer.role ?? "crew";
+      const pill = $("hud-role");
+      pill.textContent = role.toUpperCase();
+      pill.className = `hud-pill hud-role-${role}`;
+
+      if (role === "impostor") {
+        $("btn-kill").classList.remove("hidden");
+        $("hud-kill-status").textContent = "🔪 NEED SQ";
+      }
+      if (role === "jester") {
+        $("btn-swap").classList.remove("hidden");
+        updateSwapButton();
+      }
+      if (role === "crew") updateTasksHUD();
+
+      onGameStateChange(matchId, state => {
+        const { phase, winner } = state;
+        if (phase === "meeting") openMeeting();
+        else if (phase === "playing") closeMeeting();
+        else if (phase === "ended" && winner && !gameOver) { gameOver = true; endGame(winner); return; }
+        checkWinConditions(allPlayers);
+      });
+
+      onPlayersChange(matchId, snap => {
+        allPlayers = snap ?? {};
+        const me = allPlayers[localPlayer.id];
+
+        if (me && !me.alive && isAlive) setGhostState();
+
+        if (me && role === "impostor") {
+          killReady = me.killReady ?? false;
+          $("hud-kill-status").textContent = killReady ? "🔪 KILL READY" : "🔪 NEED SQ";
+          $("hud-kill-status").style.color = killReady ? "var(--danger)" : "var(--muted)";
+        }
+        if (me?.shield) {
+          $("hud-shield").textContent = "🛡 SHIELDED"; $("hud-shield").style.color = "var(--accent)"; $("hud-shield").style.borderColor = "var(--accent)";
+        } else if (me) {
+          $("hud-shield").textContent = "NO SHIELD"; $("hud-shield").style.color = "var(--muted)"; $("hud-shield").style.borderColor = "var(--muted)";
         }
 
-        // ── Ghost state ───────────────────────────────────────────────
-        function setGhostState() {
-          isAlive = false;
-          const pill = $("hud-role");
-          pill.textContent = "DEAD — GHOST";
-          pill.className = "hud-pill hud-role-dead";
-          $("hud-tasks").textContent = "";
+        checkWinConditions(allPlayers);
+      });
 
-          // Hide all action buttons
-          ["btn-task", "btn-kill", "btn-swap", "btn-report", "btn-meeting"].forEach(id => $(id).classList.add("hidden"));
-          flashHud("👻 You are dead. Observe as a ghost.", "warn");
-        }
+      onMeetingChange(matchId, mtg => {
+        window._latestMeeting = mtg;
+        if (!mtg) return;
 
-        // ── Task button label ─────────────────────────────────────────
-        function updateTaskButton(room) {
-          if (!isAlive) { $("btn-task").classList.add("hidden"); return; }
-          if (!room?.taskZone) { $("btn-task").classList.add("hidden"); return; }
-
-          const btn = $("btn-task");
-          const role = localPlayer.role;
-          btn.classList.remove("hidden");
-          btn.style.cursor = "";
-          btn.style.opacity = "";
-          btn.classList.remove("ghost");
-
-          if (role === "crew") {
-            if (localCompletedRooms.has(room.id)) {
-              btn.textContent = "✓ DONE";
-              btn.style.opacity = "0.4";
-              btn.style.cursor = "default";
-              btn.classList.add("ghost");
-            } else {
-              btn.textContent = "⬡ TASK";
-            }
-          } else if (role === "impostor") {
-            btn.textContent = "⬡ PREP KILL";
-          } else if (role === "jester") {
-            btn.textContent = "⬡ CHARGE SWAP";
-          }
-        }
-
-        function updateTasksHUD() {
-          if (localPlayer.role !== "crew") return;
-          const done = localCompletedRooms.size;
-          $("hud-tasks").textContent = `📋 ${done}/${tasksNeeded}`;
-        }
-
-        // ── Swap button label ─────────────────────────────────────────
-        function updateSwapButton() {
-          const needed = GAME_CONFIG.jesterSwapCostSq;
-          const btn = $("btn-swap");
-          if (jesterSqCount >= needed) {
-            btn.textContent = "⇄ SWAP ✓";
-            btn.style.background = "var(--warn)";
-            btn.style.color = "#07080f";
-          } else {
-            btn.textContent = `⇄ SWAP (${jesterSqCount}/${needed})`;
-            btn.style.background = "";
-            btn.style.color = "";
+        if (meetingPhase === "voting" && !tallyingVotes) {
+          const voteCount = Object.keys(mtg.votes ?? {}).length;
+          const aliveCount = Object.values(allPlayers).filter(p => p.alive).length;
+          if (aliveCount > 0 && voteCount >= aliveCount) {
+            tallyingVotes = true;
+            clearInterval(meetingTimerInterval);
+            flashHud("All votes in — tallying!", "info");
+            setTimeout(tallyVotes, 800);
           }
         }
 
-        // ── Kill ──────────────────────────────────────────────────────
-        $("btn-kill").addEventListener("click", async () => {
-          if (localPlayer.role !== "impostor" || !isAlive) return;
-          if (!killReady) { flashHud("Complete an SQ first to preload a kill!"); return; }
-          const target = world?.findNearest(50);
-          if (!target) { flashHud("No one in range!"); return; }
-          if (target.shield) {
-            const blocked = Math.random() < target.shield.chance;
-            if (blocked) {
-              flashHud("Kill blocked by a shield!", "warn");
-              killReady = false;
-              await Impostor.resetKill(matchId, localPlayer.id);
-              $("hud-kill-status").textContent = "🔪 NEED SQ";
-              $("hud-kill-status").style.color = "var(--muted)";
-              return;
-            }
-          }
-          await applyKill(matchId, target.id);
+        if (settings.useChat === "chat") syncChat(mtg);
+      });
+    }
+
+    // ── Ghost state ───────────────────────────────────────────────
+    function setGhostState() {
+      isAlive = false;
+      const pill = $("hud-role");
+      pill.textContent = "DEAD — GHOST";
+      pill.className = "hud-pill hud-role-dead";
+      $("hud-tasks").textContent = "";
+      ["btn-task", "btn-kill", "btn-swap", "btn-report", "btn-meeting"].forEach(id => $(id).classList.add("hidden"));
+      flashHud("👻 You are dead. Observe as a ghost.", "warn");
+    }
+
+    // ── Task button label ─────────────────────────────────────────
+    function updateTaskButton(room) {
+      if (!isAlive) { $("btn-task").classList.add("hidden"); return; }
+      if (!room?.taskZone) { $("btn-task").classList.add("hidden"); return; }
+
+      const btn = $("btn-task");
+      const role = localPlayer.role;
+      btn.classList.remove("hidden");
+      btn.style.cursor = "";
+      btn.style.opacity = "";
+      btn.classList.remove("ghost");
+
+      if (role === "crew") {
+        if (localCompletedRooms.has(room.id)) {
+          btn.textContent = "✓ DONE";
+          btn.style.opacity = "0.4";
+          btn.style.cursor = "default";
+          btn.classList.add("ghost");
+        } else {
+          btn.textContent = "⬡ TASK";
+        }
+      } else if (role === "impostor") {
+        btn.textContent = "⬡ PREP KILL";
+      } else if (role === "jester") {
+        btn.textContent = "⬡ CHARGE SWAP";
+      }
+    }
+
+    function updateTasksHUD() {
+      if (localPlayer.role !== "crew") return;
+      const done = localCompletedRooms.size;
+      $("hud-tasks").textContent = `📋 ${done}/${tasksNeeded}`;
+    }
+
+    // ── Swap button label ─────────────────────────────────────────
+    function updateSwapButton() {
+      const needed = GAME_CONFIG.jesterSwapCostSq;
+      const btn = $("btn-swap");
+      if (jesterSqCount >= needed) {
+        btn.textContent = "⇄ SWAP ✓";
+        btn.style.background = "var(--warn)";
+        btn.style.color = "#07080f";
+      } else {
+        btn.textContent = `⇄ SWAP (${jesterSqCount}/${needed})`;
+        btn.style.background = "";
+        btn.style.color = "";
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // KILL
+    // FIX: friendly fire check — impostors cannot kill other impostors
+    // ─────────────────────────────────────────────
+    $("btn-kill").addEventListener("click", async () => {
+      if (localPlayer.role !== "impostor" || !isAlive) return;
+      if (!killReady) { flashHud("Complete an SQ first to preload a kill!"); return; }
+      const target = world?.findNearest(50);
+      if (!target) { flashHud("No one in range!"); return; }
+
+      // FIX: prevent impostors from killing each other
+      if (target.role === "impostor") {
+        flashHud("Cannot target a fellow impostor!", "warn");
+        return;
+      }
+
+      if (target.shield) {
+        const blocked = Math.random() < target.shield.chance;
+        if (blocked) {
+          flashHud("Kill blocked by a shield!", "warn");
           killReady = false;
-          await setKillReady(matchId, localPlayer.id, false);
-          const f = $("kill-flash"); f.classList.add("flash"); setTimeout(() => f.classList.remove("flash"), 300);
+          await Impostor.resetKill(matchId, localPlayer.id);
           $("hud-kill-status").textContent = "🔪 NEED SQ";
           $("hud-kill-status").style.color = "var(--muted)";
-        });
+          return;
+        }
+      }
+      await applyKill(matchId, target.id);
+      killReady = false;
+      await setKillReady(matchId, localPlayer.id, false);
+      const f = $("kill-flash"); f.classList.add("flash"); setTimeout(() => f.classList.remove("flash"), 300);
+      $("hud-kill-status").textContent = "🔪 NEED SQ";
+      $("hud-kill-status").style.color = "var(--muted)";
+    });
 
-        // ── Report (near corpse only) ─────────────────────────────────
-        $("btn-report").addEventListener("click", async () => {
-          if (!localPlayer || !isAlive) return;
-          const corpse = world?.findNearestCorpse(50);
-          if (!corpse) { flashHud("No body nearby to report!"); return; }
-          await callMeeting(matchId, localPlayer.id, "corpse");
-          await setPhase(matchId, "meeting");
-        });
+    // ── Report (near corpse only) ─────────────────────────────────
+    $("btn-report").addEventListener("click", async () => {
+      if (!localPlayer || !isAlive) return;
+      const corpse = world?.findNearestCorpse(50);
+      if (!corpse) { flashHud("No body nearby to report!"); return; }
+      await callMeeting(matchId, localPlayer.id, "corpse");
+      await setPhase(matchId, "meeting");
+    });
 
-        // ── Meeting zone button ───────────────────────────────────────
-        $("btn-meeting").addEventListener("click", async () => {
-          if (!isAlive) return;
-          const me = allPlayers[localPlayer.id];
-          if ((me?.meetingCallsLeft ?? 1) <= 0) { flashHud("No meeting calls left!"); return; }
-          await callMeeting(matchId, localPlayer.id, "zone");
-          await setPhase(matchId, "meeting");
-        });
+    // ── Meeting zone button ───────────────────────────────────────
+    $("btn-meeting").addEventListener("click", async () => {
+      if (!isAlive) return;
+      const me = allPlayers[localPlayer.id];
+      if ((me?.meetingCallsLeft ?? 1) <= 0) { flashHud("No meeting calls left!"); return; }
+      await callMeeting(matchId, localPlayer.id, "zone");
+      await setPhase(matchId, "meeting");
+    });
 
-        // ── Task button ───────────────────────────────────────────────
-        $("btn-task").addEventListener("click", () => {
-          if (!isAlive) return;
-          const room = world?.getLocalRoom();
-          if (!room?.taskZone) return;
-          const role = localPlayer.role;
-          if (role === "crew") {
-            if (localCompletedRooms.has(room.id)) return; // already done
-            openCrewTask(room);
-          } else if (role === "impostor") {
-            openImpostorTask(room);
-          } else if (role === "jester") {
-            openRoleQuestionModal("jester");
-          }
-        });
-        $("btn-close-task").addEventListener("click", () => {
+    // ── Task button ───────────────────────────────────────────────
+    $("btn-task").addEventListener("click", () => {
+      if (!isAlive) return;
+      const room = world?.getLocalRoom();
+      if (!room?.taskZone) return;
+      const role = localPlayer.role;
+      if (role === "crew") {
+        if (localCompletedRooms.has(room.id)) return;
+        openCrewTask(room);
+      } else if (role === "impostor") {
+        openImpostorTask(room);
+      } else if (role === "jester") {
+        openRoleQuestionModal("jester");
+      }
+    });
+    $("btn-close-task").addEventListener("click", () => {
+      $("task-modal").classList.remove("open");
+      // Reset any failure styling
+      $("task-modal").querySelector(".task-box").style.borderColor = "";
+      world?.setPaused(false);
+    });
+
+    // ─────────────────────────────────────────────
+    // CREW TASK FLOW
+    // FIX: 100% completion rule — all answers must be correct (s === n)
+    // FIX: failure state — red border + "Task done wrong" message + auto-close
+    // ─────────────────────────────────────────────
+    function openCrewTask(room) {
+      world?.setPaused(true);
+      $("task-modal").classList.add("open");
+      $("task-modal-title").textContent = "⬡ TASK STATION";
+      $("task-content").innerHTML = "";
+      // Reset any leftover failure styling from a previous attempt
+      $("task-modal").querySelector(".task-box").style.borderColor = "";
+
+      const cat = selectedCategory;
+      const type = room.id === "electrical" ? "connector"
+        : room.id === "weapons" ? "ninja"
+          : "swipe";
+
+      const onDone = async (_score, _total, pass) => {
+        if (pass) {
           $("task-modal").classList.remove("open");
+          $("task-modal").querySelector(".task-box").style.borderColor = "";
           world?.setPaused(false);
-        });
-
-        // ── Crew task flow ────────────────────────────────────────────
-        function openCrewTask(room) {
-          world?.setPaused(true);
-          $("task-modal").classList.add("open");
-          $("task-modal-title").textContent = "⬡ TASK STATION";
-          $("task-content").innerHTML = "";
-
-          const cat = selectedCategory;
-          const type = room.id === "electrical" ? "connector"
-            : room.id === "weapons" ? "ninja"
-              : "swipe";
-
-          const onDone = async (_score, _total, pass) => {
+          localCompletedRooms.add(room.id);
+          await completeRoomTask(matchId, localPlayer.id, room.id);
+          await Crew.onTaskComplete(matchId, localPlayer.id);
+          updateTasksHUD();
+          updateTaskButton(world?.getLocalRoom());
+          checkWinConditions(allPlayers);
+        } else {
+          // FIX: failure state UI
+          const taskBox = $("task-modal").querySelector(".task-box");
+          taskBox.style.borderColor = "var(--danger)";
+          $("task-content").innerHTML = `
+            <p style="color:var(--danger);text-align:center;padding:1.5rem 0;
+                      font-size:.95rem;letter-spacing:.06em">✕ Task done wrong</p>`;
+          $("btn-close-task").classList.add("hidden");
+          setTimeout(() => {
             $("task-modal").classList.remove("open");
+            taskBox.style.borderColor = "";
+            $("btn-close-task").classList.remove("hidden");
             world?.setPaused(false);
-            if (pass) {
-              localCompletedRooms.add(room.id);
-              await completeRoomTask(matchId, localPlayer.id, room.id);
-              await Crew.onTaskComplete(matchId, localPlayer.id);
-              updateTasksHUD();
-              updateTaskButton(world?.getLocalRoom());
-              checkWinConditions(allPlayers);
-            }
-          };
-
-          if (type === "swipe") {
-            const t = new SwipeTask("task-content", cat);
-            t.onComplete = (s, n) => onDone(s, n, s >= Math.ceil(n * 0.6));
-            t.init();
-          } else if (type === "connector") {
-            const t = new ConnectorTask("task-content", cat);
-            t.onComplete = (s, n) => onDone(s, n, s >= 1);
-            t.init();
-          } else {
-            const cvs = document.createElement("canvas");
-            cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
-            $("task-content").appendChild(cvs);
-            const t = new FruitNinjaTask("ninja-canvas", cat);
-            t.onComplete = (s, n) => { onDone(s, n, s >= Math.ceil(n * 0.5)); t.destroy(); };
-            t.init();
-          }
+          }, 2000);
         }
+      };
 
-        // ── Impostor task — random minigame, awards kill charge on pass ──
-        function openImpostorTask(room) {
-          world?.setPaused(true);
-          $("task-modal").classList.add("open");
-          $("task-modal-title").textContent = "⬡ PREP KILL";
-          $("task-content").innerHTML = "";
+      if (type === "swipe") {
+        const t = new SwipeTask("task-content", cat);
+        // FIX: 100% pass rule
+        t.onComplete = (s, n) => onDone(s, n, s === n);
+        t.init();
+      } else if (type === "connector") {
+        const t = new ConnectorTask("task-content", cat);
+        // FIX: 100% pass rule
+        t.onComplete = (s, n) => onDone(s, n, s === n);
+        t.init();
+      } else {
+        const cvs = document.createElement("canvas");
+        cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
+        $("task-content").appendChild(cvs);
+        const t = new FruitNinjaTask("ninja-canvas", cat);
+        // FIX: 100% pass rule
+        t.onComplete = (s, n) => { onDone(s, n, s === n); t.destroy(); };
+        t.init();
+      }
+    }
 
-          const cat = selectedCategory;
-          // Pick a random task type regardless of which room we're in
-          const types = ["swipe", "connector", "ninja"];
-          const type = types[Math.floor(Math.random() * types.length)];
+    // ─────────────────────────────────────────────
+    // IMPOSTOR TASK — random minigame, awards kill charge on pass
+    // FIX: 100% pass rule + failure state UI
+    // ─────────────────────────────────────────────
+    function openImpostorTask(room) {
+      world?.setPaused(true);
+      $("task-modal").classList.add("open");
+      $("task-modal-title").textContent = "⬡ PREP KILL";
+      $("task-content").innerHTML = "";
+      $("task-modal").querySelector(".task-box").style.borderColor = "";
 
-          const onDone = async (_score, _total, pass) => {
+      const cat = selectedCategory;
+      const types = ["swipe", "connector", "ninja"];
+      const type = types[Math.floor(Math.random() * types.length)];
+
+      const onDone = async (_score, _total, pass) => {
+        if (pass) {
+          $("task-modal").classList.remove("open");
+          $("task-modal").querySelector(".task-box").style.borderColor = "";
+          world?.setPaused(false);
+          await Impostor.onSqCorrect(matchId, localPlayer.id);
+        } else {
+          // FIX: failure state UI
+          const taskBox = $("task-modal").querySelector(".task-box");
+          taskBox.style.borderColor = "var(--danger)";
+          $("task-content").innerHTML = `
+            <p style="color:var(--danger);text-align:center;padding:1.5rem 0;
+                      font-size:.95rem;letter-spacing:.06em">✕ Task done wrong</p>`;
+          $("btn-close-task").classList.add("hidden");
+          setTimeout(() => {
             $("task-modal").classList.remove("open");
+            taskBox.style.borderColor = "";
+            $("btn-close-task").classList.remove("hidden");
             world?.setPaused(false);
-            if (pass) {
-              await Impostor.onSqCorrect(matchId, localPlayer.id);
-            } else {
-              flashHud("Task failed — no kill charge gained.");
-            }
-          };
-
-          if (type === "swipe") {
-            const t = new SwipeTask("task-content", cat);
-            t.onComplete = (s, n) => onDone(s, n, s >= Math.ceil(n * 0.6));
-            t.init();
-          } else if (type === "connector") {
-            const t = new ConnectorTask("task-content", cat);
-            t.onComplete = (s, n) => onDone(s, n, s >= 1);
-            t.init();
-          } else {
-            const cvs = document.createElement("canvas");
-            cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
-            $("task-content").appendChild(cvs);
-            const t = new FruitNinjaTask("ninja-canvas", cat);
-            t.onComplete = (s, n) => { onDone(s, n, s >= Math.ceil(n * 0.5)); t.destroy(); };
-            t.init();
-          }
+          }, 2000);
         }
+      };
 
-        // ── Jester question modal — answer SQ to charge swap ────────────
-        async function openRoleQuestionModal(role) {
-          // Only jester uses this now; impostor uses openImpostorTask()
-          const subtitle = "SQ charges your swap. You need " + GAME_CONFIG.jesterSwapCostSq + " SQs to swap.";
+      if (type === "swipe") {
+        const t = new SwipeTask("task-content", cat);
+        t.onComplete = (s, n) => onDone(s, n, s === n);
+        t.init();
+      } else if (type === "connector") {
+        const t = new ConnectorTask("task-content", cat);
+        t.onComplete = (s, n) => onDone(s, n, s === n);
+        t.init();
+      } else {
+        const cvs = document.createElement("canvas");
+        cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
+        $("task-content").appendChild(cvs);
+        const t = new FruitNinjaTask("ninja-canvas", cat);
+        t.onComplete = (s, n) => { onDone(s, n, s === n); t.destroy(); };
+        t.init();
+      }
+    }
 
-          world?.setPaused(true);
-          const type = await showQuestionTypeModal("⬡ CHARGE SWAP — Answer a question", subtitle);
-          if (!type) { world?.setPaused(false); return; }
+    // ── Jester question modal ─────────────────────────────────────
+    async function openRoleQuestionModal(role) {
+      const subtitle = "SQ charges your swap. You need " + GAME_CONFIG.jesterSwapCostSq + " SQs to swap.";
+      world?.setPaused(true);
+      const type = await showQuestionTypeModal("⬡ CHARGE SWAP — Answer a question", subtitle);
+      if (!type) { world?.setPaused(false); return; }
 
-          const cat = selectedCategory;
-          const qs = type === "sq" ? await fetchSQ(1, cat) : await fetchLQ(1, cat);
-          if (!qs.length) { world?.setPaused(false); flashHud("No questions available for this category."); return; }
+      const cat = selectedCategory;
+      const qs = type === "sq" ? await fetchSQ(1, cat) : await fetchLQ(1, cat);
+      if (!qs.length) { world?.setPaused(false); flashHud("No questions available for this category."); return; }
 
-          const correct = await showQuestionModal(qs[0]);
-          world?.setPaused(false);
-          if (!correct) { flashHud("Wrong answer — no charge gained."); return; }
+      const correct = await showQuestionModal(qs[0]);
+      world?.setPaused(false);
+      if (!correct) { flashHud("Wrong answer — no charge gained."); return; }
 
-          jesterSqCount = Math.min(jesterSqCount + 1, GAME_CONFIG.jesterSwapCostSq);
-          updateSwapButton();
-          const needed = GAME_CONFIG.jesterSwapCostSq;
-          if (jesterSqCount >= needed) flashHud("⇄ Swap fully charged! Press SWAP to teleport.", "warn");
-          else flashHud(`⇄ Swap charge: ${jesterSqCount}/${needed}`);
-        }
+      jesterSqCount = Math.min(jesterSqCount + 1, GAME_CONFIG.jesterSwapCostSq);
+      updateSwapButton();
+      const needed = GAME_CONFIG.jesterSwapCostSq;
+      if (jesterSqCount >= needed) flashHud("⇄ Swap fully charged! Press SWAP to teleport.", "warn");
+      else flashHud(`⇄ Swap charge: ${jesterSqCount}/${needed}`);
+    }
 
-        // ── Swap (jester) ────────────────────────────────────────────
-        $("btn-swap").addEventListener("click", async () => {
-          if (localPlayer.role !== "jester" || !isAlive) return;
-          const needed = GAME_CONFIG.jesterSwapCostSq;
-          if (jesterSqCount < needed) {
-            flashHud(`Need ${needed - jesterSqCount} more SQ charge${needed - jesterSqCount !== 1 ? "s" : ""}!`);
-            return;
-          }
-          const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
-          if (!imp) { flashHud("Impostor not found or already dead!"); return; }
+    // ── Swap (jester) ─────────────────────────────────────────────
+    $("btn-swap").addEventListener("click", async () => {
+      if (localPlayer.role !== "jester" || !isAlive) return;
+      const needed = GAME_CONFIG.jesterSwapCostSq;
+      if (jesterSqCount < needed) {
+        flashHud(`Need ${needed - jesterSqCount} more SQ charge${needed - jesterSqCount !== 1 ? "s" : ""}!`);
+        return;
+      }
+      const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
+      if (!imp) { flashHud("Impostor not found or already dead!"); return; }
 
-          world?.setPaused(true);
-          const confirmed = await showSwapConfirmModal(imp);
-          world?.setPaused(false);
-          if (!confirmed) return;
+      world?.setPaused(true);
+      const confirmed = await showSwapConfirmModal(imp);
+      world?.setPaused(false);
+      if (!confirmed) return;
 
-          const impX = imp.x ?? 600, impY = imp.y ?? 130;
-          await applyJesterSwap(matchId, localPlayer.id, imp.id);
-          world.teleport(impX, impY);
-          await movePlayer(matchId, localPlayer.id, Math.round(impX), Math.round(impY));
+      const impX = imp.x ?? 600, impY = imp.y ?? 130;
+      await applyJesterSwap(matchId, localPlayer.id, imp.id);
+      world.teleport(impX, impY);
+      await movePlayer(matchId, localPlayer.id, Math.round(impX), Math.round(impY));
 
-          jesterSqCount = 0;
-          updateSwapButton();
-          flashHud("⇄ Swapped with the impostor!", "warn");
-        });
+      jesterSqCount = 0;
+      updateSwapButton();
+      flashHud("⇄ Swapped with the impostor!", "warn");
+    });
 
-        // ═══════════════════════════════════════════════
-        //  MEETING
-        // ═══════════════════════════════════════════════
-        function openMeeting() {
-          world?.setPaused(true);
-          hasVoted = false;
-          meetingPhase = "discussion";
-          tallyingVotes = false;
+    // ═══════════════════════════════════════════════
+    //  MEETING
+    // ═══════════════════════════════════════════════
 
-          $("meeting-overlay").classList.add("active");
-          $("vote-result").style.display = "none";
-          $("vote-result").textContent = "";
-          $("vote-phase-banner").textContent = "🔒 DISCUSSION — voting opens when timer ends";
-          $("vote-phase-banner").classList.remove("voting");
-          $("timer-fill").style.background = "var(--accent)";
+    // FIX: teleport all players to cafeteria meeting point when a meeting opens.
+    // We do it on the local client via onGameStateChange → openMeeting().
+    // The world.teleport() moves the local canvas position immediately;
+    // movePlayer() syncs it to Firebase so other clients see it too.
+    function openMeeting() {
+      // FIX: reset local player to cafeteria spawn
+      world?.teleport(600, 130);
+      if (matchId && localPlayer) {
+        movePlayer(matchId, localPlayer.id, 600, 130).catch(() => { });
+      }
 
-          const useChat = settings.useChat === "chat";
-          $("chat-wrap").style.display = useChat ? "flex" : "none";
+      world?.setPaused(true);
+      hasVoted = false;
+      meetingPhase = "discussion";
+      tallyingVotes = false;
 
-          if (!isAlive) {
-            // Ghost observer: see the meeting but can't vote
-            $("vote-phase-banner").textContent = "👻 GHOST MODE — observing only";
-            $("vote-list").innerHTML = `<p style="color:var(--muted);font-size:.82rem;padding:.5rem 0;text-align:center">You are a ghost. Only living players can vote.</p>`;
-            startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => {
-              startMeetingTimer(settings.votingTime ?? 60, "VOTING", () => {
-                if (!tallyingVotes) { tallyingVotes = true; tallyVotes(); }
-              });
-            });
-            return;
-          }
+      $("meeting-overlay").classList.add("active");
+      $("vote-result").style.display = "none";
+      $("vote-result").textContent = "";
+      $("vote-phase-banner").textContent = "🔒 DISCUSSION — voting opens when timer ends";
+      $("vote-phase-banner").classList.remove("voting");
+      $("timer-fill").style.background = "var(--accent)";
 
-          buildVoteList(); // all buttons start disabled (discussion phase)
-          startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => startVotingPhase());
-        }
+      const useChat = settings.useChat === "chat";
+      $("chat-wrap").style.display = useChat ? "flex" : "none";
 
-        function buildVoteList() {
-          const alive = Object.entries(allPlayers).filter(([, p]) => p.alive);
-          $("vote-list").innerHTML = alive.map(([id, p]) => `
-    <button class="vote-btn" data-id="${id}" disabled>
-      <span class="vote-dot" style="background:${p.color}"></span>
-      ${esc(p.name)}${id === localPlayer.id ? " (you)" : ""}
-    </button>
-  `).join("") + `<button class="vote-btn" data-id="skip" disabled style="color:var(--muted)">⊘ Skip vote</button>`;
-
-          $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
-            btn.addEventListener("click", async () => {
-              if (hasVoted || btn.disabled || meetingPhase !== "voting") return;
-              hasVoted = true;
-              $("vote-list").querySelectorAll(".vote-btn").forEach(b => { b.disabled = true; b.style.opacity = "0.4"; });
-              btn.style.opacity = "1"; btn.style.borderColor = "var(--accent)";
-              await castVote(matchId, localPlayer.id, btn.dataset.id);
-            });
-          });
-        }
-
-        function startVotingPhase() {
-          meetingPhase = "voting";
-          $("vote-phase-banner").textContent = "🗳 VOTING OPEN — tap a player to eject";
-          $("vote-phase-banner").classList.add("voting");
-          $("timer-fill").style.background = "var(--danger)";
-          // Enable vote buttons for everyone except self
-          $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
-            if (btn.dataset.id !== localPlayer.id) btn.disabled = false;
-          });
+      if (!isAlive) {
+        $("vote-phase-banner").textContent = "👻 GHOST MODE — observing only";
+        $("vote-list").innerHTML = `<p style="color:var(--muted);font-size:.82rem;padding:.5rem 0;text-align:center">You are a ghost. Only living players can vote.</p>`;
+        startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => {
           startMeetingTimer(settings.votingTime ?? 60, "VOTING", () => {
             if (!tallyingVotes) { tallyingVotes = true; tallyVotes(); }
           });
-        }
+        });
+        return;
+      }
 
-        async function tallyVotes() {
-          await new Promise(r => setTimeout(r, 1200));
-          const votes = window._latestMeeting?.votes ?? {};
-          const tally = {};
-          for (const v of Object.values(votes)) tally[v] = (tally[v] ?? 0) + 1;
-          const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
-          const topId = sorted[0]?.[0];
-          const topVotes = sorted[0]?.[1] ?? 0;
-          const tied = sorted.length > 1 && sorted[1][1] === topVotes;
-          const result = $("vote-result");
-          result.style.display = "block";
+      buildVoteList();
+      startMeetingTimer(settings.discussionTime ?? 120, "DISCUSSION", () => startVotingPhase());
+    }
 
-          let ejectedRole = null;
-
-          if (!topId || topId === "skip" || tied) {
-            result.textContent = tied ? "🤝 Tied vote — no one ejected." : "⊘ No votes cast.";
-            result.style.color = "var(--muted)";
-          } else {
-            const ejected = allPlayers[topId];
-            ejectedRole = ejected?.role ?? null;
-            result.innerHTML = `<strong style="color:var(--danger)">${esc(ejected?.name ?? "?")}</strong> ejected (${topVotes} vote${topVotes > 1 ? "s" : ""}).<br><span style="color:var(--muted);font-size:.8rem">They were… <strong>${ejectedRole ?? "?"}</strong></span>`;
-            await applyKill(matchId, topId);
-
-            if (ejectedRole !== "jester") {
-              checkWinConditions({ ...allPlayers, [topId]: { ...allPlayers[topId], alive: false } });
-            }
-          }
-
-          // Jester win: broadcast via Firebase (endGame handles setGameResult for all clients)
-          if (ejectedRole === "jester") {
-            setTimeout(() => { gameOver = true; endGame("jester"); }, 2000);
-            return; // don't resume game
-          }
-
-          // Normal path: if game isn't over, resume playing
-          setTimeout(async () => {
-            if (!gameOver) await setPhase(matchId, "playing");
-          }, 4000);
-        }
-
-        function closeMeeting() {
-          $("meeting-overlay").classList.remove("active");
-          clearInterval(meetingTimerInterval);
-          if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
-          world?.setPaused(false);
-          world?.clearCorpses();
-        }
-
-        function startMeetingTimer(secs, label, onDone) {
-          clearInterval(meetingTimerInterval);
-          let remaining = secs;
-          $("timer-label").textContent = `${label} — ${remaining}s`;
-          $("timer-fill").style.width = "100%";
-          meetingTimerInterval = setInterval(() => {
-            remaining--;
-            $("timer-fill").style.width = `${(remaining / secs) * 100}%`;
-            $("timer-label").textContent = `${label} — ${remaining}s`;
-            if (remaining <= 0) { clearInterval(meetingTimerInterval); onDone(); }
-          }, 1000);
-        }
-
-        // ── Chat ─────────────────────────────────────────────────────
-        $("btn-chat-send").addEventListener("click", sendChat);
-        $("chat-input").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
-        async function sendChat() {
-          const msg = $("chat-input").value.trim();
-          if (!msg || !matchId) return;
-          $("chat-input").value = "";
-          await sendChatMessage(matchId, localPlayer.id, localPlayer.name, localPlayer.color, msg);
-        }
-        function syncChat(_mtg) {
-          if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
-          chatUnsubscribe = onChatMessage(matchId, msgs => {
-            const box = $("chat-box"); if (!box) return;
-            box.innerHTML = msgs.map(m => `<div style="margin-bottom:.2rem"><strong style="color:${m.color}">${esc(m.playerName)}:</strong> ${esc(m.text)}</div>`).join("");
-            box.scrollTop = box.scrollHeight;
-          });
-        }
-
-        // ═══════════════════════════════════════════════
-        //  WIN CONDITIONS
-        // ═══════════════════════════════════════════════
-        let gameOver = false;
-        function checkWinConditions(players) {
-          if (gameOver) return;
-          const list = Object.values(players);
-          const alive = list.filter(p => p.alive);
-          const imps = alive.filter(p => p.role === "impostor");
-          const crew = alive.filter(p => p.role === "crew");
-          const jesters = alive.filter(p => p.role === "jester")
-
-          // Task win: all crew have completed enough tasks (impostor still alive)
-          const allCrew = list.filter(p => p.role === "crew");
-          if (allCrew.length > 0 && imps.length > 0) {
-            const allDone = allCrew.every(p => Object.keys(p.completedRooms ?? {}).length >= tasksNeeded);
-            if (allDone) { gameOver = true; endGame("crew"); return; }
-          }
-
-          // Impostor eliminated → crew wins (jester does NOT win here — only via vote)
-          if (imps.length === 0) { gameOver = true; endGame("crew"); return; }
-          console.log(imps.length);
-          console.log (crew.length + jesters.length);
-          if (imps.length >= crew.length + jesters.length) { gameOver = true; endGame("impostor"); }
-        }
-
-        function endGame(winner) {
-          if (!gameOver) { gameOver = true; }
-          world?.stop();
-          clearInterval(meetingTimerInterval);
-          if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
-
-          // Close any overlays that might be sitting on top of the end screen
-          $("meeting-overlay").classList.remove("active");
-          $("task-modal").classList.remove("open");
-          world?.setPaused(false);
-
-          // Broadcast result to all clients via Firebase
-          if (matchId) setGameResult(matchId, winner).catch(() => { });
-
-          const data = {
-            crew: ["CREW WINS", "All tasks complete — or the impostor was ejected."],
-            impostor: ["IMPOSTOR WINS", "Sabotage complete. No survivors."],
-            jester: ["JESTER WINS", "Voted out on purpose. Clever."],
-          };
-          $("end-title").textContent = data[winner][0];
-          $("end-title").style.color = { crew: "var(--accent)", impostor: "var(--danger)", jester: "var(--warn)" }[winner];
-          $("end-body").textContent = data[winner][1];
-
-          // Build roles reveal — show who was impostor and jester
-          const playerList = Object.values(allPlayers);
-          const impostor = playerList.find(p => p.role === "impostor");
-          const jester = playerList.find(p => p.role === "jester");
-          const revealRows = [];
-          if (impostor) revealRows.push(`
-    <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:9px;
-                background:rgba(255,74,107,0.08);border:1px solid rgba(255,74,107,0.25);margin-bottom:.4rem">
-      <span style="width:11px;height:11px;border-radius:50%;background:${impostor.color ?? '#f44'};flex-shrink:0;display:inline-block"></span>
-      <span style="color:var(--text);font-size:.82rem"><strong>${esc(impostor.name)}</strong></span>
-      <span style="margin-left:auto;font-size:.7rem;color:var(--danger);font-weight:700;letter-spacing:.06em">IMPOSTOR</span>
-    </div>`);
-          if (jester) revealRows.push(`
-    <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:9px;
-                background:rgba(255,201,74,0.08);border:1px solid rgba(255,201,74,0.25);margin-bottom:.4rem">
-      <span style="width:11px;height:11px;border-radius:50%;background:${jester.color ?? '#fc4'};flex-shrink:0;display:inline-block"></span>
-      <span style="color:var(--text);font-size:.82rem"><strong>${esc(jester.name)}</strong></span>
-      <span style="margin-left:auto;font-size:.7rem;color:var(--warn);font-weight:700;letter-spacing:.06em">JESTER</span>
-    </div>`);
-
-          const reveal = $("end-reveal");
-          if (reveal) reveal.innerHTML = revealRows.join("") || `<p style="color:var(--muted);font-size:.78rem">No role data available.</p>`;
-
-          show("screen-end");
-
-          // Delete the match from Firebase after 60 seconds
-          if (matchId) setTimeout(() => deleteMatch(matchId).catch(() => { }), 60_000);
-        }
-
-        // ═══════════════════════════════════════════════
-        //  MODAL HELPERS
-        // ═══════════════════════════════════════════════
-
-        /** Show a styled two-option modal for picking SQ or LQ. Returns "sq"|"lq"|null */
-        function showQuestionTypeModal(title, subtitle) {
-          return new Promise(resolve => {
-            const wrap = mkOverlay();
-            wrap.querySelector(".mo-inner").innerHTML = `
-      <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.4rem;font-size:.9rem">${title}</h3>
-      <p style="color:var(--muted);font-size:.78rem;margin-bottom:1.1rem;line-height:1.4">${subtitle}</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
-        <button id="_qt-sq" style="padding:.9rem .5rem;border-radius:10px;border:2px solid var(--blue);background:rgba(74,158,255,0.08);color:var(--blue);font-family:var(--font-title);font-size:.78rem;font-weight:700;cursor:pointer">
-          ⚡ SHORT Q<br><span style="font-size:.62rem;opacity:.7;font-family:var(--font-hud)">Quick recall</span>
+    function buildVoteList() {
+      const alive = Object.entries(allPlayers).filter(([, p]) => p.alive);
+      $("vote-list").innerHTML = alive.map(([id, p]) => `
+        <button class="vote-btn" data-id="${id}" disabled>
+          <span class="vote-dot" style="background:${p.color}"></span>
+          ${esc(p.name)}${id === localPlayer.id ? " (you)" : ""}
         </button>
-        <button id="_qt-lq" style="padding:.9rem .5rem;border-radius:10px;border:2px solid var(--warn);background:rgba(255,201,74,0.08);color:var(--warn);font-family:var(--font-title);font-size:.78rem;font-weight:700;cursor:pointer">
-          📖 LONG Q<br><span style="font-size:.62rem;opacity:.7;font-family:var(--font-hud)">Deep analysis</span>
-        </button>
-      </div>
-      <button id="_qt-x" style="width:100%;padding:.55rem;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-hud);font-size:.78rem;cursor:pointer">CANCEL</button>
-    `;
-            document.body.appendChild(wrap);
-            wrap.querySelector("#_qt-sq").onclick = () => { document.body.removeChild(wrap); resolve("sq"); };
-            wrap.querySelector("#_qt-lq").onclick = () => { document.body.removeChild(wrap); resolve("lq"); };
-            wrap.querySelector("#_qt-x").onclick = () => { document.body.removeChild(wrap); resolve(null); };
-          });
+      `).join("") + `<button class="vote-btn" data-id="skip" disabled style="color:var(--muted)">⊘ Skip vote</button>`;
+
+      $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (hasVoted || btn.disabled || meetingPhase !== "voting") return;
+          hasVoted = true;
+          $("vote-list").querySelectorAll(".vote-btn").forEach(b => { b.disabled = true; b.style.opacity = "0.4"; });
+          btn.style.opacity = "1"; btn.style.borderColor = "var(--accent)";
+          await castVote(matchId, localPlayer.id, btn.dataset.id);
+        });
+      });
+    }
+
+    function startVotingPhase() {
+      meetingPhase = "voting";
+      $("vote-phase-banner").textContent = "🗳 VOTING OPEN — tap a player to eject";
+      $("vote-phase-banner").classList.add("voting");
+      $("timer-fill").style.background = "var(--danger)";
+      $("vote-list").querySelectorAll(".vote-btn").forEach(btn => {
+        if (btn.dataset.id !== localPlayer.id) btn.disabled = false;
+      });
+      startMeetingTimer(settings.votingTime ?? 60, "VOTING", () => {
+        if (!tallyingVotes) { tallyingVotes = true; tallyVotes(); }
+      });
+    }
+
+    async function tallyVotes() {
+      await new Promise(r => setTimeout(r, 1200));
+      const votes = window._latestMeeting?.votes ?? {};
+      const tally = {};
+      for (const v of Object.values(votes)) tally[v] = (tally[v] ?? 0) + 1;
+      const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+      const topId = sorted[0]?.[0];
+      const topVotes = sorted[0]?.[1] ?? 0;
+      const tied = sorted.length > 1 && sorted[1][1] === topVotes;
+      const result = $("vote-result");
+      result.style.display = "block";
+
+      let ejectedRole = null;
+
+      if (!topId || topId === "skip" || tied) {
+        result.textContent = tied ? "🤝 Tied vote — no one ejected." : "⊘ No votes cast.";
+        result.style.color = "var(--muted)";
+      } else {
+        const ejected = allPlayers[topId];
+        ejectedRole = ejected?.role ?? null;
+        result.innerHTML = `<strong style="color:var(--danger)">${esc(ejected?.name ?? "?")}</strong> ejected (${topVotes} vote${topVotes > 1 ? "s" : ""}).<br><span style="color:var(--muted);font-size:.8rem">They were… <strong>${ejectedRole ?? "?"}</strong></span>`;
+        await applyKill(matchId, topId);
+
+        if (ejectedRole !== "jester") {
+          checkWinConditions({ ...allPlayers, [topId]: { ...allPlayers[topId], alive: false } });
         }
+      }
 
-        /** Show a question and text input. Returns true if answered correctly. */
-        function showQuestionModal(question) {
-          return new Promise(resolve => {
-            const wrap = mkOverlay();
-            wrap.querySelector(".mo-inner").innerHTML = `
-      <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.7rem;font-size:.85rem">❓ QUESTION</h3>
-      <p style="font-size:.9rem;line-height:1.55;margin-bottom:1rem;color:var(--text)">${esc(question.question)}</p>
-      <input id="_qm-a" type="text" placeholder="Your answer…" style="width:100%;padding:.65rem 1rem;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:var(--r);font-family:var(--font-hud);font-size:.9rem;margin-bottom:.6rem;outline:none;display:block"/>
-      <div style="display:flex;gap:.5rem">
-        <button id="_qm-ok"   style="flex:1;padding:.65rem;background:var(--accent);color:#07080f;border:none;border-radius:var(--r);font-family:var(--font-title);font-size:.82rem;font-weight:800;cursor:pointer">SUBMIT</button>
-        <button id="_qm-skip" style="padding:.65rem 1rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.82rem;cursor:pointer">SKIP</button>
-      </div>
-    `;
-            document.body.appendChild(wrap);
-            const input = wrap.querySelector("#_qm-a");
-            const check = () => {
-              const correct = input.value.trim().toLowerCase() === question.answer.trim().toLowerCase();
-              document.body.removeChild(wrap);
-              resolve(correct);
-            };
-            wrap.querySelector("#_qm-ok").onclick = check;
-            wrap.querySelector("#_qm-skip").onclick = () => { document.body.removeChild(wrap); resolve(false); };
-            input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
-            setTimeout(() => input.focus(), 50);
-          });
-        }
+      // Jester win: ejected via vote
+      if (ejectedRole === "jester") {
+        setTimeout(() => { gameOver = true; endGame("jester"); }, 2000);
+        return;
+      }
 
-        /** Custom swap confirmation dialog for jester. */
-        function showSwapConfirmModal(imp) {
-          return new Promise(resolve => {
-            const wrap = mkOverlay("#ffc94a");
-            wrap.querySelector(".mo-inner").innerHTML = `
-      <h3 style="font-family:var(--font-title);color:var(--warn);margin-bottom:.75rem;font-size:.95rem">⇄ EXECUTE SWAP</h3>
-      <p style="color:var(--text);font-size:.85rem;margin-bottom:1.2rem;line-height:1.5">
-        You will teleport to <strong style="color:var(--warn)">${esc(imp.name)}</strong>'s current position, and they will appear where you stand.<br>
-        <span style="color:var(--muted);font-size:.73rem">This consumes all ${GAME_CONFIG.jesterSwapCostSq} SQ charges.</span>
-      </p>
-      <div style="display:flex;gap:.6rem">
-        <button id="_sw-yes" style="flex:1;padding:.7rem;background:var(--warn);color:#07080f;border:none;border-radius:var(--r);font-family:var(--font-title);font-size:.82rem;font-weight:800;cursor:pointer">SWAP NOW</button>
-        <button id="_sw-no"  style="flex:1;padding:.7rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.82rem;cursor:pointer">CANCEL</button>
-      </div>
-    `;
-            document.body.appendChild(wrap);
-            wrap.querySelector("#_sw-yes").onclick = () => { document.body.removeChild(wrap); resolve(true); };
-            wrap.querySelector("#_sw-no").onclick = () => { document.body.removeChild(wrap); resolve(false); };
-          });
-        }
+      setTimeout(async () => {
+        if (!gameOver) await setPhase(matchId, "playing");
+      }, 4000);
+    }
 
-        /** Build a reusable modal overlay wrapper. */
-        function mkOverlay(borderColor = null) {
-          const wrap = document.createElement("div");
-          wrap.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;z-index:400;font-family:var(--font-hud)";
-          const inner = document.createElement("div");
-          inner.className = "mo-inner";
-          inner.style.cssText = `background:var(--surface);border:1px solid ${borderColor ?? "var(--border)"};border-radius:16px;padding:1.5rem;width:min(420px,92vw)`;
-          wrap.appendChild(inner);
-          return wrap;
-        }
+    function closeMeeting() {
+      $("meeting-overlay").classList.remove("active");
+      clearInterval(meetingTimerInterval);
+      if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+      world?.setPaused(false);
+      world?.clearCorpses();
+    }
 
-        // ── HUD flash ─────────────────────────────────────────────────
-        function flashHud(msg, type = "info") {
-          const lbl = $("room-label");
-          lbl.textContent = msg;
-          lbl.style.borderColor = type === "warn" ? "var(--warn)" : "var(--muted)";
-          lbl.style.color = type === "warn" ? "var(--warn)" : "var(--muted)";
-          lbl.classList.add("visible");
-          setTimeout(() => { lbl.classList.remove("visible"); lbl.style.borderColor = ""; lbl.style.color = ""; }, 2500);
-        }
+    function startMeetingTimer(secs, label, onDone) {
+      clearInterval(meetingTimerInterval);
+      let remaining = secs;
+      $("timer-label").textContent = `${label} — ${remaining}s`;
+      $("timer-fill").style.width = "100%";
+      meetingTimerInterval = setInterval(() => {
+        remaining--;
+        $("timer-fill").style.width = `${(remaining / secs) * 100}%`;
+        $("timer-label").textContent = `${label} — ${remaining}s`;
+        if (remaining <= 0) { clearInterval(meetingTimerInterval); onDone(); }
+      }, 1000);
+    }
 
-        function esc(str) {
-          return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
+    // ── Chat ─────────────────────────────────────────────────────
+    $("btn-chat-send").addEventListener("click", sendChat);
+    $("chat-input").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
+    async function sendChat() {
+      const msg = $("chat-input").value.trim();
+      if (!msg || !matchId) return;
+      $("chat-input").value = "";
+      await sendChatMessage(matchId, localPlayer.id, localPlayer.name, localPlayer.color, msg);
+    }
+    function syncChat(_mtg) {
+      if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+      chatUnsubscribe = onChatMessage(matchId, msgs => {
+        const box = $("chat-box"); if (!box) return;
+        box.innerHTML = msgs.map(m => `<div style="margin-bottom:.2rem"><strong style="color:${m.color}">${esc(m.playerName)}:</strong> ${esc(m.text)}</div>`).join("");
+        box.scrollTop = box.scrollHeight;
+      });
+    }
 
-        function flashHostError(msg) {
-          // Reuse room-label style flash in the panel context
-          const el = document.createElement("p");
-          el.style.cssText = "color:var(--danger);font-size:.74rem;text-align:center;margin-top:.5rem";
-          el.textContent = msg;
-          const btn = $("btn-create-match");
-          btn.parentNode.insertBefore(el, btn.nextSibling);
-          setTimeout(() => el.remove(), 2500);
-        }
+    // ═══════════════════════════════════════════════
+    //  WIN CONDITIONS
+    // FIX: multi-impostor termination — jesters excluded from crew count
+    //      so e.g. 2 impostors vs 1 crew + 1 jester correctly triggers impostor win
+    // ═══════════════════════════════════════════════
+    let gameOver = false;
+    function checkWinConditions(players) {
+      if (gameOver) return;
+      const list = Object.values(players);
+      const alive = list.filter(p => p.alive);
+      const imps = alive.filter(p => p.role === "impostor");
+      const crew = alive.filter(p => p.role === "crew");
+      const jesters = alive.filter(p => p.role === "jester");
 
-        // ═══════════════════════════════════════════════
-        //  ADD QUESTIONS
-        // ═══════════════════════════════════════════════
-        let addqRowCount = 0;
+      // Task win: all crew have completed enough tasks
+      const allCrew = list.filter(p => p.role === "crew");
+      if (allCrew.length > 0 && imps.length > 0) {
+        const allDone = allCrew.every(p => Object.keys(p.completedRooms ?? {}).length >= tasksNeeded);
+        if (allDone) { gameOver = true; endGame("crew"); return; }
+      }
 
-        async function loadAddqCategories() {
-          if (!currentUser) return;
+      // All impostors dead → crew wins
+      if (imps.length === 0) { gameOver = true; endGame("crew"); return; }
+
+      // Impostors reach parity with or outnumber crew + jesters → impostor wins
+      if (imps.length >= crew.length + jesters.length) { gameOver = true; endGame("impostor"); }
+    }
+
+    function endGame(winner) {
+      if (!gameOver) { gameOver = true; }
+      world?.stop();
+      clearInterval(meetingTimerInterval);
+      if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+
+      $("meeting-overlay").classList.remove("active");
+      $("task-modal").classList.remove("open");
+      world?.setPaused(false);
+
+      if (matchId) setGameResult(matchId, winner).catch(() => { });
+
+      const data = {
+        crew: ["CREW WINS", "All tasks complete — or the impostor was ejected."],
+        impostor: ["IMPOSTOR WINS", "Sabotage complete. No survivors."],
+        jester: ["JESTER WINS", "Voted out on purpose. Clever."],
+      };
+      $("end-title").textContent = data[winner][0];
+      $("end-title").style.color = { crew: "var(--accent)", impostor: "var(--danger)", jester: "var(--warn)" }[winner];
+      $("end-body").textContent = data[winner][1];
+
+      const playerList = Object.values(allPlayers);
+      const impostor = playerList.find(p => p.role === "impostor");
+      const jester = playerList.find(p => p.role === "jester");
+      const revealRows = [];
+      if (impostor) revealRows.push(`
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:9px;
+                    background:rgba(255,74,107,0.08);border:1px solid rgba(255,74,107,0.25);margin-bottom:.4rem">
+          <span style="width:11px;height:11px;border-radius:50%;background:${impostor.color ?? '#f44'};flex-shrink:0;display:inline-block"></span>
+          <span style="color:var(--text);font-size:.82rem"><strong>${esc(impostor.name)}</strong></span>
+          <span style="margin-left:auto;font-size:.7rem;color:var(--danger);font-weight:700;letter-spacing:.06em">IMPOSTOR</span>
+        </div>`);
+      if (jester) revealRows.push(`
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:9px;
+                    background:rgba(255,201,74,0.08);border:1px solid rgba(255,201,74,0.25);margin-bottom:.4rem">
+          <span style="width:11px;height:11px;border-radius:50%;background:${jester.color ?? '#fc4'};flex-shrink:0;display:inline-block"></span>
+          <span style="color:var(--text);font-size:.82rem"><strong>${esc(jester.name)}</strong></span>
+          <span style="margin-left:auto;font-size:.7rem;color:var(--warn);font-weight:700;letter-spacing:.06em">JESTER</span>
+        </div>`);
+
+      const reveal = $("end-reveal");
+      if (reveal) reveal.innerHTML = revealRows.join("") || `<p style="color:var(--muted);font-size:.78rem">No role data available.</p>`;
+
+      show("screen-end");
+
+      if (matchId) setTimeout(() => deleteMatch(matchId).catch(() => { }), 60_000);
+    }
+
+    // ═══════════════════════════════════════════════
+    //  MODAL HELPERS
+    // ═══════════════════════════════════════════════
+    function showQuestionTypeModal(title, subtitle) {
+      return new Promise(resolve => {
+        const wrap = mkOverlay();
+        wrap.querySelector(".mo-inner").innerHTML = `
+          <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.4rem;font-size:.9rem">${title}</h3>
+          <p style="color:var(--muted);font-size:.78rem;margin-bottom:1.1rem;line-height:1.4">${subtitle}</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+            <button id="_qt-sq" style="padding:.9rem .5rem;border-radius:10px;border:2px solid var(--blue);background:rgba(74,158,255,0.08);color:var(--blue);font-family:var(--font-title);font-size:.78rem;font-weight:700;cursor:pointer">
+              ⚡ SHORT Q<br><span style="font-size:.62rem;opacity:.7;font-family:var(--font-hud)">Quick recall</span>
+            </button>
+            <button id="_qt-lq" style="padding:.9rem .5rem;border-radius:10px;border:2px solid var(--warn);background:rgba(255,201,74,0.08);color:var(--warn);font-family:var(--font-title);font-size:.78rem;font-weight:700;cursor:pointer">
+              📖 LONG Q<br><span style="font-size:.62rem;opacity:.7;font-family:var(--font-hud)">Deep analysis</span>
+            </button>
+          </div>
+          <button id="_qt-x" style="width:100%;padding:.55rem;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-hud);font-size:.78rem;cursor:pointer">CANCEL</button>
+        `;
+        document.body.appendChild(wrap);
+        wrap.querySelector("#_qt-sq").onclick = () => { document.body.removeChild(wrap); resolve("sq"); };
+        wrap.querySelector("#_qt-lq").onclick = () => { document.body.removeChild(wrap); resolve("lq"); };
+        wrap.querySelector("#_qt-x").onclick  = () => { document.body.removeChild(wrap); resolve(null); };
+      });
+    }
+
+    function showQuestionModal(question) {
+      return new Promise(resolve => {
+        const wrap = mkOverlay();
+        wrap.querySelector(".mo-inner").innerHTML = `
+          <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.7rem;font-size:.85rem">❓ QUESTION</h3>
+          <p style="font-size:.9rem;line-height:1.55;margin-bottom:1rem;color:var(--text)">${esc(question.question)}</p>
+          <input id="_qm-a" type="text" placeholder="Your answer…" style="width:100%;padding:.65rem 1rem;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:var(--r);font-family:var(--font-hud);font-size:.9rem;margin-bottom:.6rem;outline:none;display:block"/>
+          <div style="display:flex;gap:.5rem">
+            <button id="_qm-ok"   style="flex:1;padding:.65rem;background:var(--accent);color:#07080f;border:none;border-radius:var(--r);font-family:var(--font-title);font-size:.82rem;font-weight:800;cursor:pointer">SUBMIT</button>
+            <button id="_qm-skip" style="padding:.65rem 1rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.82rem;cursor:pointer">SKIP</button>
+          </div>
+        `;
+        document.body.appendChild(wrap);
+        const input = wrap.querySelector("#_qm-a");
+        const check = () => {
+          const correct = input.value.trim().toLowerCase() === question.answer.trim().toLowerCase();
+          document.body.removeChild(wrap);
+          resolve(correct);
+        };
+        wrap.querySelector("#_qm-ok").onclick   = check;
+        wrap.querySelector("#_qm-skip").onclick = () => { document.body.removeChild(wrap); resolve(false); };
+        input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+        setTimeout(() => input.focus(), 50);
+      });
+    }
+
+    function showSwapConfirmModal(imp) {
+      return new Promise(resolve => {
+        const wrap = mkOverlay("#ffc94a");
+        wrap.querySelector(".mo-inner").innerHTML = `
+          <h3 style="font-family:var(--font-title);color:var(--warn);margin-bottom:.75rem;font-size:.95rem">⇄ EXECUTE SWAP</h3>
+          <p style="color:var(--text);font-size:.85rem;margin-bottom:1.2rem;line-height:1.5">
+            You will teleport to <strong style="color:var(--warn)">${esc(imp.name)}</strong>'s current position, and they will appear where you stand.<br>
+            <span style="color:var(--muted);font-size:.73rem">This consumes all ${GAME_CONFIG.jesterSwapCostSq} SQ charges.</span>
+          </p>
+          <div style="display:flex;gap:.6rem">
+            <button id="_sw-yes" style="flex:1;padding:.7rem;background:var(--warn);color:#07080f;border:none;border-radius:var(--r);font-family:var(--font-title);font-size:.82rem;font-weight:800;cursor:pointer">SWAP NOW</button>
+            <button id="_sw-no"  style="flex:1;padding:.7rem;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:var(--font-hud);font-size:.82rem;cursor:pointer">CANCEL</button>
+          </div>
+        `;
+        document.body.appendChild(wrap);
+        wrap.querySelector("#_sw-yes").onclick = () => { document.body.removeChild(wrap); resolve(true); };
+        wrap.querySelector("#_sw-no").onclick  = () => { document.body.removeChild(wrap); resolve(false); };
+      });
+    }
+
+    function mkOverlay(borderColor = null) {
+      const wrap = document.createElement("div");
+      wrap.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;z-index:400;font-family:var(--font-hud)";
+      wrap.innerHTML = `<div class="mo-inner" style="background:var(--surface);border:1px solid ${borderColor ?? "var(--border)"};border-radius:16px;padding:1.5rem;width:min(420px,92vw)"></div>`;
+      return wrap;
+    }
+
+    // ── HUD flash ─────────────────────────────────────────────────
+    function flashHud(msg, type = "info") {
+      const lbl = $("room-label");
+      lbl.textContent = msg;
+      lbl.style.borderColor = type === "warn" ? "var(--warn)" : "var(--muted)";
+      lbl.style.color = type === "warn" ? "var(--warn)" : "var(--muted)";
+      lbl.classList.add("visible");
+      setTimeout(() => { lbl.classList.remove("visible"); lbl.style.borderColor = ""; lbl.style.color = ""; }, 2500);
+    }
+
+    function esc(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function flashHostError(msg) {
+      const el = document.createElement("p");
+      el.style.cssText = "color:var(--danger);font-size:.74rem;text-align:center;margin-top:.5rem";
+      el.textContent = msg;
+      const btn = $("btn-create-match");
+      btn.parentNode.insertBefore(el, btn.nextSibling);
+      setTimeout(() => el.remove(), 2500);
+    }
+
+    // ═══════════════════════════════════════════════
+    //  ADD QUESTIONS
+    // ═══════════════════════════════════════════════
+    let addqRowCount = 0;
+
+    async function loadAddqCategories() {
+      if (!currentUser) return;
+      try {
+        const cats = await fetchCategories(currentUser.id);
+        const sel = $("addq-cat-select");
+        if (!sel) return;
+        sel.innerHTML = `<option value="">— select existing set —</option>` +
+          cats.map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${c.sqCount} SQ · ${c.lqCount} LQ)</option>`).join("");
+      } catch (_) { }
+    }
+
+    $("addq-cat-select").addEventListener("change", () => {
+      const v = $("addq-cat-select").value;
+      if (v) {
+        $("addq-cat-input").value = v;
+        loadExistingQuestions(v);
+      } else {
+        $("addq-existing-section").style.display = "none";
+      }
+    });
+
+    async function loadExistingQuestions(category) {
+      if (!currentUser) return;
+      const section = $("addq-existing-section");
+      section.style.display = "block";
+      $("addq-existing-list").innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">Loading…</p>`;
+      try {
+        const questions = await fetchQuestionsForCategory(category, currentUser.id);
+        renderExistingQuestions(questions);
+      } catch (err) {
+        $("addq-existing-list").innerHTML = `<p style="color:var(--danger);font-size:.78rem">${esc(err.message)}</p>`;
+      }
+    }
+
+    function renderExistingQuestions(questions) {
+      const list = $("addq-existing-list");
+      if (!questions.length) {
+        list.innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">No questions in this set yet (or none owned by you).</p>`;
+        return;
+      }
+      list.innerHTML = questions.map(q => `
+        <div class="existing-q-row" data-id="${q.id}" data-table="${q._table}">
+          <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem">
+            <span style="font-size:.58rem;padding:.1rem .35rem;border-radius:999px;flex-shrink:0;
+                         border:1px solid ${q._table === 'sq' ? 'rgba(74,158,255,.4)' : 'rgba(255,201,74,.4)'};
+                         color:${q._table === 'sq' ? 'var(--blue)' : 'var(--warn)'}">${q._table.toUpperCase()}</span>
+            <button class="eq-del" title="Delete question"
+                    style="margin-left:auto;background:none;border:none;color:var(--muted);
+                           cursor:pointer;font-size:.9rem;padding:.1rem .3rem;flex-shrink:0">✕</button>
+          </div>
+          <div class="field" style="margin-bottom:.3rem">
+            <label>Question</label>
+            <textarea class="eq-q" rows="2" style="font-size:.78rem">${esc(q.question)}</textarea>
+          </div>
+          <div class="field" style="margin-bottom:.4rem">
+            <label>Answer</label>
+            <input class="eq-a" type="text" value="${esc(q.answer)}" style="font-size:.78rem"/>
+          </div>
+          <button class="eq-save btn sm" style="font-size:.68rem;padding:.35rem .7rem">💾 Save changes</button>
+          <div class="eq-status" style="font-size:.7rem;margin-top:.25rem;display:none"></div>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".existing-q-row").forEach(row => {
+        const id = Number(row.dataset.id);
+        const table = row.dataset.table;
+
+        row.querySelector(".eq-del").addEventListener("click", async () => {
+          if (!confirm("Delete this question? This cannot be undone.")) return;
           try {
-            // Only show categories this user owns
-            const cats = await fetchCategories(currentUser.id);
-            const sel = $("addq-cat-select");
-            if (!sel) return;
-            sel.innerHTML = `<option value="">— select existing set —</option>` +
-              cats.map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${c.sqCount} SQ · ${c.lqCount} LQ)</option>`).join("");
-          } catch (_) { }
-        }
-        $("addq-cat-select").addEventListener("change", () => {
-          const v = $("addq-cat-select").value;
-          if (v) {
-            $("addq-cat-input").value = v;
-            loadExistingQuestions(v);
-          } else {
-            $("addq-existing-section").style.display = "none";
+            await deleteQuestion(table, id);
+            row.remove();
+            if (!list.querySelectorAll(".existing-q-row").length)
+              list.innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">All questions in this set have been deleted.</p>`;
+          } catch (err) {
+            alert(`Delete failed: ${err.message}`);
           }
         });
 
-        async function loadExistingQuestions(category) {
-          if (!currentUser) return;
-          const section = $("addq-existing-section");
-          section.style.display = "block";
-          $("addq-existing-list").innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">Loading…</p>`;
+        row.querySelector(".eq-save").addEventListener("click", async () => {
+          const newQ = row.querySelector(".eq-q").value.trim();
+          const newA = row.querySelector(".eq-a").value.trim();
+          const status = row.querySelector(".eq-status");
+          if (!newQ || !newA) { status.textContent = "Question and answer cannot be empty."; status.style.color = "var(--danger)"; status.style.display = "block"; return; }
           try {
-            const questions = await fetchQuestionsForCategory(category, currentUser.id);
-            renderExistingQuestions(questions);
+            await updateQuestion(table, id, { question: newQ, answer: newA });
+            status.textContent = "✓ Saved!"; status.style.color = "var(--accent)"; status.style.display = "block";
+            setTimeout(() => { status.style.display = "none"; }, 2500);
           } catch (err) {
-            $("addq-existing-list").innerHTML = `<p style="color:var(--danger);font-size:.78rem">${esc(err.message)}</p>`;
-          }
-        }
-
-        function renderExistingQuestions(questions) {
-          const list = $("addq-existing-list");
-          if (!questions.length) {
-            list.innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">No questions in this set yet (or none owned by you).</p>`;
-            return;
-          }
-          list.innerHTML = questions.map(q => `
-    <div class="existing-q-row" data-id="${q.id}" data-table="${q._table}">
-      <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem">
-        <span style="font-size:.58rem;padding:.1rem .35rem;border-radius:999px;flex-shrink:0;
-                     border:1px solid ${q._table === 'sq' ? 'rgba(74,158,255,.4)' : 'rgba(255,201,74,.4)'};
-                     color:${q._table === 'sq' ? 'var(--blue)' : 'var(--warn)'}">${q._table.toUpperCase()}</span>
-        <button class="eq-del" title="Delete question"
-                style="margin-left:auto;background:none;border:none;color:var(--muted);
-                       cursor:pointer;font-size:.9rem;padding:.1rem .3rem;flex-shrink:0">✕</button>
-      </div>
-      <div class="field" style="margin-bottom:.3rem">
-        <label>Question</label>
-        <textarea class="eq-q" rows="2" style="font-size:.78rem">${esc(q.question)}</textarea>
-      </div>
-      <div class="field" style="margin-bottom:.4rem">
-        <label>Answer</label>
-        <input class="eq-a" type="text" value="${esc(q.answer)}" style="font-size:.78rem"/>
-      </div>
-      <button class="eq-save btn sm" style="font-size:.68rem;padding:.35rem .7rem">💾 Save changes</button>
-      <div class="eq-status" style="font-size:.7rem;margin-top:.25rem;display:none"></div>
-    </div>
-  `).join("");
-
-          list.querySelectorAll(".existing-q-row").forEach(row => {
-            const id = Number(row.dataset.id);
-            const table = row.dataset.table;
-
-            row.querySelector(".eq-del").addEventListener("click", async () => {
-              if (!confirm("Delete this question? This cannot be undone.")) return;
-              try {
-                await deleteQuestion(table, id);
-                row.remove();
-                if (!list.querySelectorAll(".existing-q-row").length)
-                  list.innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">All questions in this set have been deleted.</p>`;
-              } catch (err) {
-                alert(`Delete failed: ${err.message}`);
-              }
-            });
-
-            row.querySelector(".eq-save").addEventListener("click", async () => {
-              const newQ = row.querySelector(".eq-q").value.trim();
-              const newA = row.querySelector(".eq-a").value.trim();
-              const status = row.querySelector(".eq-status");
-              if (!newQ || !newA) { status.textContent = "Question and answer cannot be empty."; status.style.color = "var(--danger)"; status.style.display = "block"; return; }
-              try {
-                await updateQuestion(table, id, { question: newQ, answer: newA });
-                status.textContent = "✓ Saved!"; status.style.color = "var(--accent)"; status.style.display = "block";
-                setTimeout(() => { status.style.display = "none"; }, 2500);
-              } catch (err) {
-                status.textContent = `Save failed: ${err.message}`; status.style.color = "var(--danger)"; status.style.display = "block";
-              }
-            });
-          });
-        }
-        function addqEnsureRow() { if (!$("addq-rows").children.length) addqAddRow(); }
-        $("addq-add-row").addEventListener("click", addqAddRow);
-        function addqAddRow() {
-          addqRowCount++;
-          const n = addqRowCount, div = document.createElement("div");
-          div.className = "q-row"; div.dataset.row = n;
-          div.innerHTML = `
-    <div class="q-row-num">QUESTION ${n}</div>
-    <button class="q-row-del" data-del="${n}">✕</button>
-    <div style="display:flex;gap:.35rem;margin-bottom:.6rem">
-      <button class="row-type-btn active sq" data-type="sq" style="flex:1;padding:.4rem;border-radius:7px;border:1px solid var(--blue);background:rgba(74,158,255,0.10);color:var(--blue);font-family:var(--font-hud);font-size:.72rem;cursor:pointer">⚡ Short (SQ)</button>
-      <button class="row-type-btn lq" data-type="lq" style="flex:1;padding:.4rem;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--muted2);font-family:var(--font-hud);font-size:.72rem;cursor:pointer">📖 Long (LQ)</button>
-    </div>
-    <div class="field" style="margin-bottom:.5rem"><label>Question</label><textarea class="addq-q" placeholder="e.g. What is the powerhouse of the cell?" rows="2"></textarea></div>
-    <div class="field" style="margin-bottom:0"><label>Correct Answer</label><input class="addq-a" type="text" placeholder="e.g. Mitochondria"/></div>
-  `;
-          $("addq-rows").appendChild(div);
-          div.querySelector("[data-del]").addEventListener("click", () => div.remove());
-
-          // Per-row type toggle
-          div.querySelectorAll(".row-type-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-              div.querySelectorAll(".row-type-btn").forEach(b => {
-                const isSq = b.dataset.type === "sq";
-                b.classList.toggle("active", b === btn);
-                b.style.borderColor = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--border)";
-                b.style.background = b === btn ? (isSq ? "rgba(74,158,255,0.10)" : "rgba(255,201,74,0.10)") : "var(--bg)";
-                b.style.color = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--muted2)";
-              });
-              div.dataset.qtype = btn.dataset.type;
-            });
-          });
-          div.dataset.qtype = "sq"; // default
-        }
-        $("addq-submit").addEventListener("click", async () => {
-          if (!currentUser) { showAddqStatus("You must be signed in to upload questions.", "error"); return; }
-          const cat = $("addq-cat-input").value.trim();
-          if (!cat) { $("addq-cat-input").focus(); showAddqStatus("Please enter a category name.", "error"); return; }
-          const rows = []; let anyBlank = false;
-          $("addq-rows").querySelectorAll(".q-row").forEach(row => {
-            const q = row.querySelector(".addq-q").value.trim(), a = row.querySelector(".addq-a").value.trim();
-            if (!q || !a) { anyBlank = true; return; }
-            rows.push({ question: q, answer: a, category: cat, type: row.dataset.qtype || "sq" });
-          });
-          if (anyBlank) { showAddqStatus("Some questions are missing text.", "error"); return; }
-          if (!rows.length) { showAddqStatus("Add at least one question.", "error"); return; }
-          $("addq-submit").disabled = true; $("addq-submit").textContent = "Uploading…";
-          try {
-            await addQuestions(rows, currentUser.id);
-            showAddqStatus(`✓ ${rows.length} question${rows.length > 1 ? "s" : ""} added to "${cat}"!`, "ok");
-            $("addq-rows").innerHTML = ""; addqRowCount = 0; addqAddRow();
-            loadAddqCategories();
-          } catch (err) {
-            showAddqStatus(`Upload failed: ${err.message}`, "error");
-          } finally {
-            $("addq-submit").disabled = false; $("addq-submit").textContent = "UPLOAD TO DATABASE →";
+            status.textContent = `Save failed: ${err.message}`; status.style.color = "var(--danger)"; status.style.display = "block";
           }
         });
-        function showAddqStatus(msg, type) {
-          const el = $("addq-status");
-          el.textContent = msg; el.style.color = type === "error" ? "var(--danger)" : "var(--accent)"; el.style.display = "block";
-          setTimeout(() => { el.style.display = "none"; }, 5000);
-        }
-      </script>
+      });
+    }
+
+    function addqEnsureRow() { if (!$("addq-rows").children.length) addqAddRow(); }
+    $("addq-add-row").addEventListener("click", addqAddRow);
+
+    function addqAddRow() {
+      addqRowCount++;
+      const n = addqRowCount, div = document.createElement("div");
+      div.className = "q-row"; div.dataset.row = n;
+      div.innerHTML = `
+        <div class="q-row-num">QUESTION ${n}</div>
+        <button class="q-row-del" data-del="${n}">✕</button>
+        <div style="display:flex;gap:.35rem;margin-bottom:.6rem">
+          <button class="row-type-btn active sq" data-type="sq" style="flex:1;padding:.4rem;border-radius:7px;border:1px solid var(--blue);background:rgba(74,158,255,0.10);color:var(--blue);font-family:var(--font-hud);font-size:.72rem;cursor:pointer">⚡ Short (SQ)</button>
+          <button class="row-type-btn lq" data-type="lq" style="flex:1;padding:.4rem;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--muted2);font-family:var(--font-hud);font-size:.72rem;cursor:pointer">📖 Long (LQ)</button>
+        </div>
+        <div class="field" style="margin-bottom:.5rem"><label>Question</label><textarea class="addq-q" placeholder="e.g. What is the powerhouse of the cell?" rows="2"></textarea></div>
+        <div class="field" style="margin-bottom:0"><label>Correct Answer</label><input class="addq-a" type="text" placeholder="e.g. Mitochondria"/></div>
+      `;
+      $("addq-rows").appendChild(div);
+      div.querySelector("[data-del]").addEventListener("click", () => div.remove());
+
+      div.querySelectorAll(".row-type-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          div.querySelectorAll(".row-type-btn").forEach(b => {
+            const isSq = b.dataset.type === "sq";
+            b.classList.toggle("active", b === btn);
+            b.style.borderColor = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--border)";
+            b.style.background  = b === btn ? (isSq ? "rgba(74,158,255,0.10)" : "rgba(255,201,74,0.10)") : "var(--bg)";
+            b.style.color       = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--muted2)";
+          });
+          div.dataset.qtype = btn.dataset.type;
+        });
+      });
+      div.dataset.qtype = "sq";
+    }
+
+    $("addq-submit").addEventListener("click", async () => {
+      if (!currentUser) { showAddqStatus("You must be signed in to upload questions.", "error"); return; }
+      const cat = $("addq-cat-input").value.trim();
+      if (!cat) { $("addq-cat-input").focus(); showAddqStatus("Please enter a category name.", "error"); return; }
+      const rows = []; let anyBlank = false;
+      $("addq-rows").querySelectorAll(".q-row").forEach(row => {
+        const q = row.querySelector(".addq-q").value.trim(), a = row.querySelector(".addq-a").value.trim();
+        if (!q || !a) { anyBlank = true; return; }
+        rows.push({ question: q, answer: a, category: cat, type: row.dataset.qtype || "sq" });
+      });
+      if (anyBlank) { showAddqStatus("Some questions are missing text.", "error"); return; }
+      if (!rows.length) { showAddqStatus("Add at least one question.", "error"); return; }
+      $("addq-submit").disabled = true; $("addq-submit").textContent = "Uploading…";
+      try {
+        await addQuestions(rows, currentUser.id);
+        showAddqStatus(`✓ ${rows.length} question${rows.length > 1 ? "s" : ""} added to "${cat}"!`, "ok");
+        $("addq-rows").innerHTML = ""; addqRowCount = 0; addqAddRow();
+        loadAddqCategories();
+      } catch (err) {
+        showAddqStatus(`Upload failed: ${err.message}`, "error");
+      } finally {
+        $("addq-submit").disabled = false; $("addq-submit").textContent = "UPLOAD TO DATABASE →";
+      }
+    });
+
+    function showAddqStatus(msg, type) {
+      const el = $("addq-status");
+      el.textContent = msg; el.style.color = type === "error" ? "var(--danger)" : "var(--accent)"; el.style.display = "block";
+      setTimeout(() => { el.style.display = "none"; }, 5000);
+    }
+  </script>
 </body>
 
 </html>

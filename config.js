@@ -43,12 +43,15 @@ export const DB_PATHS = {
 // Adjust these without touching any logic files
 export const GAME_CONFIG = {
   // Shield odds
-  crewShieldChance:   0.30,   // 50% — full shield from completed task
+  // FIX: reduced from 0.50 → 0.30 to balance shield frequency
+  crewShieldChance:    0.30,  // 30% — full shield from completed task
   ghostShieldSqChance: 0.05,  // 5%  — low shield from dead player SQ answer
   ghostShieldLqChance: 0.15,  // 15% — higher shield from dead player LQ answer
 
+  // Default role counts (host overrides these in lobby settings)
   impostors: 1,
-  jesters: 1,
+  jesters:   1,
+
   // Impostor kill costs
   killCostSq: 1,              // SQs needed to preload one kill
 
