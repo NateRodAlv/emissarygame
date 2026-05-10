@@ -970,6 +970,89 @@
       z-index: 999;
       background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px)
     }
+
+    /* ── Set picker filter buttons ─────────────────────── */
+    .sp-filter {
+      padding: .28rem .65rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted2);
+      font-family: var(--font-hud);
+      font-size: .68rem;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap
+    }
+    .sp-filter:hover { border-color: var(--accent); color: var(--accent) }
+    .sp-filter.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(74,255,164,.08)
+    }
+
+    /* ── Set picker grid ───────────────────────────────── */
+    #setpicker-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: .8rem 1rem 6rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: .55rem;
+      align-content: start
+    }
+
+    .setpicker-card {
+      padding: .75rem .85rem;
+      border-radius: 11px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+      position: relative
+    }
+    .setpicker-card:hover { border-color: var(--border2) }
+    .setpicker-card.selected {
+      border-color: var(--accent);
+      background: rgba(74, 255, 164, 0.06)
+    }
+    .setpicker-card .sp-name {
+      font-size: .84rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      word-break: break-word
+    }
+    .setpicker-card .sp-meta {
+      font-size: .63rem;
+      color: var(--muted);
+      letter-spacing: .04em
+    }
+    .sp-card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .4rem;
+      flex-wrap: wrap
+    }
+    .sp-preview-btn {
+      padding: .22rem .5rem !important;
+      font-size: .6rem !important;
+      border-radius: 6px !important;
+      white-space: nowrap;
+      flex-shrink: 0
+    }
+
+    /* ── Waiting room settings body ────────────────────── */
+    #waiting-settings-body {
+      overflow: hidden;
+      transition: max-height .25s ease, opacity .2s
+    }
+    #waiting-set-chip:hover { border-color: var(--accent) }
+    #waiting-set-chip.chosen { border-color: var(--accent); background: rgba(74,255,164,.05) }
   </style>
 </head>
 
@@ -982,7 +1065,7 @@
     <div class="panel-wrap">
       <div class="menu-logo">
         <h1>EMISSARY</h1>
-        <p>▸ LEARNING ◆ DECEPTION ◆ SURVIVAL ◀</p>
+        <p>▸ LEARN ◆ DECEIVE ◆ SURVIVE ◀</p>
       </div>
       <div class="menu-btns">
         <button class="menu-btn primary" id="menu-btn-play"><span class="icon">▶</span>
@@ -1052,11 +1135,27 @@
         <span class="back-link" id="setpicker-back" style="margin-bottom:0">◀</span>
         <h2 style="margin-bottom:0">CHOOSE QUESTION SET</h2>
       </div>
-      <input id="setpicker-search" type="search" placeholder="🔍  Search sets…" autocomplete="off" />
+      <input id="setpicker-search" type="search" placeholder="🔍  Search sets…" autocomplete="off" style="margin-bottom:.6rem" />
+      <!-- Filter + sort bar -->
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">
+        <div id="sp-filter-btns" style="display:flex;gap:.3rem;flex-wrap:wrap;flex:1">
+          <button class="sp-filter active" data-filter="all">All Sets</button>
+          <button class="sp-filter" data-filter="mine">Mine</button>
+          <button class="sp-filter" data-filter="sq">Has SQ</button>
+          <button class="sp-filter" data-filter="lq">Has LQ</button>
+        </div>
+        <select id="sp-sort" style="padding:.3rem .6rem;background:var(--bg);border:1px solid var(--border);color:var(--muted2);border-radius:7px;font-family:var(--font-hud);font-size:.7rem;outline:none;flex-shrink:0">
+          <option value="alpha">A → Z</option>
+          <option value="most">Most Questions</option>
+          <option value="sq">Most SQ</option>
+          <option value="lq">Most LQ</option>
+        </select>
+      </div>
     </div>
     <div id="setpicker-list"></div>
-    <div id="setpicker-none" style="display:none">No matching sets found.</div>
+    <div id="setpicker-none" style="display:none;padding:2rem;text-align:center;color:var(--muted);font-size:.82rem">No matching sets found.</div>
     <div id="setpicker-footer">
+      <div id="sp-selected-label" style="font-size:.7rem;color:var(--muted);margin-bottom:.4rem;text-align:center;min-height:1.1em"></div>
       <button class="btn" id="setpicker-confirm">USE SELECTED SET →</button>
     </div>
   </div>
@@ -1081,7 +1180,7 @@
 
   <!-- WAITING -->
   <div id="screen-waiting" class="screen">
-    <div class="panel">
+    <div class="panel panel-scroll">
       <h1>STANDING BY</h1>
       <p class="sub">MATCH CODE: <strong id="waiting-code" style="color:var(--accent);letter-spacing:.15em"></strong>
       </p>
@@ -1091,6 +1190,68 @@
       <p style="font-size:.68rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">
         Players in lobby</p>
       <ul id="player-list"></ul>
+
+      <!-- HOST-ONLY: live settings editor shown before game starts -->
+      <div id="waiting-host-settings" style="display:none">
+        <div class="divider"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:.3rem"
+             id="waiting-settings-toggle">
+          <p class="section-label" style="margin:0">⚙️ MATCH SETTINGS</p>
+          <span id="waiting-settings-arrow" style="color:var(--muted);font-size:.8rem">▾</span>
+        </div>
+        <div id="waiting-settings-body">
+          <!-- Question set chip -->
+          <div id="waiting-set-chip" style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;
+               padding:.55rem .8rem;border-radius:10px;border:2px solid var(--border);background:var(--bg);
+               cursor:pointer;transition:border-color .15s;margin-bottom:.6rem">
+            <div>
+              <div style="font-size:.67rem;color:var(--muted2)">Question Set</div>
+              <div id="waiting-set-chip-value" style="font-size:.82rem;font-weight:700;color:var(--text)">—</div>
+            </div>
+            <span style="color:var(--muted);font-size:.8rem">▸</span>
+          </div>
+          <!-- Numeric settings in 2-col grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+            <div class="field" style="margin:0">
+              <label>Discussion (s)</label>
+              <input id="ws-discuss" type="number" min="20" value="120" />
+            </div>
+            <div class="field" style="margin:0">
+              <label>Voting (s)</label>
+              <input id="ws-vote" type="number" min="15" value="60" />
+            </div>
+            <div class="field" style="margin:0">
+              <label>Impostors</label>
+              <input id="ws-impostors" type="number" min="1" max="3" value="1" />
+            </div>
+            <div class="field" style="margin:0">
+              <label>Jesters</label>
+              <input id="ws-jesters" type="number" min="0" max="3" value="1" />
+            </div>
+            <div class="field" style="margin:0">
+              <label>Tasks / crew</label>
+              <input id="ws-tasks" type="number" min="1" max="9" value="3" />
+            </div>
+            <div class="field" style="margin:0">
+              <label>Meeting calls</label>
+              <input id="ws-calls" type="number" min="0" max="5" value="1" />
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:.5rem">
+            <label>Discussion mode</label>
+            <select id="ws-chat">
+              <option value="class">🏫 Discuss aloud (no chat)</option>
+              <option value="chat">💬 In-game text chat</option>
+            </select>
+          </div>
+          <button class="btn ghost" id="ws-save-btn" style="font-size:.75rem;padding:.55rem">
+            💾 SAVE SETTINGS
+          </button>
+          <p id="ws-save-status" style="font-size:.68rem;text-align:center;margin-top:.35rem;display:none"></p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
       <div id="host-qset-display"
         style="display:none;font-size:.72rem;color:var(--muted);padding:.4rem .7rem;border-radius:6px;border:1px solid var(--border);margin-bottom:.6rem">
         📚 Set: <strong id="host-qset-name" style="color:var(--accent)">—</strong></div>
@@ -1244,7 +1405,13 @@
         </div>
         <div class="divider"></div>
         <div id="addq-existing-section" style="display:none">
-          <p class="section-label">✏️ Existing Questions in This Set</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem">
+            <p class="section-label" style="margin:0">✏️ Existing Questions in This Set</p>
+            <button id="addq-delete-set-btn" class="btn danger sm"
+              style="font-size:.65rem;padding:.3rem .65rem;letter-spacing:.04em">
+              🗑 Delete Entire Set
+            </button>
+          </div>
           <p style="font-size:.67rem;color:var(--muted);margin-bottom:.6rem;line-height:1.4">
             Edit or delete questions you previously uploaded. Only your own questions are shown.
           </p>
@@ -1276,7 +1443,8 @@
       applyKill, applyJesterSwap,
       onMeetingChange, setKillReady,
       completeRoomTask, movePlayer,
-      getMatchSettings, getPlayerData,
+      getMatchSettings, updateMatchSettings, onSettingsChange,
+      getPlayerData,
       getMatchPlayers, deleteMatch,
       cleanupStaleMatches,
       sendChatMessage, onChatMessage
@@ -1291,7 +1459,7 @@
       fetchCategories, addQuestions,
       fetchSQ, fetchLQ,
       fetchQuestionsForCategory,
-      updateQuestion, deleteQuestion,
+      updateQuestion, deleteQuestion, deleteQuestionSet,
       signInWithGoogle, signOut,
       getCurrentUser, onAuthChange
     } from "./questions.js";
@@ -1421,6 +1589,8 @@
     // ═══════════════════════════════════════════════
     //  MAIN MENU
     // ═══════════════════════════════════════════════
+    let _setpickerReturnScreen = null; // tracks which screen opened the set picker
+
     $("menu-btn-play").addEventListener("click", () => show("screen-play"));
     $("menu-btn-host").addEventListener("click", () => show("screen-host"));
     $("menu-btn-addq").addEventListener("click", () => {
@@ -1431,7 +1601,7 @@
     $("host-back").addEventListener("click", () => show("screen-menu"));
     $("addq-back").addEventListener("click", () => show("screen-menu"));
     $("auth-back").addEventListener("click", () => show("screen-menu"));
-    $("setpicker-back").addEventListener("click", () => show("screen-host"));
+    $("setpicker-back").addEventListener("click", () => show(_setpickerReturnScreen ?? "screen-host"));
     $("addq-goto-auth").addEventListener("click", () => show("screen-auth"));
 
     // ═══════════════════════════════════════════════
@@ -1461,22 +1631,37 @@
     async function openSetPicker() {
       show("screen-setpicker");
       $("setpicker-search").value = "";
-      $("setpicker-list").innerHTML = `<div style="text-align:center;color:var(--muted);padding:2rem">Loading…</div>`;
+      $("setpicker-list").innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:2rem">Loading…</div>`;
       try {
         allSetCategories = await fetchCategories();
-        renderSetPicker("");
+        renderSetPicker();
       } catch (err) {
-        $("setpicker-list").innerHTML = `<div style="color:var(--danger);padding:1rem">${esc(err.message)}</div>`;
+        $("setpicker-list").innerHTML = `<div style="grid-column:1/-1;color:var(--danger);padding:1rem">${esc(err.message)}</div>`;
       }
     }
 
-    function renderSetPicker(query) {
-      const list = $("setpicker-list");
-      const none = $("setpicker-none");
-      const q = query.toLowerCase().trim();
-      const filtered = q
-        ? allSetCategories.filter(c => c.name.toLowerCase().includes(q))
-        : allSetCategories;
+    // Track active filter and sort for setpicker
+    let spFilter = "all";
+    let spSort   = "alpha";
+
+    function renderSetPicker() {
+      const list   = $("setpicker-list");
+      const none   = $("setpicker-none");
+      const search = ($("setpicker-search").value || "").toLowerCase().trim();
+
+      let filtered = allSetCategories.filter(c => {
+        if (search && !c.name.toLowerCase().includes(search)) return false;
+        if (spFilter === "mine"  && c.createdBy !== currentUser?.id) return false;
+        if (spFilter === "sq"   && !c.sqCount)  return false;
+        if (spFilter === "lq"   && !c.lqCount)  return false;
+        return true;
+      });
+
+      // Sort
+      if (spSort === "alpha") filtered.sort((a,b) => a.name.localeCompare(b.name));
+      else if (spSort === "most") filtered.sort((a,b) => (b.sqCount+b.lqCount)-(a.sqCount+a.lqCount));
+      else if (spSort === "sq")  filtered.sort((a,b) => b.sqCount - a.sqCount);
+      else if (spSort === "lq")  filtered.sort((a,b) => b.lqCount - a.lqCount);
 
       if (!filtered.length) {
         list.innerHTML = "";
@@ -1485,22 +1670,22 @@
       }
       none.style.display = "none";
 
+      const isMine = cat => currentUser && cat.createdBy === currentUser.id;
+
       list.innerHTML = filtered.map(c => `
         <div class="setpicker-card${selectedCategory === c.name ? " selected" : ""}"
              data-cat="${esc(c.name)}">
-          <div style="flex:1;min-width:0">
-            <div class="sp-name">${esc(c.name)}</div>
-            <div class="sp-meta">${c.sqCount} short · ${c.lqCount} long</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
+          ${isMine(c) ? `<span style="position:absolute;top:.45rem;right:.5rem;font-size:.58rem;color:var(--accent);letter-spacing:.04em">MINE</span>` : ""}
+          <div class="sp-name">${esc(c.name)}</div>
+          <div class="sp-card-row">
             <div class="qset-badges">
               ${c.sqCount ? `<span class="qset-badge sq">SQ×${c.sqCount}</span>` : ""}
               ${c.lqCount ? `<span class="qset-badge lq">LQ×${c.lqCount}</span>` : ""}
             </div>
-            <button class="btn ghost sm sp-preview-btn" data-preview="${esc(c.name)}"
-                    style="padding:.28rem .6rem;font-size:.62rem;border-radius:6px;white-space:nowrap">
-              👁 Preview
-            </button>
+          </div>
+          <div class="sp-card-row">
+            <span class="sp-meta">${c.sqCount + c.lqCount} questions</span>
+            <button class="btn ghost sm sp-preview-btn" data-preview="${esc(c.name)}">👁 Preview</button>
           </div>
         </div>
       `).join("");
@@ -1511,6 +1696,8 @@
           list.querySelectorAll(".setpicker-card").forEach(c => c.classList.remove("selected"));
           card.classList.add("selected");
           selectedCategory = card.dataset.cat;
+          const lbl = $("sp-selected-label");
+          if (lbl) lbl.textContent = `Selected: ${selectedCategory}`;
         });
       });
 
@@ -1522,7 +1709,17 @@
       });
     }
 
-    $("setpicker-search").addEventListener("input", e => renderSetPicker(e.target.value));
+    // Wire search + filter + sort controls
+    $("setpicker-search").addEventListener("input", () => renderSetPicker());
+    $("sp-sort").addEventListener("change", e => { spSort = e.target.value; renderSetPicker(); });
+    document.querySelectorAll(".sp-filter").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".sp-filter").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        spFilter = btn.dataset.filter;
+        renderSetPicker();
+      });
+    });
 
     async function openPreviewModal(categoryName) {
       const wrap = mkOverlay();
@@ -1581,15 +1778,35 @@
 
     $("setpicker-confirm").addEventListener("click", () => {
       if (!selectedCategory) {
-        $("setpicker-list").querySelector(".setpicker-card")?.click();
+        // Auto-pick the first visible card
+        const first = $("setpicker-list").querySelector(".setpicker-card");
+        if (first) { first.click(); } else { return; }
       }
       if (!selectedCategory) { return; }
+      // Update host screen chip
       $("host-set-chip-value").textContent = selectedCategory;
       $("host-set-chip").classList.add("chosen");
-      show("screen-host");
+      // Also update waiting room chip if already in lobby
+      const wChipVal = $("waiting-set-chip-value");
+      if (wChipVal) { wChipVal.textContent = selectedCategory; $("waiting-set-chip").classList.add("chosen"); }
+      if ($("host-qset-name")) {
+        $("host-qset-name").textContent = selectedCategory;
+        $("host-qset-display").style.display = "block";
+      }
+      // Persist change to Firebase if already in a match (host editing from waiting room)
+      if (matchId && isHost && selectedCategory) {
+        updateMatchSettings(matchId, { questionCategory: selectedCategory }).catch(() => {});
+      }
+      // Go back to wherever we came from
+      show(_setpickerReturnScreen ?? "screen-host");
+      _setpickerReturnScreen = null;
     });
 
-    $("host-set-chip").addEventListener("click", openSetPicker);
+    // Host set chip opens picker (from host config screen)
+    $("host-set-chip").addEventListener("click", () => {
+      _setpickerReturnScreen = "screen-host";
+      openSetPicker();
+    });
 
     // ═══════════════════════════════════════════════
     //  JOIN
@@ -1703,6 +1920,77 @@
             prompt("Copy this link to share:", url);
           }
         };
+
+        // Show host settings panel only if this client is the host
+        if (isHost) {
+          $("waiting-host-settings").style.display = "block";
+
+          // Populate fields from current settings
+          const populateWaitingSettings = (s) => {
+            if ($("ws-discuss"))   $("ws-discuss").value   = s.discussionTime ?? 120;
+            if ($("ws-vote"))      $("ws-vote").value      = s.votingTime      ?? 60;
+            if ($("ws-impostors")) $("ws-impostors").value = s.impostors        ?? 1;
+            if ($("ws-jesters"))   $("ws-jesters").value   = s.jesters          ?? 1;
+            if ($("ws-tasks"))     $("ws-tasks").value     = s.tasksPerCrew     ?? 3;
+            if ($("ws-calls"))     $("ws-calls").value     = s.meetingCalls     ?? 1;
+            if ($("ws-chat"))      $("ws-chat").value      = s.useChat          ?? "class";
+            const cat = s.questionCategory;
+            if (cat && $("waiting-set-chip-value")) {
+              $("waiting-set-chip-value").textContent = cat;
+              $("waiting-set-chip").classList.add("chosen");
+            }
+          };
+          populateWaitingSettings(settings);
+
+          // Live-sync settings changes from Firebase (if host has two windows open, etc.)
+          onSettingsChange(matchId, s => { Object.assign(settings, s); populateWaitingSettings(s); });
+
+          // Collapsible toggle
+          let settingsOpen = true;
+          $("waiting-settings-toggle").addEventListener("click", () => {
+            settingsOpen = !settingsOpen;
+            $("waiting-settings-body").style.display = settingsOpen ? "block" : "none";
+            $("waiting-settings-arrow").textContent  = settingsOpen ? "▾" : "▸";
+          });
+
+          // Waiting-room set chip opens picker and returns here
+          $("waiting-set-chip").addEventListener("click", () => {
+            _setpickerReturnScreen = "screen-waiting";
+            openSetPicker();
+          });
+
+          // Save button — write changed values to Firebase
+          $("ws-save-btn").addEventListener("click", async () => {
+            const newSettings = {
+              discussionTime:   +$("ws-discuss").value   || 120,
+              votingTime:       +$("ws-vote").value       || 60,
+              impostors:        +$("ws-impostors").value  || 1,
+              jesters:          +$("ws-jesters").value    || 0,
+              tasksPerCrew:     +$("ws-tasks").value      || 3,
+              meetingCalls:     +$("ws-calls").value      || 1,
+              useChat:          $("ws-chat").value,
+              questionCategory: selectedCategory ?? settings.questionCategory,
+            };
+            try {
+              $("ws-save-btn").disabled = true;
+              await updateMatchSettings(matchId, newSettings);
+              Object.assign(settings, newSettings);
+              // Update host-qset-display
+              if (newSettings.questionCategory) {
+                $("host-qset-name").textContent = newSettings.questionCategory;
+                $("host-qset-display").style.display = "block";
+              }
+              const st = $("ws-save-status");
+              st.textContent = "✓ Saved!"; st.style.color = "var(--accent)"; st.style.display = "block";
+              setTimeout(() => { st.style.display = "none"; }, 2500);
+            } catch (e) {
+              const st = $("ws-save-status");
+              st.textContent = `Error: ${e.message}`; st.style.color = "var(--danger)"; st.style.display = "block";
+            } finally {
+              $("ws-save-btn").disabled = false;
+            }
+          });
+        }
       } catch (error) {
         console.error("Error in setupWaitingListeners:", error);
         throw error;
@@ -1713,13 +2001,15 @@
     //  START GAME
     // ═══════════════════════════════════════════════
     $("btn-start").addEventListener("click", async () => {
-      const ids = Object.keys(allPlayers);
+      // Always re-read settings from Firebase so any waiting-room edits are used
+      settings = await getMatchSettings(matchId);
+      selectedCategory = settings.questionCategory ?? selectedCategory;
 
-      // FIX: read impostor/jester counts properly from settings
-      const impostorCount = settings.impostors ?? GAME_CONFIG.impostors;
-      const jesterCount   = settings.jesters   ?? GAME_CONFIG.jesters;
+      const ids           = Object.keys(allPlayers);
+      const impostorCount = Math.max(1, +settings.impostors || GAME_CONFIG.impostors);
+      const jesterCount   = Math.max(0, +settings.jesters   || GAME_CONFIG.jesters);
 
-      // FIX: capacity check — need at least 1 crew member on top of impostors + jesters
+      // Capacity check — need at least 1 crew member on top of impostors + jesters
       const minplayers = impostorCount + jesterCount + 1;
       if (ids.length < minplayers) {
         alert("Not enough people, change your settings.");
@@ -1727,17 +2017,20 @@
       }
 
       const shuffled = [...ids].sort(() => Math.random() - 0.5);
-      const roleMap = {};
+      const roleMap  = {};
 
-      // FIX: correct index-based role assignment (was using <= and bitwise & causing
-      // wrong boundaries and always assigning 2 impostors)
+      // Correct index-based role assignment
       shuffled.forEach((id, i) => {
-        if (i < impostorCount)                       roleMap[id] = "impostor";
-        else if (i < impostorCount + jesterCount)    roleMap[id] = "jester";
-        else                                         roleMap[id] = "crew";
+        if (i < impostorCount)                     roleMap[id] = "impostor";
+        else if (i < impostorCount + jesterCount)  roleMap[id] = "jester";
+        else                                       roleMap[id] = "crew";
       });
 
+      // Write roles THEN phase — clients start watching onPlayersChange before
+      // onGameStateChange fires "playing", so roles arrive first.
       await assignRoles(matchId, roleMap);
+      // Small delay ensures role writes replicate before phase triggers launchGame
+      await new Promise(r => setTimeout(r, 200));
       await setPhase(matchId, "playing");
       localPlayer.role = roleMap[localPlayer.id];
       launchGame();
@@ -2306,16 +2599,23 @@
 
     // ═══════════════════════════════════════════════
     //  WIN CONDITIONS
-    // FIX: multi-impostor termination — jesters excluded from crew count
-    //      so e.g. 2 impostors vs 1 crew + 1 jester correctly triggers impostor win
     // ═══════════════════════════════════════════════
     let gameOver = false;
     function checkWinConditions(players) {
       if (gameOver) return;
       const list = Object.values(players);
-      const alive = list.filter(p => p.alive);
-      const imps = alive.filter(p => p.role === "impostor");
-      const crew = alive.filter(p => p.role === "crew");
+
+      // BUG FIX: roles propagate from Firebase asynchronously after setPhase("playing").
+      // Non-host clients (and sometimes even the host) receive onPlayersChange before
+      // assignRoles has fully written every player's role.  When any role is still null
+      // we have an incomplete snapshot — skip the check entirely so imps.length === 0
+      // never falsely triggers an instant crew-win at game start.
+      const allRolesAssigned = list.length > 0 && list.every(p => p.role !== null && p.role !== undefined);
+      if (!allRolesAssigned) return;
+
+      const alive   = list.filter(p => p.alive);
+      const imps    = alive.filter(p => p.role === "impostor");
+      const crew    = alive.filter(p => p.role === "crew");
       const jesters = alive.filter(p => p.role === "jester");
 
       // Task win: all crew have completed enough tasks
@@ -2354,16 +2654,18 @@
       $("end-body").textContent = data[winner][1];
 
       const playerList = Object.values(allPlayers);
-      const impostor = playerList.find(p => p.role === "impostor");
-      const jester = playerList.find(p => p.role === "jester");
+      const impostors  = playerList.filter(p => p.role === "impostor");
+      const jester     = playerList.find(p => p.role === "jester");
       const revealRows = [];
-      if (impostor) revealRows.push(`
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:9px;
-                    background:rgba(255,74,107,0.08);border:1px solid rgba(255,74,107,0.25);margin-bottom:.4rem">
-          <span style="width:11px;height:11px;border-radius:50%;background:${impostor.color ?? '#f44'};flex-shrink:0;display:inline-block"></span>
-          <span style="color:var(--text);font-size:.82rem"><strong>${esc(impostor.name)}</strong></span>
-          <span style="margin-left:auto;font-size:.7rem;color:var(--danger);font-weight:700;letter-spacing:.06em">IMPOSTOR</span>
-        </div>`);
+      for (const imp of impostors) {
+        revealRows.push(`
+          <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:9px;
+                      background:rgba(255,74,107,0.08);border:1px solid rgba(255,74,107,0.25);margin-bottom:.4rem">
+            <span style="width:11px;height:11px;border-radius:50%;background:${imp.color ?? '#f44'};flex-shrink:0;display:inline-block"></span>
+            <span style="color:var(--text);font-size:.82rem"><strong>${esc(imp.name)}</strong></span>
+            <span style="margin-left:auto;font-size:.7rem;color:var(--danger);font-weight:700;letter-spacing:.06em">IMPOSTOR</span>
+          </div>`);
+      }
       if (jester) revealRows.push(`
         <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:9px;
                     background:rgba(255,201,74,0.08);border:1px solid rgba(255,201,74,0.25);margin-bottom:.4rem">
@@ -2513,6 +2815,39 @@
       const section = $("addq-existing-section");
       section.style.display = "block";
       $("addq-existing-list").innerHTML = `<p style="color:var(--muted);font-size:.78rem;padding:.4rem 0">Loading…</p>`;
+
+      // Wire the "Delete Entire Set" button for this category
+      const delSetBtn = $("addq-delete-set-btn");
+      if (delSetBtn) {
+        // Clone to remove any previous listener
+        const fresh = delSetBtn.cloneNode(true);
+        delSetBtn.parentNode.replaceChild(fresh, delSetBtn);
+        fresh.addEventListener("click", async () => {
+          const confirmed = confirm(
+            `Delete ALL your questions in "${category}"?\n\nThis permanently removes every question you created in this set. Questions uploaded by others in the same category are not affected. This cannot be undone.`
+          );
+          if (!confirmed) return;
+          fresh.disabled = true;
+          fresh.textContent = "Deleting…";
+          try {
+            const { sqDeleted, lqDeleted } = await deleteQuestionSet(category, currentUser.id);
+            const total = sqDeleted + lqDeleted;
+            showAddqStatus(`✓ Deleted ${total} question${total !== 1 ? "s" : ""} from "${category}".`, "ok");
+            $("addq-existing-section").style.display = "none";
+            $("addq-cat-input").value = "";
+            // Reload the category dropdown so the deleted set is removed/updated
+            loadAddqCategories();
+            // Reset the cat-select back to placeholder
+            $("addq-cat-select").value = "";
+          } catch (err) {
+            showAddqStatus(`Delete failed: ${err.message}`, "error");
+          } finally {
+            fresh.disabled = false;
+            fresh.innerHTML = "🗑 Delete Entire Set";
+          }
+        });
+      }
+
       try {
         const questions = await fetchQuestionsForCategory(category, currentUser.id);
         renderExistingQuestions(questions);

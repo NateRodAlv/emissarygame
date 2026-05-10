@@ -9,14 +9,12 @@ import { FIREBASE_CONFIG, DB_PATHS }   from "./config.js";
 const app = initializeApp(FIREBASE_CONFIG);
 const db  = getDatabase(app);
 
-// ── Helpers ──────────────────────────────────────────────────
 const matchRef  = (matchId) => ref(db, `${DB_PATHS.matches}/${matchId}`);
 const playerRef = (matchId, pid) =>
   ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}/${pid}`);
 const stateRef  = (matchId) =>
   ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.gameState}`);
 
-// ── Match lifecycle ───────────────────────────────────────────
 export async function createMatch(matchId, hostId, settings) {
   await set(matchRef(matchId), {
     host: hostId,
@@ -27,10 +25,6 @@ export async function createMatch(matchId, hostId, settings) {
   });
 }
 
-/**
- * Delete any matches older than maxAgeMs that are still in lobby phase.
- * Call on app startup to prevent stale lobby data accumulating.
- */
 export async function cleanupStaleMatches(maxAgeMs = 2 * 60 * 60 * 1000) {
   const snap = await get(ref(db, DB_PATHS.matches));
   const all  = snap.val() ?? {};
@@ -53,7 +47,7 @@ export async function joinMatch(matchId, player) {
     killReady: false,
     jesterSwapsLeft: 0,
     meetingCallsLeft: 0,
-    completedRooms: {},   // { [roomId]: true } — task completion tracking
+    completedRooms: {},
   });
 }
 
@@ -62,12 +56,25 @@ export async function getMatchSettings(matchId) {
   return snap.val() ?? {};
 }
 
+/** Update (merge) match settings — host only, called from waiting room. */
+export async function updateMatchSettings(matchId, newSettings) {
+  await update(ref(db, `${DB_PATHS.matches}/${matchId}/settings`), newSettings);
+  await update(matchRef(matchId), { lastActivity: Date.now() });
+}
+
+/** Subscribe to live settings changes (used by waiting room). */
+export function onSettingsChange(matchId, cb) {
+  return onValue(
+    ref(db, `${DB_PATHS.matches}/${matchId}/settings`),
+    snap => cb(snap.val() ?? {})
+  );
+}
+
 export async function getPlayerData(matchId, playerId) {
   const snap = await get(playerRef(matchId, playerId));
   return snap.val();
 }
 
-// ── Game state mutations ──────────────────────────────────────
 export async function assignRoles(matchId, roleMap) {
   const updates = {};
   for (const [pid, role] of Object.entries(roleMap)) {
@@ -75,7 +82,6 @@ export async function assignRoles(matchId, roleMap) {
     if (role === "impostor") {
       updates[`${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}/${pid}/killReady`] = false;
     }
-    // Set meetingCallsLeft from settings
     updates[`${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}/${pid}/meetingCallsLeft`] = 1;
   }
   await update(ref(db), updates);
@@ -85,23 +91,19 @@ export async function setPhase(matchId, phase) {
   await update(stateRef(matchId), { phase });
 }
 
-/** Broadcast game-over result to all clients. */
 export async function setGameResult(matchId, winner) {
   await update(stateRef(matchId), { phase: "ended", winner });
 }
 
-/** Subscribe to full game-state changes (phase + winner). */
 export function onGameStateChange(matchId, cb) {
   return onValue(stateRef(matchId), snap => cb(snap.val() ?? {}));
 }
 
-/** Read all current players once (for name deduplication etc). */
 export async function getMatchPlayers(matchId) {
   const snap = await get(ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}`));
   return snap.val() ?? {};
 }
 
-/** Delete the entire match from Firebase. */
 export async function deleteMatch(matchId) {
   await remove(matchRef(matchId));
 }
@@ -139,19 +141,13 @@ export async function breakShield(matchId, playerId) {
   await update(playerRef(matchId, playerId), { shield: null });
 }
 
-/**
- * Mark a task room as complete for this player.
- * Stored under players/{pid}/completedRooms/{roomId}: true
- */
 export async function completeRoomTask(matchId, playerId, roomId) {
-  // Sanitize room id for Firebase key (room ids are safe already, but just in case)
   const safeId = roomId.replace(/[.#$\[\]/]/g, "_");
   await update(playerRef(matchId, playerId), {
     [`completedRooms/${safeId}`]: true,
   });
 }
 
-// ── Meeting / voting ──────────────────────────────────────────
 export async function callMeeting(matchId, callerId, reason) {
   await set(ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.meetings}/active`), {
     calledBy: callerId,
@@ -162,7 +158,6 @@ export async function callMeeting(matchId, callerId, reason) {
     chat: {},
   });
 
-  // Decrement meetingCallsLeft properly
   const snap    = await get(playerRef(matchId, callerId));
   const current = snap.val()?.meetingCallsLeft ?? 1;
   await update(playerRef(matchId, callerId), {
@@ -193,7 +188,6 @@ export function onChatMessage(matchId, cb) {
   );
 }
 
-// ── Subscriptions ─────────────────────────────────────────────
 export function onPlayersChange(matchId, cb) {
   return onValue(
     ref(db, `${DB_PATHS.matches}/${matchId}/${DB_PATHS.players}`),
