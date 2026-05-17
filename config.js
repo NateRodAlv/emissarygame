@@ -56,7 +56,11 @@ export const GAME_CONFIG = {
   killCostSq: 1,              // SQs needed to preload one kill
 
   // Jester swap cost
-  jesterSwapCostSq: 3,        // SQs needed to trigger swap
+  jesterSwapCostSq: 3,        // SQs needed to trigger position swap
+
+  // Jester disguise cost (new ability 2)
+  jesterColorSwapLqCost: 3,   // LQs needed to copy impostor color+name for 10s
+  disguiseDurationMs: 10000,  // How long the disguise lasts
 
   // Ghost power costs
   ghostShieldBreakerCostSq: 2,  // SQs for a shieldbreaker

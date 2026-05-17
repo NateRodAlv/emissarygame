@@ -141,6 +141,16 @@ export async function breakShield(matchId, playerId) {
   await update(playerRef(matchId, playerId), { shield: null });
 }
 
+/**
+ * Set a visual disguise on a player.
+ * disguise: { name, color, until: timestamp_ms } | null
+ * All clients reading this player will render the fake name/color
+ * until Date.now() > until, then fall back to real identity.
+ */
+export async function setDisguise(matchId, playerId, disguise) {
+  await update(playerRef(matchId, playerId), { disguise: disguise ?? null });
+}
+
 export async function completeRoomTask(matchId, playerId, roomId) {
   const safeId = roomId.replace(/[.#$\[\]/]/g, "_");
   await update(playerRef(matchId, playerId), {

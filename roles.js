@@ -80,9 +80,14 @@ export const Impostor = {
 
 // ── JESTER ───────────────────────────────────────────────────
 export const Jester = {
+  // Ability 1: teleport-swap with impostor (charges via SQ)
   sqAnsweredCount: 0,
 
-  /** Call when jester answers an SQ correctly. */
+  // Ability 2: 10-second color+name disguise (charges via LQ)
+  lqAnsweredCount: 0,
+  colorSwapReady:  false,
+
+  /** Call when jester answers an SQ correctly. Charges the swap ability. */
   async onSqCorrect(matchId, jesterId, impostorPos) {
     this.sqAnsweredCount++;
     const progress = this.sqAnsweredCount;
@@ -100,7 +105,27 @@ export const Jester = {
     }
   },
 
-  /** Trigger the swap (call after player confirms). */
+  /**
+   * Call when jester answers an LQ correctly. Charges the disguise ability.
+   * @returns {boolean} true when colorSwap is now ready
+   */
+  async onLqCorrect(matchId, jesterId) {
+    this.lqAnsweredCount++;
+    const progress = this.lqAnsweredCount;
+    const needed   = GAME_CONFIG.jesterColorSwapLqCost;
+
+    emit("game:jesterLqProgress", { jesterId, progress, needed });
+
+    if (progress >= needed) {
+      this.colorSwapReady   = true;
+      this.lqAnsweredCount  = 0;
+      emit("game:jesterDisguiseReady", { jesterId });
+      return true;
+    }
+    return false;
+  },
+
+  /** Trigger the teleport-swap (call after player confirms). */
   async triggerSwap(matchId, jesterId, impostorId) {
     if (this.sqAnsweredCount < GAME_CONFIG.jesterSwapCostSq) return;
     await applyJesterSwap(matchId, jesterId, impostorId);
@@ -108,6 +133,17 @@ export const Jester = {
     emit("game:jesterSwapped", { jesterId, impostorId });
     // Victory condition: if jester gets voted out → jester wins.
     // Checked in index.html's checkWinConditions after ejection vote.
+  },
+
+  /**
+   * Consume the colorSwap charge.
+   * Returns true if it was ready (and resets the flag).
+   * The caller (index.html) handles Firebase writes and the timer.
+   */
+  consumeColorSwap() {
+    if (!this.colorSwapReady) return false;
+    this.colorSwapReady = false;
+    return true;
   },
 };
 

@@ -265,7 +265,37 @@ export class ConnectorTask {
   _submit() {
     let correct = 0;
     for (const q of this.questions) { if (this.connections[q.id] === q.id) correct++; }
-    this.onComplete?.(correct, this.questions.length);
+
+    // Color each node green (correct) or red (wrong) so player sees what they got right
+    for (const q of this.questions) {
+      const qEl = this.container.querySelector(`[data-qid="${q.id}"]`);
+      const aEl = this.container.querySelector(`[data-aid="${q.id}"]`);
+      const isCorrect = this.connections[q.id] === q.id;
+      const col = isCorrect ? "var(--accent)" : "var(--danger)";
+      const bg  = isCorrect ? "rgba(74,255,164,0.12)" : "rgba(255,74,107,0.10)";
+      if (qEl) { qEl.style.borderColor = col; qEl.style.background = bg; }
+      if (aEl) { aEl.style.borderColor = col; aEl.style.background = bg; }
+    }
+
+    // Show score banner above submit button
+    const submitBtn = this.container.querySelector("#conn-submit");
+    if (submitBtn) {
+      const total = this.questions.length;
+      const pct   = Math.round((correct / total) * 100);
+      const allOk = correct === total;
+      const banner = document.createElement("p");
+      banner.style.cssText = `text-align:center;font-size:.8rem;font-weight:700;
+        color:${allOk ? "var(--accent)" : "var(--danger)"};
+        letter-spacing:.06em;margin-bottom:.4rem`;
+      banner.textContent = allOk
+        ? `✓ All correct! (${correct}/${total})`
+        : `✗ ${correct}/${total} correct (${pct}%)`;
+      submitBtn.parentNode.insertBefore(banner, submitBtn);
+      submitBtn.disabled = true;
+    }
+
+    // Delay so player can read the feedback before the modal closes
+    setTimeout(() => this.onComplete?.(correct, this.questions.length), 950);
   }
 }
 

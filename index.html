@@ -1058,6 +1058,7 @@
 
 <body>
   <div id="kill-flash"></div>
+<div id="disguise-flash" style="position:fixed;inset:0;background:rgba(255,201,74,0);pointer-events:none;z-index:200;transition:background .1s"></div>
   <canvas id="star-canvas"></canvas>
 
   <!-- MAIN MENU -->
@@ -1237,6 +1238,20 @@
               <input id="ws-calls" type="number" min="0" max="5" value="1" />
             </div>
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+            <div class="field" style="margin:0">
+              <label style="color:var(--danger)">🔪 Kill SQs</label>
+              <input id="ws-kill-sq" type="number" min="1" max="10" value="1" />
+            </div>
+            <div class="field" style="margin:0">
+              <label style="color:var(--warn)">⇄ Swap SQs</label>
+              <input id="ws-jester-swap-sq" type="number" min="1" max="10" value="3" />
+            </div>
+            <div class="field" style="margin:0">
+              <label style="color:var(--warn)">🎭 Disguise LQs</label>
+              <input id="ws-jester-disguise-lq" type="number" min="1" max="10" value="3" />
+            </div>
+          </div>
           <div class="field" style="margin-bottom:.5rem">
             <label>Discussion mode</label>
             <select id="ws-chat">
@@ -1267,6 +1282,7 @@
       <span class="hud-spacer"></span>
       <span id="hud-tasks" style="font-size:.68rem;color:var(--muted2)"></span>
       <span id="hud-kill-status" style="font-size:.7rem;color:var(--muted);margin-left:.4rem"></span>
+      <span id="hud-jester-lq" style="font-size:.7rem;color:var(--warn);margin-left:.4rem;display:none"></span>
       <span id="hud-room" style="font-size:.7rem;color:var(--muted);margin-left:.5rem">—</span>
     </div>
     <div id="room-label"></div>
@@ -1280,6 +1296,7 @@
       <button class="btn ghost hidden" id="btn-task">⬡ TASK</button>
       <button class="btn danger hidden" id="btn-kill">✕ KILL</button>
       <button class="btn hidden" id="btn-swap">⇄ SWAP</button>
+      <button class="btn hidden" id="btn-color-swap" style="background:var(--warn);color:#07080f">🎭 DISGUISE</button>
       <button class="btn ghost hidden" id="btn-report">⚑ REPORT</button>
       <button class="btn ghost hidden" id="btn-meeting">◈ MEETING</button>
     </div>
@@ -1369,6 +1386,23 @@
           max="3" /></div>
       <div class="field"><label>Amount of Jester roled players</label><input id="host-jesters" type="number" value="1"
           min="0" max="3" /></div>
+      <div class="divider"></div>
+      <p class="section-label">⚡ QUESTION COSTS</p>
+      <div class="field">
+        <label>Impostor kill — SQ tasks needed</label>
+        <input id="host-kill-sq" type="number" value="1" min="1" max="10" />
+        <div class="hint">How many SQ tasks the impostor must pass to charge one kill.</div>
+      </div>
+      <div class="field">
+        <label>Jester swap — SQ tasks needed</label>
+        <input id="host-jester-swap-sq" type="number" value="3" min="1" max="10" />
+        <div class="hint">How many SQ tasks the jester must pass to charge the teleport swap.</div>
+      </div>
+      <div class="field">
+        <label>Jester disguise — LQ tasks needed</label>
+        <input id="host-jester-disguise-lq" type="number" value="3" min="1" max="10" />
+        <div class="hint">How many LQ tasks the jester must pass to charge the 10-second color+name disguise.</div>
+      </div>
       <div class="field"><label>Discussion mode</label><select id="host-chat">
           <option value="class">🏫 Discuss aloud in class (no in-game chat)</option>
           <option value="chat">💬 In-game text chat</option>
@@ -1844,6 +1878,9 @@
           tasksPerCrew: +$("host-tasks").value || 3,
           impostors: +$("host-impostors").value || 1,
           jesters: +$("host-jesters").value || 1,
+          killCostSq:            +$("host-kill-sq").value             || GAME_CONFIG.killCostSq,
+          jesterSwapCostSq:      +$("host-jester-swap-sq").value       || GAME_CONFIG.jesterSwapCostSq,
+          jesterColorSwapLqCost: +$("host-jester-disguise-lq").value   || GAME_CONFIG.jesterColorSwapLqCost,
           questionCategory: selectedCategory,
         };
 
@@ -1934,6 +1971,9 @@
             if ($("ws-tasks"))     $("ws-tasks").value     = s.tasksPerCrew     ?? 3;
             if ($("ws-calls"))     $("ws-calls").value     = s.meetingCalls     ?? 1;
             if ($("ws-chat"))      $("ws-chat").value      = s.useChat          ?? "class";
+            if ($("ws-kill-sq"))            $("ws-kill-sq").value            = s.killCostSq            ?? GAME_CONFIG.killCostSq;
+            if ($("ws-jester-swap-sq"))     $("ws-jester-swap-sq").value     = s.jesterSwapCostSq      ?? GAME_CONFIG.jesterSwapCostSq;
+            if ($("ws-jester-disguise-lq")) $("ws-jester-disguise-lq").value = s.jesterColorSwapLqCost ?? GAME_CONFIG.jesterColorSwapLqCost;
             const cat = s.questionCategory;
             if (cat && $("waiting-set-chip-value")) {
               $("waiting-set-chip-value").textContent = cat;
@@ -1969,6 +2009,9 @@
               tasksPerCrew:     +$("ws-tasks").value      || 3,
               meetingCalls:     +$("ws-calls").value      || 1,
               useChat:          $("ws-chat").value,
+              killCostSq:            +$("ws-kill-sq").value            || GAME_CONFIG.killCostSq,
+              jesterSwapCostSq:      +$("ws-jester-swap-sq").value     || GAME_CONFIG.jesterSwapCostSq,
+              jesterColorSwapLqCost: +$("ws-jester-disguise-lq").value || GAME_CONFIG.jesterColorSwapLqCost,
               questionCategory: selectedCategory ?? settings.questionCategory,
             };
             try {
@@ -2043,7 +2086,13 @@
       isAlive = true;
       localCompletedRooms = new Set();
       jesterSqCount = 0;
+      jesterLqCount = 0;
       tasksNeeded = settings.tasksPerCrew || 3;
+
+      // Apply host's custom question costs to GAME_CONFIG so all modules pick them up
+      if (settings.killCostSq)            GAME_CONFIG.killCostSq            = settings.killCostSq;
+      if (settings.jesterSwapCostSq)      GAME_CONFIG.jesterSwapCostSq      = settings.jesterSwapCostSq;
+      if (settings.jesterColorSwapLqCost) GAME_CONFIG.jesterColorSwapLqCost = settings.jesterColorSwapLqCost;
 
       show("screen-game");
       const canvas = $("game-canvas");

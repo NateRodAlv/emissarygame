@@ -338,6 +338,19 @@ export class World {
   }
 
   // ── Players & Corpses ─────────────────────────────────────
+
+  /**
+   * Returns the { name, color } to visually display for a player,
+   * respecting any active disguise set by the Jester's color-swap ability.
+   */
+  _resolveDisplay(player) {
+    const now = Date.now();
+    if (player.disguise && player.disguise.until > now) {
+      return { name: player.disguise.name, color: player.disguise.color };
+    }
+    return { name: player.name, color: player.color ?? "#aaa" };
+  }
+
   _drawOtherPlayers() {
     const localDead = this.players[this.local.id]?.alive === false;
 
@@ -345,8 +358,9 @@ export class World {
       if (id === this.local.id) continue;
 
       if (p.alive) {
-        // Everyone sees alive players
-        this._drawPlayer(p.x ?? 600, p.y ?? 130, p.name, p.color ?? "#aaa", false);
+        // Everyone sees alive players — but apply any active disguise
+        const { name, color } = this._resolveDisplay(p);
+        this._drawPlayer(p.x ?? 600, p.y ?? 130, name, color, false);
       } else if (localDead) {
         // Dead players see other dead players as roaming ghosts (current x,y)
         this.ctx.globalAlpha = 0.55;
@@ -364,12 +378,15 @@ export class World {
     // Check live state from Firebase snapshot (dead = ghost)
     const me = this.players[this.local.id];
     const dead = me ? !me.alive : false;
+    // Apply own disguise so the jester sees themselves disguised too
+    const displayName  = (me?.disguise && me.disguise.until > Date.now()) ? me.disguise.name  : this.local.name;
+    const displayColor = (me?.disguise && me.disguise.until > Date.now()) ? me.disguise.color : (this.local.color ?? "#fff");
     if (dead) {
       this.ctx.globalAlpha = 0.5;
       this._drawPlayer(this.lx, this.ly, this.local.name + " 👻", this.local.color ?? "#fff", true, true);
       this.ctx.globalAlpha = 1;
     } else {
-      this._drawPlayer(this.lx, this.ly, this.local.name, this.local.color ?? "#fff", false, true);
+      this._drawPlayer(this.lx, this.ly, displayName, displayColor, false, true);
     }
   }
 
@@ -514,8 +531,9 @@ export class World {
     for (const [id, p] of Object.entries(this.players)) {
       if (id === this.local.id) continue;
       if (p.alive) {
+        const { color } = this._resolveDisplay(p);
         ctx.beginPath(); ctx.arc(p.x ?? 600, p.y ?? 130, 9, 0, Math.PI * 2);
-        ctx.fillStyle = p.color ?? "#aaa"; ctx.fill();
+        ctx.fillStyle = color; ctx.fill();
       } else if (localDead) {
         // Ghost dot for dead viewers
         ctx.beginPath(); ctx.arc(p.x ?? 600, p.y ?? 130, 7, 0, Math.PI * 2);
