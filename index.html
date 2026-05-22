@@ -1308,6 +1308,7 @@
       <h1 id="end-title">GAME OVER</h1>
       <p id="end-body" style="color:var(--muted);margin:.6rem 0 1rem;font-size:.85rem"></p>
       <div id="end-reveal" style="text-align:left;margin-bottom:1rem"></div>
+      <button id="btn-accuracy-report" class="btn ghost" style="margin-bottom:.6rem;display:none">📊 VIEW ACCURACY REPORT</button>
       <button class="btn" onclick="location.reload()">BACK TO LOBBY</button>
     </div>
   </div>
@@ -1527,6 +1528,10 @@
     let tasksNeeded = 3;
     let jesterSqCount = 0;
     let jesterLqCount = 0;
+
+    // ── Question accuracy tracking ────────────────────────────────
+    // Each entry: { player, role, questionType, question, correct, timestamp }
+    const accuracyLog = [];
 
     // ── Auth state listener ───────────────────────────────────────
     onAuthChange(user => {
@@ -2285,10 +2290,8 @@
       const swapDone   = jesterSqCount >= swapNeeded;
       const disDone    = jesterLqCount >= disNeeded;
 
-      // Ask the jester which ability to charge (unless one is already full)
-      let chargeTarget; // "swap" | "disguise"
+      let chargeTarget;
       if (swapDone && disDone) {
-        // Both full — nothing to charge
         world?.setPaused(false);
         flashHud("Both abilities fully charged! Use them.", "warn");
         return;
@@ -2297,35 +2300,111 @@
       } else if (disDone) {
         chargeTarget = "swap";
       } else {
-        // Let them pick
         chargeTarget = await showAbilityChoiceModal();
         if (!chargeTarget) { world?.setPaused(false); return; }
       }
 
       const isLq = chargeTarget === "disguise";
-      const questionType = isLq ? "lq" : "sq";
-      const cat = selectedCategory;
-      const qs = isLq ? await fetchLQ(1, cat) : await fetchSQ(1, cat);
-      if (!qs.length) { world?.setPaused(false); flashHud("No questions available."); return; }
+      const cat   = selectedCategory;
 
-      const correct = await showQuestionModal(qs[0]);
-      world?.setPaused(false);
-      if (!correct) { flashHud("Wrong answer — no charge gained."); return; }
+      // Use a real minigame task instead of a typed-answer modal
+      $("task-modal").classList.add("open");
+      $("task-modal-title").textContent = isLq ? "🎭 CHARGE DISGUISE" : "⇄ CHARGE SWAP";
+      $("task-content").innerHTML = "";
+      $("task-modal").querySelector(".task-box").style.borderColor = "";
 
-      if (isLq) {
-        jesterLqCount = Math.min(jesterLqCount + 1, disNeeded);
-        updateDisguiseButton();
-        if (jesterLqCount >= disNeeded) flashHud("🎭 Disguise fully charged! Press DISGUISE.", "warn");
-        else flashHud(`🎭 Disguise charge: ${jesterLqCount}/${disNeeded} LQ`);
+      const types = ["swipe", "connector", "ninja"];
+      const type  = isLq
+        ? "connector"   // LQ → connector task
+        : types[Math.floor(Math.random() * types.length)]; // SQ → random
+
+      const onDone = async (score, total, pass) => {
+        $("task-modal").classList.remove("open");
+        $("task-modal").querySelector(".task-box").style.borderColor = "";
+        world?.setPaused(false);
+
+        // Log accuracy
+        accuracyLog.push({
+          player: localPlayer.name,
+          role: "jester",
+          questionType: isLq ? "LQ" : "SQ",
+          taskType: type,
+          score,
+          total,
+          pass,
+          timestamp: Date.now(),
+        });
+
+        if (!pass) { flashHud("Task failed — no charge gained."); return; }
+
+        if (isLq) {
+          jesterLqCount = Math.min(jesterLqCount + 1, disNeeded);
+          updateDisguiseButton();
+          if (jesterLqCount >= disNeeded) flashHud("🎭 Disguise fully charged! Press DISGUISE.", "warn");
+          else flashHud(`🎭 Disguise charge: ${jesterLqCount}/${disNeeded} LQ`);
+        } else {
+          jesterSqCount = Math.min(jesterSqCount + 1, swapNeeded);
+          updateSwapButton();
+          if (jesterSqCount >= swapNeeded) flashHud("⇄ Swap fully charged! Press SWAP.", "warn");
+          else flashHud(`⇄ Swap charge: ${jesterSqCount}/${swapNeeded} SQ`);
+        }
+        updateTaskButton(world?.getLocalRoom());
+      };
+
+      if (type === "swipe") {
+        const t = new SwipeTask("task-content", cat);
+        t.onComplete = (s, n) => onDone(s, n, s === n);
+        t.init();
+      } else if (type === "connector") {
+        const t = new ConnectorTask("task-content", cat);
+        t.onComplete = (s, n) => onDone(s, n, s === n);
+        t.init();
       } else {
-        jesterSqCount = Math.min(jesterSqCount + 1, swapNeeded);
-        updateSwapButton();
-        if (jesterSqCount >= swapNeeded) flashHud("⇄ Swap fully charged! Press SWAP to teleport.", "warn");
-        else flashHud(`⇄ Swap charge: ${jesterSqCount}/${swapNeeded} SQ`);
+        const cvs = document.createElement("canvas");
+        cvs.id = "ninja-canvas"; cvs.width = 360; cvs.height = 220;
+        $("task-content").appendChild(cvs);
+        const t = new FruitNinjaTask("ninja-canvas", cat);
+        t.onComplete = (s, n) => { onDone(s, n, s === n); t.destroy(); };
+        t.init();
       }
-      updateTaskButton(world?.getLocalRoom());
     }
 
+    // Pick any alive player (excluding self) from a modal list
+    function showPlayerPickerModal(title, subtitle, excludeId = null) {
+      return new Promise(resolve => {
+        const targets = Object.values(allPlayers).filter(p => p.alive && p.id !== (excludeId ?? localPlayer.id));
+        if (!targets.length) { resolve(null); return; }
+        const wrap = mkOverlay("var(--warn)");
+        wrap.querySelector(".mo-inner").innerHTML = `
+          <h3 style="font-family:var(--font-title);color:var(--warn);margin-bottom:.3rem;font-size:.92rem">${title}</h3>
+          <p style="color:var(--muted);font-size:.76rem;margin-bottom:1rem;line-height:1.4">${subtitle}</p>
+          <div id="_pp-list" style="display:flex;flex-direction:column;gap:.45rem;max-height:280px;overflow-y:auto;margin-bottom:.75rem">
+            ${targets.map(p => `
+              <button data-pid="${p.id}" style="display:flex;align-items:center;gap:.65rem;
+                padding:.65rem .8rem;background:var(--bg);border:1.5px solid var(--border);
+                border-radius:9px;color:var(--text);font-family:var(--font-hud);
+                font-size:.84rem;cursor:pointer;text-align:left;transition:border-color .15s">
+                <span style="width:11px;height:11px;border-radius:50%;background:${p.color ?? '#aaa'};flex-shrink:0"></span>
+                ${esc(p.name)}
+              </button>`).join("")}
+          </div>
+          <button id="_pp-cancel" style="width:100%;padding:.55rem;background:transparent;
+            border:1px solid var(--border);border-radius:8px;color:var(--muted);
+            font-family:var(--font-hud);font-size:.78rem;cursor:pointer">CANCEL</button>
+        `;
+        document.body.appendChild(wrap);
+        wrap.querySelector("#_pp-list").querySelectorAll("button[data-pid]").forEach(btn => {
+          btn.addEventListener("mouseenter", () => { btn.style.borderColor = "var(--warn)"; });
+          btn.addEventListener("mouseleave", () => { btn.style.borderColor = "var(--border)"; });
+          btn.onclick = () => {
+            const pid = btn.dataset.pid;
+            document.body.removeChild(wrap);
+            resolve(allPlayers[pid] ?? null);
+          };
+        });
+        wrap.querySelector("#_pp-cancel").onclick = () => { document.body.removeChild(wrap); resolve(null); };
+      });
+    }
     // Modal for jester to choose which ability to charge
     function showAbilityChoiceModal() {
       return new Promise(resolve => {
@@ -2365,7 +2444,7 @@
         overlay.querySelector("#abil-cancel").onclick  = () => cleanup(null);
       });
     }
-    // ── Swap (jester) ─────────────────────────────────────────────
+    // ── Swap (jester) — pick any alive player ─────────────────────
     $("btn-swap").addEventListener("click", async () => {
       if (localPlayer.role !== "jester" || !isAlive) return;
       const needed = GAME_CONFIG.jesterSwapCostSq;
@@ -2373,25 +2452,26 @@
         flashHud(`Need ${needed - jesterSqCount} more SQ charge${needed - jesterSqCount !== 1 ? "s" : ""}!`);
         return;
       }
-      const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
-      if (!imp) { flashHud("Impostor not found or already dead!"); return; }
 
       world?.setPaused(true);
-      const confirmed = await showSwapConfirmModal(imp);
+      const target = await showPlayerPickerModal(
+        "⇄ CHOOSE SWAP TARGET",
+        `Pick any alive player to swap positions with. Costs all ${needed} SQ charges.`
+      );
       world?.setPaused(false);
-      if (!confirmed) return;
+      if (!target) return;
 
-      const impX = imp.x ?? 600, impY = imp.y ?? 130;
-      await applyJesterSwap(matchId, localPlayer.id, imp.id);
-      world.teleport(impX, impY);
-      await movePlayer(matchId, localPlayer.id, Math.round(impX), Math.round(impY));
+      const tX = target.x ?? 600, tY = target.y ?? 130;
+      await applyJesterSwap(matchId, localPlayer.id, target.id);
+      world.teleport(tX, tY);
+      await movePlayer(matchId, localPlayer.id, Math.round(tX), Math.round(tY));
 
       jesterSqCount = 0;
       updateSwapButton();
-      flashHud("⇄ Swapped with the impostor!", "warn");
+      flashHud(`⇄ Swapped with ${esc(target.name)}!`, "warn");
     });
 
-    // ── Disguise (jester) — 10-second color+name swap with impostor ──
+    // ── Disguise (jester) — pick any alive player to swap appearance with ──
     $("btn-color-swap").addEventListener("click", async () => {
       if (localPlayer.role !== "jester" || !isAlive) return;
       const needed = GAME_CONFIG.jesterColorSwapLqCost;
@@ -2399,31 +2479,38 @@
         flashHud(`Need ${needed - jesterLqCount} more LQ charge${needed - jesterLqCount !== 1 ? "s" : ""} for disguise!`);
         return;
       }
-      const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
-      if (!imp) { flashHud("Impostor not found or already dead!"); return; }
+
+      world?.setPaused(true);
+      const target = await showPlayerPickerModal(
+        "🎭 CHOOSE DISGUISE TARGET",
+        `You will appear as this player, and they will appear as you — for ${GAME_CONFIG.disguiseDurationMs / 1000}s. Costs all ${needed} LQ charges.`
+      );
+      world?.setPaused(false);
+      if (!target) return;
 
       jesterLqCount = 0;
       updateDisguiseButton();
 
       const duration = GAME_CONFIG.disguiseDurationMs;
       const until    = Date.now() + duration;
+      const myData   = allPlayers[localPlayer.id];
 
-      const myData = allPlayers[localPlayer.id];
+      // Jester appears as target; target appears as jester
       await Promise.all([
-        setDisguise(matchId, localPlayer.id, { name: imp.name,   color: imp.color,                             until }),
-        setDisguise(matchId, imp.id,         { name: myData?.name ?? localPlayer.name,
+        setDisguise(matchId, localPlayer.id, { name: target.name,  color: target.color,               until }),
+        setDisguise(matchId, target.id,      { name: myData?.name  ?? localPlayer.name,
                                                color: myData?.color ?? localPlayer.color, until }),
       ]);
 
       const df = $("disguise-flash");
       df.style.background = "rgba(255,201,74,0.18)";
       setTimeout(() => { df.style.background = "rgba(255,201,74,0)"; }, 400);
-      flashHud(`🎭 Disguised as impostor for ${duration / 1000}s!`, "warn");
+      flashHud(`🎭 Disguised as ${esc(target.name)} for ${duration / 1000}s!`, "warn");
 
       setTimeout(async () => {
         await Promise.all([
           setDisguise(matchId, localPlayer.id, null),
-          setDisguise(matchId, imp.id,         null),
+          setDisguise(matchId, target.id,      null),
         ]);
         flashHud("🎭 Disguise ended", "info");
       }, duration);
@@ -2522,12 +2609,17 @@
         : room.id === "weapons" ? "ninja"
           : "swipe";
 
-      const onDone = async (_score, _total, pass) => {
+      const onDone = async (score, total, pass) => {
+        accuracyLog.push({
+          player: localPlayer.name,
+          role: "crew",
+          taskType: type,
+          score,
+          total,
+          pass,
+          timestamp: Date.now(),
+        });
         if (pass) {
-          $("task-modal").classList.remove("open");
-          $("task-modal").querySelector(".task-box").style.borderColor = "";
-          world?.setPaused(false);
-          localCompletedRooms.add(room.id);
           await completeRoomTask(matchId, localPlayer.id, room.id);
           await Crew.onTaskComplete(matchId, localPlayer.id);
           updateTasksHUD();
@@ -2586,7 +2678,16 @@
       const types = ["swipe", "connector", "ninja"];
       const type = types[Math.floor(Math.random() * types.length)];
 
-      const onDone = async (_score, _total, pass) => {
+      const onDone = async (score, total, pass) => {
+        accuracyLog.push({
+          player: localPlayer.name,
+          role: "impostor",
+          taskType: type,
+          score,
+          total,
+          pass,
+          timestamp: Date.now(),
+        });
         if (pass) {
           $("task-modal").classList.remove("open");
           $("task-modal").querySelector(".task-box").style.borderColor = "";
@@ -2863,9 +2964,94 @@
       const reveal = $("end-reveal");
       if (reveal) reveal.innerHTML = revealRows.join("") || `<p style="color:var(--muted);font-size:.78rem">No role data available.</p>`;
 
+      // Show accuracy report button for host
+      const rptBtn = $("btn-accuracy-report");
+      if (rptBtn && isHost) {
+        rptBtn.style.display = "block";
+        rptBtn.onclick = () => showAccuracyReport();
+      }
+
       show("screen-end");
 
       if (matchId) setTimeout(() => deleteMatch(matchId).catch(() => { }), 60_000);
+    }
+
+    // ── Accuracy Report (host-only) ───────────────────────────────
+    function showAccuracyReport() {
+      const wrap = mkOverlay();
+      const inner = wrap.querySelector(".mo-inner");
+      inner.style.width = "min(600px,96vw)";
+      inner.style.maxHeight = "88dvh";
+      inner.style.overflowY = "auto";
+
+      if (!accuracyLog.length) {
+        inner.innerHTML = `
+          <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.8rem;font-size:.9rem">📊 ACCURACY REPORT</h3>
+          <p style="color:var(--muted);font-size:.82rem;text-align:center;padding:1rem 0">No task attempts recorded this match.</p>
+          <button id="_ar-close" style="width:100%;padding:.6rem;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-hud);font-size:.8rem;cursor:pointer;margin-top:.5rem">CLOSE</button>`;
+        document.body.appendChild(wrap);
+        wrap.querySelector("#_ar-close").onclick = () => document.body.removeChild(wrap);
+        return;
+      }
+
+      // Aggregate per-player stats
+      const byPlayer = {};
+      for (const entry of accuracyLog) {
+        if (!byPlayer[entry.player]) {
+          byPlayer[entry.player] = { role: entry.role, attempts: 0, passed: 0, totalScore: 0, totalQ: 0, byType: {} };
+        }
+        const p = byPlayer[entry.player];
+        p.attempts++;
+        if (entry.pass) p.passed++;
+        p.totalScore += entry.score ?? 0;
+        p.totalQ     += entry.total ?? 1;
+        const tk = entry.taskType ?? "unknown";
+        if (!p.byType[tk]) p.byType[tk] = { attempts: 0, passed: 0 };
+        p.byType[tk].attempts++;
+        if (entry.pass) p.byType[tk].passed++;
+      }
+
+      const roleColor = { crew: "var(--blue)", impostor: "var(--danger)", jester: "var(--warn)" };
+      const typeLabel = { swipe: "Swipe Sort", connector: "Connect", ninja: "Ninja", unknown: "Other" };
+
+      const rows = Object.entries(byPlayer).map(([name, s]) => {
+        const pct = s.attempts ? Math.round((s.passed / s.attempts) * 100) : 0;
+        const bar = `<div style="height:6px;border-radius:3px;background:var(--border);margin:.35rem 0">
+          <div style="height:100%;width:${pct}%;border-radius:3px;background:${pct >= 70 ? "var(--accent)" : pct >= 40 ? "var(--warn)" : "var(--danger)"};transition:width .4s"></div>
+        </div>`;
+        const typeBreakdown = Object.entries(s.byType).map(([t, d]) =>
+          `<span style="font-size:.66rem;color:var(--muted)">${typeLabel[t] ?? t}: ${d.passed}/${d.attempts}</span>`
+        ).join(" &nbsp;·&nbsp; ");
+        return `
+          <div style="padding:.75rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:.5rem">
+            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
+              <span style="font-size:.84rem;font-weight:700;color:var(--text)">${esc(name)}</span>
+              <span style="font-size:.65rem;color:${roleColor[s.role] ?? "var(--muted)"};font-weight:700;letter-spacing:.06em;margin-left:auto">${s.role.toUpperCase()}</span>
+            </div>
+            ${bar}
+            <div style="display:flex;justify-content:space-between;font-size:.72rem">
+              <span style="color:var(--muted)">${s.passed}/${s.attempts} tasks passed &nbsp;·&nbsp; ${s.totalScore}/${s.totalQ} Qs correct</span>
+              <span style="color:${pct >= 70 ? "var(--accent)" : pct >= 40 ? "var(--warn)" : "var(--danger)"};font-weight:700">${pct}%</span>
+            </div>
+            ${typeBreakdown ? `<div style="margin-top:.35rem">${typeBreakdown}</div>` : ""}
+          </div>`;
+      }).join("");
+
+      // Overall totals
+      const totAttempts = accuracyLog.length;
+      const totPassed   = accuracyLog.filter(e => e.pass).length;
+      const totPct      = totAttempts ? Math.round((totPassed / totAttempts) * 100) : 0;
+
+      inner.innerHTML = `
+        <h3 style="font-family:var(--font-title);color:var(--accent);margin-bottom:.25rem;font-size:.9rem">📊 ACCURACY REPORT</h3>
+        <p style="color:var(--muted);font-size:.7rem;margin-bottom:.9rem">
+          ${totAttempts} total task attempts &nbsp;·&nbsp; ${totPassed} passed &nbsp;·&nbsp; ${totPct}% overall
+        </p>
+        ${rows}
+        <button id="_ar-close" style="width:100%;padding:.65rem;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-hud);font-size:.8rem;cursor:pointer;margin-top:.25rem">CLOSE</button>
+      `;
+      document.body.appendChild(wrap);
+      wrap.querySelector("#_ar-close").onclick = () => document.body.removeChild(wrap);
     }
 
     // ═══════════════════════════════════════════════
