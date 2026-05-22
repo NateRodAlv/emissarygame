@@ -984,16 +984,11 @@
       transition: all .15s;
       white-space: nowrap
     }
-
-    .sp-filter:hover {
-      border-color: var(--accent);
-      color: var(--accent)
-    }
-
+    .sp-filter:hover { border-color: var(--accent); color: var(--accent) }
     .sp-filter.active {
       border-color: var(--accent);
       color: var(--accent);
-      background: rgba(74, 255, 164, .08)
+      background: rgba(74,255,164,.08)
     }
 
     /* ── Set picker grid ───────────────────────────────── */
@@ -1019,16 +1014,11 @@
       gap: .4rem;
       position: relative
     }
-
-    .setpicker-card:hover {
-      border-color: var(--border2)
-    }
-
+    .setpicker-card:hover { border-color: var(--border2) }
     .setpicker-card.selected {
       border-color: var(--accent);
       background: rgba(74, 255, 164, 0.06)
     }
-
     .setpicker-card .sp-name {
       font-size: .84rem;
       font-weight: 700;
@@ -1036,13 +1026,11 @@
       line-height: 1.3;
       word-break: break-word
     }
-
     .setpicker-card .sp-meta {
       font-size: .63rem;
       color: var(--muted);
       letter-spacing: .04em
     }
-
     .sp-card-row {
       display: flex;
       align-items: center;
@@ -1050,7 +1038,6 @@
       gap: .4rem;
       flex-wrap: wrap
     }
-
     .sp-preview-btn {
       padding: .22rem .5rem !important;
       font-size: .6rem !important;
@@ -1064,23 +1051,14 @@
       overflow: hidden;
       transition: max-height .25s ease, opacity .2s
     }
-
-    #waiting-set-chip:hover {
-      border-color: var(--accent)
-    }
-
-    #waiting-set-chip.chosen {
-      border-color: var(--accent);
-      background: rgba(74, 255, 164, .05)
-    }
+    #waiting-set-chip:hover { border-color: var(--accent) }
+    #waiting-set-chip.chosen { border-color: var(--accent); background: rgba(74,255,164,.05) }
   </style>
 </head>
 
 <body>
   <div id="kill-flash"></div>
-  <div id="disguise-flash"
-    style="position:fixed;inset:0;background:rgba(255,201,74,0);pointer-events:none;z-index:200;transition:background .1s">
-  </div>
+<div id="disguise-flash" style="position:fixed;inset:0;background:rgba(255,201,74,0);pointer-events:none;z-index:200;transition:background .1s"></div>
   <canvas id="star-canvas"></canvas>
 
   <!-- MAIN MENU -->
@@ -1158,8 +1136,7 @@
         <span class="back-link" id="setpicker-back" style="margin-bottom:0">◀</span>
         <h2 style="margin-bottom:0">CHOOSE QUESTION SET</h2>
       </div>
-      <input id="setpicker-search" type="search" placeholder="🔍  Search sets…" autocomplete="off"
-        style="margin-bottom:.6rem" />
+      <input id="setpicker-search" type="search" placeholder="🔍  Search sets…" autocomplete="off" style="margin-bottom:.6rem" />
       <!-- Filter + sort bar -->
       <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">
         <div id="sp-filter-btns" style="display:flex;gap:.3rem;flex-wrap:wrap;flex:1">
@@ -1168,8 +1145,7 @@
           <button class="sp-filter" data-filter="sq">Has SQ</button>
           <button class="sp-filter" data-filter="lq">Has LQ</button>
         </div>
-        <select id="sp-sort"
-          style="padding:.3rem .6rem;background:var(--bg);border:1px solid var(--border);color:var(--muted2);border-radius:7px;font-family:var(--font-hud);font-size:.7rem;outline:none;flex-shrink:0">
+        <select id="sp-sort" style="padding:.3rem .6rem;background:var(--bg);border:1px solid var(--border);color:var(--muted2);border-radius:7px;font-family:var(--font-hud);font-size:.7rem;outline:none;flex-shrink:0">
           <option value="alpha">A → Z</option>
           <option value="most">Most Questions</option>
           <option value="sq">Most SQ</option>
@@ -1178,11 +1154,9 @@
       </div>
     </div>
     <div id="setpicker-list"></div>
-    <div id="setpicker-none" style="display:none;padding:2rem;text-align:center;color:var(--muted);font-size:.82rem">No
-      matching sets found.</div>
+    <div id="setpicker-none" style="display:none;padding:2rem;text-align:center;color:var(--muted);font-size:.82rem">No matching sets found.</div>
     <div id="setpicker-footer">
-      <div id="sp-selected-label"
-        style="font-size:.7rem;color:var(--muted);margin-bottom:.4rem;text-align:center;min-height:1.1em"></div>
+      <div id="sp-selected-label" style="font-size:.7rem;color:var(--muted);margin-bottom:.4rem;text-align:center;min-height:1.1em"></div>
       <button class="btn" id="setpicker-confirm">USE SELECTED SET →</button>
     </div>
   </div>
@@ -1222,7 +1196,7 @@
       <div id="waiting-host-settings" style="display:none">
         <div class="divider"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:.3rem"
-          id="waiting-settings-toggle">
+             id="waiting-settings-toggle">
           <p class="section-label" style="margin:0">⚙️ MATCH SETTINGS</p>
           <span id="waiting-settings-arrow" style="color:var(--muted);font-size:.8rem">▾</span>
         </div>
@@ -1507,9 +1481,10 @@
       getPlayerData,
       getMatchPlayers, deleteMatch,
       cleanupStaleMatches,
-      sendChatMessage, onChatMessage
+      sendChatMessage, onChatMessage,
+      setDisguise
     } from "./realtime.js";
-    import { Impostor, Crew } from "./roles.js";
+    import { Impostor, Jester, Crew } from "./roles.js";
     import { World } from "./world.js";
     import {
       SwipeTask, ConnectorTask,
@@ -1703,26 +1678,26 @@
 
     // Track active filter and sort for setpicker
     let spFilter = "all";
-    let spSort = "alpha";
+    let spSort   = "alpha";
 
     function renderSetPicker() {
-      const list = $("setpicker-list");
-      const none = $("setpicker-none");
+      const list   = $("setpicker-list");
+      const none   = $("setpicker-none");
       const search = ($("setpicker-search").value || "").toLowerCase().trim();
 
       let filtered = allSetCategories.filter(c => {
         if (search && !c.name.toLowerCase().includes(search)) return false;
-        if (spFilter === "mine" && c.createdBy !== currentUser?.id) return false;
-        if (spFilter === "sq" && !c.sqCount) return false;
-        if (spFilter === "lq" && !c.lqCount) return false;
+        if (spFilter === "mine"  && c.createdBy !== currentUser?.id) return false;
+        if (spFilter === "sq"   && !c.sqCount)  return false;
+        if (spFilter === "lq"   && !c.lqCount)  return false;
         return true;
       });
 
       // Sort
-      if (spSort === "alpha") filtered.sort((a, b) => a.name.localeCompare(b.name));
-      else if (spSort === "most") filtered.sort((a, b) => (b.sqCount + b.lqCount) - (a.sqCount + a.lqCount));
-      else if (spSort === "sq") filtered.sort((a, b) => b.sqCount - a.sqCount);
-      else if (spSort === "lq") filtered.sort((a, b) => b.lqCount - a.lqCount);
+      if (spSort === "alpha") filtered.sort((a,b) => a.name.localeCompare(b.name));
+      else if (spSort === "most") filtered.sort((a,b) => (b.sqCount+b.lqCount)-(a.sqCount+a.lqCount));
+      else if (spSort === "sq")  filtered.sort((a,b) => b.sqCount - a.sqCount);
+      else if (spSort === "lq")  filtered.sort((a,b) => b.lqCount - a.lqCount);
 
       if (!filtered.length) {
         list.innerHTML = "";
@@ -1856,7 +1831,7 @@
       }
       // Persist change to Firebase if already in a match (host editing from waiting room)
       if (matchId && isHost && selectedCategory) {
-        updateMatchSettings(matchId, { questionCategory: selectedCategory }).catch(() => { });
+        updateMatchSettings(matchId, { questionCategory: selectedCategory }).catch(() => {});
       }
       // Go back to wherever we came from
       show(_setpickerReturnScreen ?? "screen-host");
@@ -1905,9 +1880,9 @@
           tasksPerCrew: +$("host-tasks").value || 3,
           impostors: +$("host-impostors").value || 1,
           jesters: +$("host-jesters").value || 1,
-          killCostSq: +$("host-kill-sq").value || GAME_CONFIG.killCostSq,
-          jesterSwapCostSq: +$("host-jester-swap-sq").value || GAME_CONFIG.jesterSwapCostSq,
-          jesterColorSwapLqCost: +$("host-jester-disguise-lq").value || GAME_CONFIG.jesterColorSwapLqCost,
+          killCostSq:            +$("host-kill-sq").value             || GAME_CONFIG.killCostSq,
+          jesterSwapCostSq:      +$("host-jester-swap-sq").value       || GAME_CONFIG.jesterSwapCostSq,
+          jesterColorSwapLqCost: +$("host-jester-disguise-lq").value   || GAME_CONFIG.jesterColorSwapLqCost,
           questionCategory: selectedCategory,
         };
 
@@ -1991,15 +1966,15 @@
 
           // Populate fields from current settings
           const populateWaitingSettings = (s) => {
-            if ($("ws-discuss")) $("ws-discuss").value = s.discussionTime ?? 120;
-            if ($("ws-vote")) $("ws-vote").value = s.votingTime ?? 60;
-            if ($("ws-impostors")) $("ws-impostors").value = s.impostors ?? 1;
-            if ($("ws-jesters")) $("ws-jesters").value = s.jesters ?? 1;
-            if ($("ws-tasks")) $("ws-tasks").value = s.tasksPerCrew ?? 3;
-            if ($("ws-calls")) $("ws-calls").value = s.meetingCalls ?? 1;
-            if ($("ws-chat")) $("ws-chat").value = s.useChat ?? "class";
-            if ($("ws-kill-sq")) $("ws-kill-sq").value = s.killCostSq ?? GAME_CONFIG.killCostSq;
-            if ($("ws-jester-swap-sq")) $("ws-jester-swap-sq").value = s.jesterSwapCostSq ?? GAME_CONFIG.jesterSwapCostSq;
+            if ($("ws-discuss"))   $("ws-discuss").value   = s.discussionTime ?? 120;
+            if ($("ws-vote"))      $("ws-vote").value      = s.votingTime      ?? 60;
+            if ($("ws-impostors")) $("ws-impostors").value = s.impostors        ?? 1;
+            if ($("ws-jesters"))   $("ws-jesters").value   = s.jesters          ?? 1;
+            if ($("ws-tasks"))     $("ws-tasks").value     = s.tasksPerCrew     ?? 3;
+            if ($("ws-calls"))     $("ws-calls").value     = s.meetingCalls     ?? 1;
+            if ($("ws-chat"))      $("ws-chat").value      = s.useChat          ?? "class";
+            if ($("ws-kill-sq"))            $("ws-kill-sq").value            = s.killCostSq            ?? GAME_CONFIG.killCostSq;
+            if ($("ws-jester-swap-sq"))     $("ws-jester-swap-sq").value     = s.jesterSwapCostSq      ?? GAME_CONFIG.jesterSwapCostSq;
             if ($("ws-jester-disguise-lq")) $("ws-jester-disguise-lq").value = s.jesterColorSwapLqCost ?? GAME_CONFIG.jesterColorSwapLqCost;
             const cat = s.questionCategory;
             if (cat && $("waiting-set-chip-value")) {
@@ -2017,7 +1992,7 @@
           $("waiting-settings-toggle").addEventListener("click", () => {
             settingsOpen = !settingsOpen;
             $("waiting-settings-body").style.display = settingsOpen ? "block" : "none";
-            $("waiting-settings-arrow").textContent = settingsOpen ? "▾" : "▸";
+            $("waiting-settings-arrow").textContent  = settingsOpen ? "▾" : "▸";
           });
 
           // Waiting-room set chip opens picker and returns here
@@ -2029,15 +2004,15 @@
           // Save button — write changed values to Firebase
           $("ws-save-btn").addEventListener("click", async () => {
             const newSettings = {
-              discussionTime: +$("ws-discuss").value || 120,
-              votingTime: +$("ws-vote").value || 60,
-              impostors: +$("ws-impostors").value || 1,
-              jesters: +$("ws-jesters").value || 0,
-              tasksPerCrew: +$("ws-tasks").value || 3,
-              meetingCalls: +$("ws-calls").value || 1,
-              useChat: $("ws-chat").value,
-              killCostSq: +$("ws-kill-sq").value || GAME_CONFIG.killCostSq,
-              jesterSwapCostSq: +$("ws-jester-swap-sq").value || GAME_CONFIG.jesterSwapCostSq,
+              discussionTime:   +$("ws-discuss").value   || 120,
+              votingTime:       +$("ws-vote").value       || 60,
+              impostors:        +$("ws-impostors").value  || 1,
+              jesters:          +$("ws-jesters").value    || 0,
+              tasksPerCrew:     +$("ws-tasks").value      || 3,
+              meetingCalls:     +$("ws-calls").value      || 1,
+              useChat:          $("ws-chat").value,
+              killCostSq:            +$("ws-kill-sq").value            || GAME_CONFIG.killCostSq,
+              jesterSwapCostSq:      +$("ws-jester-swap-sq").value     || GAME_CONFIG.jesterSwapCostSq,
               jesterColorSwapLqCost: +$("ws-jester-disguise-lq").value || GAME_CONFIG.jesterColorSwapLqCost,
               questionCategory: selectedCategory ?? settings.questionCategory,
             };
@@ -2075,9 +2050,9 @@
       settings = await getMatchSettings(matchId);
       selectedCategory = settings.questionCategory ?? selectedCategory;
 
-      const ids = Object.keys(allPlayers);
+      const ids           = Object.keys(allPlayers);
       const impostorCount = Math.max(1, +settings.impostors || GAME_CONFIG.impostors);
-      const jesterCount = Math.max(0, +settings.jesters || GAME_CONFIG.jesters);
+      const jesterCount   = Math.max(0, +settings.jesters   || GAME_CONFIG.jesters);
 
       // Capacity check — need at least 1 crew member on top of impostors + jesters
       const minplayers = impostorCount + jesterCount + 1;
@@ -2087,13 +2062,13 @@
       }
 
       const shuffled = [...ids].sort(() => Math.random() - 0.5);
-      const roleMap = {};
+      const roleMap  = {};
 
       // Correct index-based role assignment
       shuffled.forEach((id, i) => {
-        if (i < impostorCount) roleMap[id] = "impostor";
-        else if (i < impostorCount + jesterCount) roleMap[id] = "jester";
-        else roleMap[id] = "crew";
+        if (i < impostorCount)                     roleMap[id] = "impostor";
+        else if (i < impostorCount + jesterCount)  roleMap[id] = "jester";
+        else                                       roleMap[id] = "crew";
       });
 
       // Write roles THEN phase — clients start watching onPlayersChange before
@@ -2117,8 +2092,8 @@
       tasksNeeded = settings.tasksPerCrew || 3;
 
       // Apply host's custom question costs to GAME_CONFIG so all modules pick them up
-      if (settings.killCostSq) GAME_CONFIG.killCostSq = settings.killCostSq;
-      if (settings.jesterSwapCostSq) GAME_CONFIG.jesterSwapCostSq = settings.jesterSwapCostSq;
+      if (settings.killCostSq)            GAME_CONFIG.killCostSq            = settings.killCostSq;
+      if (settings.jesterSwapCostSq)      GAME_CONFIG.jesterSwapCostSq      = settings.jesterSwapCostSq;
       if (settings.jesterColorSwapLqCost) GAME_CONFIG.jesterColorSwapLqCost = settings.jesterColorSwapLqCost;
 
       show("screen-game");
@@ -2160,7 +2135,10 @@
       }
       if (role === "jester") {
         $("btn-swap").classList.remove("hidden");
+        $("btn-color-swap").classList.remove("hidden");
+        $("hud-jester-lq").style.display = "inline";
         updateSwapButton();
+        updateDisguiseButton();
       }
       if (role === "crew") updateTasksHUD();
 
@@ -2218,7 +2196,7 @@
       pill.textContent = "DEAD — GHOST";
       pill.className = "hud-pill hud-role-dead";
       $("hud-tasks").textContent = "";
-      ["btn-task", "btn-kill", "btn-swap", "btn-report", "btn-meeting"].forEach(id => $(id).classList.add("hidden"));
+      ["btn-task", "btn-kill", "btn-swap", "btn-color-swap", "btn-report", "btn-meeting"].forEach(id => $(id).classList.add("hidden"));
       flashHud("👻 You are dead. Observe as a ghost.", "warn");
     }
 
@@ -2246,7 +2224,17 @@
       } else if (role === "impostor") {
         btn.textContent = "⬡ PREP KILL";
       } else if (role === "jester") {
-        btn.textContent = "⬡ CHARGE SWAP";
+        const swapNeeded = GAME_CONFIG.jesterSwapCostSq;
+        const disNeeded  = GAME_CONFIG.jesterColorSwapLqCost;
+        if (jesterSqCount >= swapNeeded && jesterLqCount >= disNeeded) {
+          btn.textContent = "⬡ BOTH READY";
+        } else if (jesterSqCount >= swapNeeded) {
+          btn.textContent = `⬡ CHARGE DISGUISE (${jesterLqCount}/${disNeeded} LQ)`;
+        } else if (jesterLqCount >= disNeeded) {
+          btn.textContent = `⬡ CHARGE SWAP (${jesterSqCount}/${swapNeeded} SQ)`;
+        } else {
+          btn.textContent = "⬡ CHARGE ABILITY";
+        }
       }
     }
 
@@ -2265,11 +2253,181 @@
         btn.style.background = "var(--warn)";
         btn.style.color = "#07080f";
       } else {
-        btn.textContent = `⇄ SWAP (${jesterSqCount}/${needed})`;
+        btn.textContent = `⇄ SWAP (${jesterSqCount}/${needed} SQ)`;
         btn.style.background = "";
         btn.style.color = "";
       }
     }
+
+    function updateDisguiseButton() {
+      const needed = GAME_CONFIG.jesterColorSwapLqCost;
+      const btn = $("btn-color-swap");
+      if (!btn) return;
+      if (jesterLqCount >= needed) {
+        btn.textContent = "🎭 DISGUISE ✓";
+        btn.style.background = "var(--warn)";
+        btn.style.color = "#07080f";
+        btn.style.opacity = "";
+      } else {
+        btn.textContent = `🎭 DISGUISE (${jesterLqCount}/${needed} LQ)`;
+        btn.style.background = "var(--surface)";
+        btn.style.color = "var(--warn)";
+        btn.style.opacity = "0.7";
+      }
+      updateTaskButton(world?.getLocalRoom());
+    }
+
+    // ── Jester question modal ─────────────────────────────────────
+    async function openRoleQuestionModal(role) {
+      world?.setPaused(true);
+      const swapNeeded = GAME_CONFIG.jesterSwapCostSq;
+      const disNeeded  = GAME_CONFIG.jesterColorSwapLqCost;
+      const swapDone   = jesterSqCount >= swapNeeded;
+      const disDone    = jesterLqCount >= disNeeded;
+
+      // Ask the jester which ability to charge (unless one is already full)
+      let chargeTarget; // "swap" | "disguise"
+      if (swapDone && disDone) {
+        // Both full — nothing to charge
+        world?.setPaused(false);
+        flashHud("Both abilities fully charged! Use them.", "warn");
+        return;
+      } else if (swapDone) {
+        chargeTarget = "disguise";
+      } else if (disDone) {
+        chargeTarget = "swap";
+      } else {
+        // Let them pick
+        chargeTarget = await showAbilityChoiceModal();
+        if (!chargeTarget) { world?.setPaused(false); return; }
+      }
+
+      const isLq = chargeTarget === "disguise";
+      const questionType = isLq ? "lq" : "sq";
+      const cat = selectedCategory;
+      const qs = isLq ? await fetchLQ(1, cat) : await fetchSQ(1, cat);
+      if (!qs.length) { world?.setPaused(false); flashHud("No questions available."); return; }
+
+      const correct = await showQuestionModal(qs[0]);
+      world?.setPaused(false);
+      if (!correct) { flashHud("Wrong answer — no charge gained."); return; }
+
+      if (isLq) {
+        jesterLqCount = Math.min(jesterLqCount + 1, disNeeded);
+        updateDisguiseButton();
+        if (jesterLqCount >= disNeeded) flashHud("🎭 Disguise fully charged! Press DISGUISE.", "warn");
+        else flashHud(`🎭 Disguise charge: ${jesterLqCount}/${disNeeded} LQ`);
+      } else {
+        jesterSqCount = Math.min(jesterSqCount + 1, swapNeeded);
+        updateSwapButton();
+        if (jesterSqCount >= swapNeeded) flashHud("⇄ Swap fully charged! Press SWAP to teleport.", "warn");
+        else flashHud(`⇄ Swap charge: ${jesterSqCount}/${swapNeeded} SQ`);
+      }
+      updateTaskButton(world?.getLocalRoom());
+    }
+
+    // Modal for jester to choose which ability to charge
+    function showAbilityChoiceModal() {
+      return new Promise(resolve => {
+        const overlay = document.createElement("div");
+        overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.75);
+          backdrop-filter:blur(4px);display:flex;align-items:center;
+          justify-content:center;z-index:200`;
+        overlay.innerHTML = `
+          <div style="background:var(--surface);border:1px solid var(--border);
+               border-radius:16px;padding:1.5rem;width:min(340px,94vw);text-align:center">
+            <p style="font-family:var(--font-title);color:var(--warn);
+                      font-size:.9rem;margin-bottom:1.2rem;letter-spacing:.06em">
+              WHICH ABILITY?
+            </p>
+            <button id="abil-swap" style="display:block;width:100%;padding:.75rem;
+              background:var(--surface);border:1px solid var(--warn);border-radius:10px;
+              color:var(--warn);font-family:var(--font-hud);cursor:pointer;
+              font-size:.85rem;margin-bottom:.6rem">
+              ⇄ SWAP — charge with SQ
+            </button>
+            <button id="abil-dis" style="display:block;width:100%;padding:.75rem;
+              background:var(--surface);border:1px solid var(--warn);border-radius:10px;
+              color:var(--warn);font-family:var(--font-hud);cursor:pointer;
+              font-size:.85rem;margin-bottom:.6rem">
+              🎭 DISGUISE — charge with LQ
+            </button>
+            <button id="abil-cancel" style="display:block;width:100%;padding:.5rem;
+              background:transparent;border:1px solid var(--border);border-radius:10px;
+              color:var(--muted);font-family:var(--font-hud);cursor:pointer;font-size:.8rem">
+              CANCEL
+            </button>
+          </div>`;
+        document.body.appendChild(overlay);
+        const cleanup = (val) => { document.body.removeChild(overlay); resolve(val); };
+        overlay.querySelector("#abil-swap").onclick    = () => cleanup("swap");
+        overlay.querySelector("#abil-dis").onclick     = () => cleanup("disguise");
+        overlay.querySelector("#abil-cancel").onclick  = () => cleanup(null);
+      });
+    }
+    // ── Swap (jester) ─────────────────────────────────────────────
+    $("btn-swap").addEventListener("click", async () => {
+      if (localPlayer.role !== "jester" || !isAlive) return;
+      const needed = GAME_CONFIG.jesterSwapCostSq;
+      if (jesterSqCount < needed) {
+        flashHud(`Need ${needed - jesterSqCount} more SQ charge${needed - jesterSqCount !== 1 ? "s" : ""}!`);
+        return;
+      }
+      const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
+      if (!imp) { flashHud("Impostor not found or already dead!"); return; }
+
+      world?.setPaused(true);
+      const confirmed = await showSwapConfirmModal(imp);
+      world?.setPaused(false);
+      if (!confirmed) return;
+
+      const impX = imp.x ?? 600, impY = imp.y ?? 130;
+      await applyJesterSwap(matchId, localPlayer.id, imp.id);
+      world.teleport(impX, impY);
+      await movePlayer(matchId, localPlayer.id, Math.round(impX), Math.round(impY));
+
+      jesterSqCount = 0;
+      updateSwapButton();
+      flashHud("⇄ Swapped with the impostor!", "warn");
+    });
+
+    // ── Disguise (jester) — 10-second color+name swap with impostor ──
+    $("btn-color-swap").addEventListener("click", async () => {
+      if (localPlayer.role !== "jester" || !isAlive) return;
+      const needed = GAME_CONFIG.jesterColorSwapLqCost;
+      if (jesterLqCount < needed) {
+        flashHud(`Need ${needed - jesterLqCount} more LQ charge${needed - jesterLqCount !== 1 ? "s" : ""} for disguise!`);
+        return;
+      }
+      const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
+      if (!imp) { flashHud("Impostor not found or already dead!"); return; }
+
+      jesterLqCount = 0;
+      updateDisguiseButton();
+
+      const duration = GAME_CONFIG.disguiseDurationMs;
+      const until    = Date.now() + duration;
+
+      const myData = allPlayers[localPlayer.id];
+      await Promise.all([
+        setDisguise(matchId, localPlayer.id, { name: imp.name,   color: imp.color,                             until }),
+        setDisguise(matchId, imp.id,         { name: myData?.name ?? localPlayer.name,
+                                               color: myData?.color ?? localPlayer.color, until }),
+      ]);
+
+      const df = $("disguise-flash");
+      df.style.background = "rgba(255,201,74,0.18)";
+      setTimeout(() => { df.style.background = "rgba(255,201,74,0)"; }, 400);
+      flashHud(`🎭 Disguised as impostor for ${duration / 1000}s!`, "warn");
+
+      setTimeout(async () => {
+        await Promise.all([
+          setDisguise(matchId, localPlayer.id, null),
+          setDisguise(matchId, imp.id,         null),
+        ]);
+        flashHud("🎭 Disguise ended", "info");
+      }, duration);
+    });
 
     // ─────────────────────────────────────────────
     // KILL
@@ -2469,54 +2627,6 @@
       }
     }
 
-    // ── Jester question modal ─────────────────────────────────────
-    async function openRoleQuestionModal(role) {
-      const subtitle = "SQ charges your swap. You need " + GAME_CONFIG.jesterSwapCostSq + " SQs to swap.";
-      world?.setPaused(true);
-      const type = await showQuestionTypeModal("⬡ CHARGE SWAP — Answer a question", subtitle);
-      if (!type) { world?.setPaused(false); return; }
-
-      const cat = selectedCategory;
-      const qs = type === "sq" ? await fetchSQ(1, cat) : await fetchLQ(1, cat);
-      if (!qs.length) { world?.setPaused(false); flashHud("No questions available for this category."); return; }
-
-      const correct = await showQuestionModal(qs[0]);
-      world?.setPaused(false);
-      if (!correct) { flashHud("Wrong answer — no charge gained."); return; }
-
-      jesterSqCount = Math.min(jesterSqCount + 1, GAME_CONFIG.jesterSwapCostSq);
-      updateSwapButton();
-      const needed = GAME_CONFIG.jesterSwapCostSq;
-      if (jesterSqCount >= needed) flashHud("⇄ Swap fully charged! Press SWAP to teleport.", "warn");
-      else flashHud(`⇄ Swap charge: ${jesterSqCount}/${needed}`);
-    }
-
-    // ── Swap (jester) ─────────────────────────────────────────────
-    $("btn-swap").addEventListener("click", async () => {
-      if (localPlayer.role !== "jester" || !isAlive) return;
-      const needed = GAME_CONFIG.jesterSwapCostSq;
-      if (jesterSqCount < needed) {
-        flashHud(`Need ${needed - jesterSqCount} more SQ charge${needed - jesterSqCount !== 1 ? "s" : ""}!`);
-        return;
-      }
-      const imp = Object.values(allPlayers).find(p => p.role === "impostor" && p.alive);
-      if (!imp) { flashHud("Impostor not found or already dead!"); return; }
-
-      world?.setPaused(true);
-      const confirmed = await showSwapConfirmModal(imp);
-      world?.setPaused(false);
-      if (!confirmed) return;
-
-      const impX = imp.x ?? 600, impY = imp.y ?? 130;
-      await applyJesterSwap(matchId, localPlayer.id, imp.id);
-      world.teleport(impX, impY);
-      await movePlayer(matchId, localPlayer.id, Math.round(impX), Math.round(impY));
-
-      jesterSqCount = 0;
-      updateSwapButton();
-      flashHud("⇄ Swapped with the impostor!", "warn");
-    });
-
     // ═══════════════════════════════════════════════
     //  MEETING
     // ═══════════════════════════════════════════════
@@ -2689,9 +2799,9 @@
       const allRolesAssigned = list.length > 0 && list.every(p => p.role !== null && p.role !== undefined);
       if (!allRolesAssigned) return;
 
-      const alive = list.filter(p => p.alive);
-      const imps = alive.filter(p => p.role === "impostor");
-      const crew = alive.filter(p => p.role === "crew");
+      const alive   = list.filter(p => p.alive);
+      const imps    = alive.filter(p => p.role === "impostor");
+      const crew    = alive.filter(p => p.role === "crew");
       const jesters = alive.filter(p => p.role === "jester");
 
       // Task win: all crew have completed enough tasks
@@ -2730,8 +2840,8 @@
       $("end-body").textContent = data[winner][1];
 
       const playerList = Object.values(allPlayers);
-      const impostors = playerList.filter(p => p.role === "impostor");
-      const jester = playerList.find(p => p.role === "jester");
+      const impostors  = playerList.filter(p => p.role === "impostor");
+      const jester     = playerList.find(p => p.role === "jester");
       const revealRows = [];
       for (const imp of impostors) {
         revealRows.push(`
@@ -2780,7 +2890,7 @@
         document.body.appendChild(wrap);
         wrap.querySelector("#_qt-sq").onclick = () => { document.body.removeChild(wrap); resolve("sq"); };
         wrap.querySelector("#_qt-lq").onclick = () => { document.body.removeChild(wrap); resolve("lq"); };
-        wrap.querySelector("#_qt-x").onclick = () => { document.body.removeChild(wrap); resolve(null); };
+        wrap.querySelector("#_qt-x").onclick  = () => { document.body.removeChild(wrap); resolve(null); };
       });
     }
 
@@ -2803,7 +2913,7 @@
           document.body.removeChild(wrap);
           resolve(correct);
         };
-        wrap.querySelector("#_qm-ok").onclick = check;
+        wrap.querySelector("#_qm-ok").onclick   = check;
         wrap.querySelector("#_qm-skip").onclick = () => { document.body.removeChild(wrap); resolve(false); };
         input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
         setTimeout(() => input.focus(), 50);
@@ -2826,7 +2936,7 @@
         `;
         document.body.appendChild(wrap);
         wrap.querySelector("#_sw-yes").onclick = () => { document.body.removeChild(wrap); resolve(true); };
-        wrap.querySelector("#_sw-no").onclick = () => { document.body.removeChild(wrap); resolve(false); };
+        wrap.querySelector("#_sw-no").onclick  = () => { document.body.removeChild(wrap); resolve(false); };
       });
     }
 
@@ -3019,8 +3129,8 @@
             const isSq = b.dataset.type === "sq";
             b.classList.toggle("active", b === btn);
             b.style.borderColor = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--border)";
-            b.style.background = b === btn ? (isSq ? "rgba(74,158,255,0.10)" : "rgba(255,201,74,0.10)") : "var(--bg)";
-            b.style.color = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--muted2)";
+            b.style.background  = b === btn ? (isSq ? "rgba(74,158,255,0.10)" : "rgba(255,201,74,0.10)") : "var(--bg)";
+            b.style.color       = b === btn ? (isSq ? "var(--blue)" : "var(--warn)") : "var(--muted2)";
           });
           div.dataset.qtype = btn.dataset.type;
         });
